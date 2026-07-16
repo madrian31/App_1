@@ -1,0 +1,148 @@
+@import "tailwindcss";
+
+.login-page {
+  @apply min-h-screen w-full flex items-center justify-center bg-gray-100 p-6;
+}
+
+.login-card {
+  @apply relative w-full max-w-md bg-white rounded-3xl shadow-sm overflow-hidden;
+}
+
+.login-blob {
+  @apply absolute -top-16 -right-16 w-56 h-56 rounded-full opacity-90 pointer-events-none;
+  background: radial-gradient(circle at 30% 30%, #7c8cff, #4c5eff 60%, #3a3fe0 100%);
+}
+
+.login-content {
+  @apply relative px-8 pt-10 pb-8;
+}
+
+.login-subtitle {
+  @apply text-sm text-gray-500 mb-1;
+}
+
+.login-title {
+  @apply text-3xl font-bold text-gray-900 mb-8;
+}
+
+.login-fields {
+  @apply space-y-4;
+}
+
+.login-field-group {
+  @apply flex flex-col gap-1;
+}
+
+.login-input {
+  @apply w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-800 placeholder-gray-400
+    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+    disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed;
+}
+
+.login-input-error {
+  @apply border-red-400 focus:ring-red-400;
+}
+
+.login-field-error {
+  @apply text-xs text-red-500 pl-1;
+}
+
+.login-password-wrapper {
+  @apply relative;
+}
+
+.login-input-password {
+  @apply pr-11;
+}
+
+.login-eye-toggle {
+  @apply absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600;
+}
+
+.login-row {
+  @apply flex items-center justify-between mt-4 mb-6;
+}
+
+.login-remember {
+  @apply flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none;
+}
+
+.login-checkbox {
+  @apply w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500;
+}
+
+.login-link {
+  @apply text-sm text-blue-600 hover:underline;
+}
+
+.login-link-bold {
+  @apply font-medium;
+}
+
+.login-submit {
+  @apply w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-xl transition-colors
+    flex items-center justify-center gap-2
+    disabled:bg-blue-400 disabled:cursor-not-allowed;
+}
+
+.login-spinner {
+  @apply animate-spin;
+}
+
+.login-form-message {
+  @apply text-sm rounded-lg px-3 py-2 mb-4;
+}
+
+.login-form-message-success {
+  @apply bg-green-50 text-green-700;
+}
+
+.login-form-message-error {
+  @apply bg-red-50 text-red-600;
+}
+
+.login-hint {
+  @apply text-xs text-gray-400 text-center mt-3;
+}
+
+.login-hint code {
+  @apply bg-gray-100 rounded px-1 py-0.5 text-gray-500;
+}
+
+.login-divider {
+  @apply flex items-center gap-3 my-6;
+}
+
+.login-divider-line {
+  @apply flex-1 h-px bg-gray-200;
+}
+
+.login-divider-text {
+  @apply text-sm text-gray-400;
+}
+
+.login-social-grid {
+  @apply grid grid-cols-3 gap-3;
+}
+
+.login-social-btn {
+  @apply flex items-center justify-center py-3 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors;
+}
+
+.login-icon-google {
+  @apply text-lg;
+  color: #ea4335;
+}
+
+.login-icon-facebook {
+  @apply text-lg;
+  color: #1877f2;
+}
+
+.login-icon-apple {
+  @apply text-xl;
+}
+
+.login-signup {
+  @apply text-center text-sm text-gray-500 mt-6;
+}
