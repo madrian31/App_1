@@ -1,12 +1,13 @@
-import { Routes, Route } from "react-router-dom";
-import Dashboards from "../../pages/Dashboard/Dashboard"; // adjust path
-import LoginPage from "../../pages/Login/Login"; // adjust path
+import { Sidebar } from "../../components/sidebar/Sidebar";
 
 export default function Dashboard() {
   return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome to your dashboard!</p>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <Sidebar />
+      <main style={{ flex: 1, padding: "2rem", background: "#ededed" }}>
+        <h1>Dashboard</h1>
+        <p>Welcome to your dashboard!</p>
+      </main>
     </div>
   );
 }
