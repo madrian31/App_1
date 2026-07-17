@@ -2,10 +2,12 @@ import { useState } from "react";
 import { validateEmail, validatePassword } from "../utils/validation";
 import type { FormStatus } from "../types/auth";
 import { loginUser } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 export function useLoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -46,6 +48,12 @@ export function useLoginForm() {
       await loginUser({ email, password });
       setStatus("success");
       setFormMessage("Welcome back!");
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 1000);
+
     } catch {
       setStatus("error");
       setFormMessage("We couldn't find an account with those details. Try again or sign up.");

@@ -1,6 +1,6 @@
 import "./login.css";
-import LoginForm from "../../components/LoginForm";
-import SocialLogin from "../../components/SocialLogin";
+import LoginForm from "../../components/auth/LoginForm";
+import SocialLogin from "../../components/auth/SocialLogin";
 
 export default function Login() {
   return (
