@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { validateEmail, validatePassword } from "../utils/validation";
 import type { FormStatus } from "../types/auth";
-import { loginUser } from "../services/authService";
+import { loginUser } from "../services/auth/authService";
 import { useNavigate } from "react-router-dom";
 
 export function useLoginForm() {
