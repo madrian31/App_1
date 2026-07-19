@@ -12,7 +12,7 @@ export class MenuService implements IMenuService {
         {
             sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '',
             subMenuItems: [
-                { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/AllMembers' },
+                { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/members' },
                 { sortOrder: 12, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
                 { sortOrder: 19, name: 'Archives', iconClass: 'fa-solid fa-box', path: '/ArchivesMembers' }
             ] 
