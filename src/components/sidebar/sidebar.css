@@ -33,6 +33,7 @@
   margin: 0;
   padding: 10px 0 10px 40px;
   box-sizing: border-box;
+  
 }
 
 .sidebar > .sidebar-item {
@@ -48,6 +49,7 @@
   padding: 20px 0 20px 20px;
   position: relative;
   font-size: 12px;
+  
 }
 
 .sidebar-item__row:before,
@@ -79,6 +81,7 @@
   background: #FFF;
   color: #333;
   border-radius: 100px 0 0 100px;
+  
 }
 
 .sidebar > .sidebar-item:hover .sidebar-item__row:before,
@@ -106,7 +109,7 @@
 .sidebar-submenu-wrapper {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease;
+  /* transition: grid-template-rows 0.25s ease; */
 }
 
 .sidebar-submenu-wrapper--open {
