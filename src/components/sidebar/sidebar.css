@@ -2,7 +2,7 @@
   font-family: sans-serif;
   display: flex;
   flex-direction: column;
-  width: 20%;
+  width: 18%;
   max-width: 100%;
   /* height: 100vh; */
   background: #2b2b2b;
@@ -14,7 +14,7 @@
   color: #FFF;
   font-size: 18px;
   /* text-align: center; */
-  border-bottom: #fff solid 1px;
+  /* border-bottom: #fff solid 1px; */
 }
 
 .sidebar-header__brand {
