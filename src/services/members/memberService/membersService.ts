@@ -13,8 +13,6 @@ import type { Member } from "../../../types/member";
 
 const membersCol = collection(db, "members");
 
-// Firestore write calls (addDoc/updateDoc) magthrow error sa `undefined` values
-// kaya ni-strip natin muna bago mag-save. `""` (empty string) okay lang sa Firestore.
 function stripUndefined<T extends object>(obj: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(obj).filter(([, value]) => value !== undefined)

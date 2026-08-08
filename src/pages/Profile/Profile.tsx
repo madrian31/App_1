@@ -57,27 +57,21 @@ export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Members list is fetched from Firestore. Kailangan pa rin ang buong list
-  // (hindi lang yung isang member na ini-edit) dahil dito nanggagaling ang
-  // autocomplete suggestions ng Mother/Father/Sibling names.
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isAddMode = id === 'new';
 
-  // Mock "current user" until auth is reconnected.
   const [currentUser] = useState('Unknown');
   const [form, setForm] = useState<FormState>(emptyForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // ── Autocomplete state (Mother/Father/Sibling suggestions from members) ──
   const [motherOpen, setMotherOpen] = useState(false);
   const [fatherOpen, setFatherOpen] = useState(false);
   const [siblingOpen, setSiblingOpen] = useState(false);
   const [siblingInput, setSiblingInput] = useState('');
 
-  // Fetch all members once on mount (for edit-mode lookup + autocomplete data)
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -98,7 +92,6 @@ export default function Profile() {
 
   const member = isAddMode ? undefined : members.find((m: Member) => m.id === id);
 
-  // Sync form once existing member data is available (edit mode only)
   useEffect(() => {
     if (member) {
       setForm({
@@ -180,7 +173,7 @@ export default function Profile() {
       if (isAddMode) {
         await addMember({
           ...changes,
-          userId: 0, // Firestore auto-generates the document ID; kept only to satisfy the type.
+          userId: 0,
           isPledger: false,
           addedBy: currentUser,
           dateAdded: formatDate(),

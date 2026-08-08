@@ -13,7 +13,6 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-// isSupported() check para hindi mag-crash sa SSR/unsupported environments
 isSupported().then((supported) => {
   if (supported) getAnalytics(app);
 });
