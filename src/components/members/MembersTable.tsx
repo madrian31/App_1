@@ -50,13 +50,7 @@ export default function MembersTable({ members, loading, onArchive }: MembersTab
                       {m.firstName}
                       {m.middleName ? ` ${m.middleName}` : ""} {m.lastName}
                     </span>
-                    <button
-                      className="btn-view-profile"
-                      title="View Profile"
-                      onClick={() => navigate(`/Profile/${m.id}`)}
-                    >
-                      <i className="fa-regular fa-address-card" />
-                    </button>
+                    
                   </div>
                 </td>
                 <td>

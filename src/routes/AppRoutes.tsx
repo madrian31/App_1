@@ -9,7 +9,7 @@ export default function AppRoutes() {
       <Route path="/" element={<Navigate to="/login" replace />} />
 
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path ="/members" element={<Members />} />
+      <Route path="/members" element={<Members />} />
 
       <Route path="/login" element={<LoginPage />} />
     </Routes>

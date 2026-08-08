@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
 import { SidebarItem } from "./SidebarItem";
@@ -21,27 +22,24 @@ interface SidebarProps {
   // the user isn't allowed to see.
   userAccess?: UserAccess;
 
-  // Optional: control the active route from outside (e.g. from your
-  // router). If omitted, Sidebar tracks it internally.
-  activePath?: string;
-
-  // Called whenever the user picks a menu item that has a real path.
+  // Optional: called whenever the user picks a menu item that has a
+  // real path, in addition to the actual navigation. Useful for side
+  // effects (closing a mobile drawer, analytics, etc).
   onNavigate?: (path: string) => void;
 }
 
-export function Sidebar({ userAccess, activePath, onNavigate }: SidebarProps) {
+export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
   const menuItems = menuService.getMenuItems(userAccess);
 
-  const [internalActivePath, setInternalActivePath] = useState<string>(
-    activePath ?? ""
-  );
-  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentActivePath = location.pathname;
 
-  const currentActivePath = activePath ?? internalActivePath;
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
   const go = (path: string) => {
     if (!path) return;
-    setInternalActivePath(path);
+    navigate(path);
     onNavigate?.(path);
   };
 
