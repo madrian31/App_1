@@ -6,7 +6,11 @@ import MembersToolbar from "../../components/members/MembersToolbar";
 import MembersTable from "../../components/members/MembersTable";
 import Pagination from "../../components/members/Pagination";
 import Toast from "../../components/members/Toast";
+import ImportExportBar from "../../components/members/ImportExportBar";
 import "./members.css";
+
+// TODO: replace with the actual logged-in user once auth/session wiring is in place.
+const CURRENT_USER = "Unknown";
 
 export default function Members() {
   const navigate = useNavigate();
@@ -30,6 +34,7 @@ export default function Members() {
     goNext,
     goLast,
     archiveMember,
+    refetch,
   } = useMembers();
 
   return (
@@ -37,7 +42,12 @@ export default function Members() {
       <Sidebar />
       <main style={{ flex: 1, padding: "2rem", background: "#ededed" }}>
         <div className="page">
-          <PageHeader title="Members" count={activeCount} onAddMember={() => navigate("/Profile/new")} />
+          <PageHeader
+            title="Members"
+            count={activeCount}
+            onAddMember={() => navigate("/Profile/new")}
+            extraActions={<ImportExportBar currentUser={CURRENT_USER} onImported={refetch} />}
+          />
 
           <MembersToolbar
             search={search}
