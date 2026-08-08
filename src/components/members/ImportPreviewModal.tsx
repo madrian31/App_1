@@ -17,7 +17,7 @@ function formatDisplayDate(iso: string): string {
 }
 
 export default function ImportPreviewModal({ importState, currentUser, onClose, onImported }: ImportPreviewModalProps) {
-  const { step, parseResult, error, progress, confirmImport, reset } = importState;
+  const { step, parseResult, error, progress, summary, confirmImport, reset } = importState;
   const [previewSearch, setPreviewSearch] = useState("");
 
   const visibleRows = useMemo(() => {
@@ -147,6 +147,19 @@ export default function ImportPreviewModal({ importState, currentUser, onClose, 
             <div className="import-success">
               <i className="fa-solid fa-circle-check" aria-hidden="true" />
               <p>Import complete!</p>
+              {summary && (
+                <ul className="import-summary-list">
+                  {summary.inserted > 0 && (
+                    <li>{summary.inserted} new member{summary.inserted !== 1 ? "s" : ""} added</li>
+                  )}
+                  {summary.updated > 0 && (
+                    <li>{summary.updated} existing member{summary.updated !== 1 ? "s" : ""} updated</li>
+                  )}
+                  {summary.unchanged > 0 && (
+                    <li>{summary.unchanged} already existed (no changes)</li>
+                  )}
+                </ul>
+              )}
             </div>
             <div className="modal-actions">
               <button

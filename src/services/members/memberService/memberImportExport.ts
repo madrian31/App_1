@@ -43,28 +43,79 @@ function buildMemberId(m: ImportedMember): string {
     .replace(/^-+|-+$/g, "");
 }
 
+/** Fields that come from the imported file — compared to tell "updated" apart from "already existed, unchanged". */
+const COMPARABLE_FIELDS: (keyof ImportedMember)[] = [
+  "lastName",
+  "firstName",
+  "middleInitial",
+  "gender",
+  "birthday",
+  "dateOfBaptism",
+  "facebookName",
+  "status",
+  "category",
+  "ministry",
+  "isSmallGroupLeader",
+  "us2cgLevel",
+];
+
+/** True if every importable field on the existing Firestore doc matches the incoming row. */
+function isSameData(existing: Record<string, unknown> | undefined, incoming: ImportedMember): boolean {
+  if (!existing) return false;
+  return COMPARABLE_FIELDS.every((field) => (existing[field] ?? "") === (incoming[field] ?? ""));
+}
+
 /**
  * Writes parsed rows to Firestore in batches of 450 (Firestore's hard limit is 500 writes/batch).
  * Uses a deterministic doc ID per member (see buildMemberId) with `merge: true`, so importing
  * the same file — or a file with overlapping rows — twice updates existing members in place
  * instead of creating duplicate entries.
+ *
+ * Before writing, fetches all existing member docs once so it can classify every row as:
+ *  - inserted: no existing doc with this ID (brand-new member)
+ *  - updated: existing doc found, but at least one field differs from the incoming row
+ *  - unchanged: existing doc found and every field already matches (already existed, no-op)
+ *
  * Reports progress via onProgress(written, total) after each batch commits.
  */
 export async function bulkImportMembers(
   members: ImportedMember[],
   addedBy: string,
   onProgress?: (written: number, total: number) => void
-): Promise<{ written: number }> {
+): Promise<{ written: number; inserted: number; updated: number; unchanged: number }> {
   const BATCH_SIZE = 450;
   const dateAdded = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+
+  // One read of all existing members, done up front, so we can classify every row
+  // (new / updated / unchanged) without a separate read per member.
+  const existingSnap = await getDocs(membersCol);
+  const existingById = new Map(existingSnap.docs.map((d) => [d.id, d.data()]));
+
   let written = 0;
+  let inserted = 0;
+  let updated = 0;
+  let unchanged = 0;
 
   for (let i = 0; i < members.length; i += BATCH_SIZE) {
     const chunk = members.slice(i, i + BATCH_SIZE);
     const batch = writeBatch(db);
 
     for (const m of chunk) {
-      const ref = doc(membersCol, buildMemberId(m));
+      const id = buildMemberId(m);
+      const existingData = existingById.get(id);
+
+      if (!existingData) {
+        inserted++;
+      } else if (isSameData(existingData, m)) {
+        unchanged++;
+      } else {
+        updated++;
+      }
+      // Track this row's data so duplicate rows within the same file are classified
+      // against each other too, not just against what was already in Firestore.
+      existingById.set(id, m as unknown as Record<string, unknown>);
+
+      const ref = doc(membersCol, id);
       batch.set(
         ref,
         {
@@ -83,7 +134,7 @@ export async function bulkImportMembers(
     onProgress?.(written, members.length);
   }
 
-  return { written };
+  return { written, inserted, updated, unchanged };
 }
 
 /** Builds and downloads an .xlsx export of the given members, matching the directory's original column layout. */

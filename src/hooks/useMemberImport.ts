@@ -4,11 +4,20 @@ import { parseMembersFile, bulkImportMembers } from "../services/members/memberS
 
 export type ImportStep = "idle" | "parsing" | "preview" | "importing" | "done" | "error";
 
+export interface ImportSummary {
+  written: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+}
+
 export interface UseMemberImportResult {
   step: ImportStep;
   parseResult: ParseResult | null;
   error: string | null;
   progress: { written: number; total: number } | null;
+  /** Breakdown of the last completed import — how many rows were brand-new vs. already existed. */
+  summary: ImportSummary | null;
   selectFile: (file: File) => Promise<void>;
   confirmImport: (addedBy: string) => Promise<void>;
   reset: () => void;
@@ -19,6 +28,7 @@ export default function useMemberImport(): UseMemberImportResult {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ written: number; total: number } | null>(null);
+  const [summary, setSummary] = useState<ImportSummary | null>(null);
 
   const selectFile = useCallback(async (file: File) => {
     setStep("parsing");
@@ -45,7 +55,8 @@ export default function useMemberImport(): UseMemberImportResult {
       setProgress({ written: 0, total: parseResult.rows.length });
       try {
         const data: ImportedMember[] = parseResult.rows.map((r) => r.data);
-        await bulkImportMembers(data, addedBy, (written, total) => setProgress({ written, total }));
+        const result = await bulkImportMembers(data, addedBy, (written, total) => setProgress({ written, total }));
+        setSummary(result);
         setStep("done");
       } catch (err: any) {
         setError(err?.message || "Import failed partway through. Some members may have already been added.");
@@ -60,7 +71,8 @@ export default function useMemberImport(): UseMemberImportResult {
     setParseResult(null);
     setError(null);
     setProgress(null);
+    setSummary(null);
   }, []);
 
-  return { step, parseResult, error, progress, selectFile, confirmImport, reset };
+  return { step, parseResult, error, progress, summary, selectFile, confirmImport, reset };
 }
