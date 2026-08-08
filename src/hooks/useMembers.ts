@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { Member } from "../types/member";
-import { MOCK_MEMBERS } from "../data/mockMembers";
+import { getAllMembers, archiveMember as archiveMemberService } from "../services/members/memberService/membersService";
 
 export function initials(m: Pick<Member, "firstName" | "lastName">): string {
   return `${m.firstName?.[0] || ""}${m.lastName?.[0] || ""}`.toUpperCase();
@@ -24,13 +24,13 @@ export interface UseMembersResult {
   goNext: () => void;
   goLast: () => void;
   archiveMember: (id: string) => void;
+  refetch: () => void;
 }
 
 /**
  * useMembers
- * Kumukuha, nagfi-filter, nagpapaginate, at nagha-handle ng archive action
- * para sa Members page. Palitan lang ang naka-comment na fetch simulation
- * ng tawag sa src/services (hal. membersService.getAll()) kapag may backend ka na.
+ * Kumukuha (Firestore), nagfi-filter, nagpapaginate, at nagha-handle ng
+ * archive action para sa Members page.
  */
 export default function useMembers(): UseMembersResult {
   const [members, setMembers] = useState<Member[]>([]);
@@ -41,20 +41,21 @@ export default function useMembers(): UseMembersResult {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // simulate initial fetch — palitan ng: const data = await membersService.getAll();
-  useEffect(() => {
-    let active = true;
+  const fetchMembers = useCallback(async () => {
     setLoading(true);
-    const t = setTimeout(() => {
-      if (!active) return;
-      setMembers(MOCK_MEMBERS);
+    try {
+      const data = await getAllMembers();
+      setMembers(data);
+    } catch (err) {
+      console.error("Failed to fetch members:", err);
+    } finally {
       setLoading(false);
-    }, 300);
-    return () => {
-      active = false;
-      clearTimeout(t);
-    };
+    }
   }, []);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
@@ -89,11 +90,17 @@ export default function useMembers(): UseMembersResult {
   }, []);
 
   const archiveMember = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const m = members.find((x) => x.id === id);
       if (!m) return;
-      setMembers((prev) => prev.map((x) => (x.id === id ? { ...x, isArchived: true } : x)));
-      showToast(`${m.firstName} ${m.lastName} was archived.`);
+      try {
+        await archiveMemberService(id);
+        setMembers((prev) => prev.map((x) => (x.id === id ? { ...x, isArchived: true } : x)));
+        showToast(`${m.firstName} ${m.lastName} was archived.`);
+      } catch (err) {
+        console.error(err);
+        showToast("Failed to archive member.");
+      }
     },
     [members, showToast]
   );
@@ -131,5 +138,6 @@ export default function useMembers(): UseMembersResult {
     goNext,
     goLast,
     archiveMember,
+    refetch: fetchMembers,
   };
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/sidebar/Sidebar';
 import type { Member } from '../../types/member';
-import { MOCK_MEMBERS } from '../../data/mockMembers';
+import { getAllMembers, addMember, updateMember } from '../../services/members/memberService/membersService';
 import './profile.css';
 
 function initials(firstName: string, lastName: string, nickname?: string) {
@@ -57,11 +57,11 @@ export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Shared mock data (same source as the Members page's useMembers hook)
-  // standing in for the real member store while the data layer is being
-  // rebuilt (previously Firebase-backed).
-  const [members, setMembers] = useState<Member[]>(MOCK_MEMBERS);
-  const [loading] = useState(false);
+  // Members list is fetched from Firestore. Kailangan pa rin ang buong list
+  // (hindi lang yung isang member na ini-edit) dahil dito nanggagaling ang
+  // autocomplete suggestions ng Mother/Father/Sibling names.
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const isAddMode = id === 'new';
 
@@ -76,6 +76,25 @@ export default function Profile() {
   const [fatherOpen, setFatherOpen] = useState(false);
   const [siblingOpen, setSiblingOpen] = useState(false);
   const [siblingInput, setSiblingInput] = useState('');
+
+  // Fetch all members once on mount (for edit-mode lookup + autocomplete data)
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    getAllMembers()
+      .then((data) => {
+        if (active) setMembers(data);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch members:', err);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const member = isAddMode ? undefined : members.find((m: Member) => m.id === id);
 
@@ -159,24 +178,17 @@ export default function Profile() {
 
     try {
       if (isAddMode) {
-        const nextId = members.length > 0
-          ? Math.max(...members.map((m: Member) => m.userId)) + 1
-          : 1;
-        const newMember: Member = {
+        await addMember({
           ...changes,
-          id: String(nextId),
-          userId: nextId,
+          userId: 0, // Firestore auto-generates the document ID; kept only to satisfy the type.
           isPledger: false,
           addedBy: currentUser,
           dateAdded: formatDate(),
           isArchived: false,
-        };
-        // TODO: replace with real persistence once the data layer is reconnected.
-        setMembers(prev => [...prev, newMember]);
+        });
       } else {
         if (!id) return;
-        // TODO: replace with real persistence once the data layer is reconnected.
-        setMembers(prev => prev.map((m: Member) => (m.id === id ? { ...m, ...changes } : m)));
+        await updateMember(id, changes);
       }
       navigate(-1);
     } catch (err: any) {

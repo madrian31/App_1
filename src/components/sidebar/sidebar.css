@@ -147,7 +147,7 @@
 }
 
 .sidebar-subitem--active {
-  background: orange;
+  background: rgb(140, 0, 255);
   color: #FFF;
   font-weight: 500;
 }
