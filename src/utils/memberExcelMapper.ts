@@ -63,13 +63,34 @@ function findHeaderRowIndex(rows: unknown[][], maxScanRows = 5): number {
   return -1;
 }
 
+/**
+ * Builds the effective header labels for the detected header row, filling in any blank
+ * cells from the row directly above it.
+ *
+ * Some directories use a two-row header where a parent label (e.g. "GENDER", "BIRTHDAY")
+ * is merged vertically across the title row and the sub-header row. In the underlying
+ * sheet data, a vertically-merged cell only carries a value in its first (topmost) row —
+ * every row below it reads as blank. Since we detect the header row by finding where
+ * "LAST NAME"/"FIRST NAME" literally appear (which is the *lower* row in that layout),
+ * columns like GENDER/BIRTHDAY/etc. would otherwise look blank on that row even though
+ * their label exists one row up. This backfills those blanks from the row above so every
+ * column's label is recovered regardless of which row it visually sits on.
+ */
+function mergeHeaderRows(rows: unknown[][], headerIdx: number): string[] {
+  const current = rows[headerIdx].map((c) => normalizeHeader(toText(c)));
+  if (headerIdx === 0) return current;
+
+  const above = rows[headerIdx - 1].map((c) => normalizeHeader(toText(c)));
+  return current.map((h, idx) => h || above[idx] || "");
+}
+
 export function parseMembersSheet(rows: unknown[][]): ParseResult {
   const headerIdx = findHeaderRowIndex(rows);
   if (headerIdx === -1) {
     throw new Error('Could not find a header row with "Last Name" and "First Name" columns in the first 5 rows.');
   }
 
-  const headers = rows[headerIdx].map((c) => normalizeHeader(toText(c)));
+  const headers = mergeHeaderRows(rows, headerIdx);
   const colIndex: Partial<Record<FieldKey, number>> = {};
   headers.forEach((h, idx) => {
     const key = HEADER_ALIASES[h];

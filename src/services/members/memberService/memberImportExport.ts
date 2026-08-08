@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { writeBatch, collection, doc } from "firebase/firestore";
+import { writeBatch, collection, doc, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
 import type { Member } from "../../../types/member";
 import {
@@ -24,7 +24,30 @@ export async function parseMembersFile(file: File, sheetName = "MEMBERS DATA"): 
 }
 
 /**
+ * Builds a stable, deterministic document ID for a member based on identifying fields.
+ * Re-importing the same person (same name + birthday) will always resolve to the same
+ * ID, so bulkImportMembers can safely overwrite/merge instead of creating a duplicate.
+ *
+ * NOTE: two different people who happen to share last name, first name, AND birthday
+ * would collide under this scheme (rare, but possible). If that's a real concern, add
+ * another distinguishing field (e.g. middleInitial) into the key below.
+ */
+function buildMemberId(m: ImportedMember): string {
+  const key = `${m.lastName}-${m.firstName}-${m.birthday || "no-bday"}`;
+  return key
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents (e.g. "José" -> "jose")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
  * Writes parsed rows to Firestore in batches of 450 (Firestore's hard limit is 500 writes/batch).
+ * Uses a deterministic doc ID per member (see buildMemberId) with `merge: true`, so importing
+ * the same file — or a file with overlapping rows — twice updates existing members in place
+ * instead of creating duplicate entries.
  * Reports progress via onProgress(written, total) after each batch commits.
  */
 export async function bulkImportMembers(
@@ -41,14 +64,18 @@ export async function bulkImportMembers(
     const batch = writeBatch(db);
 
     for (const m of chunk) {
-      const ref = doc(membersCol);
-      batch.set(ref, {
-        ...m,
-        isPledger: false,
-        isArchived: false,
-        addedBy,
-        dateAdded,
-      });
+      const ref = doc(membersCol, buildMemberId(m));
+      batch.set(
+        ref,
+        {
+          ...m,
+          isPledger: false,
+          isArchived: false,
+          addedBy,
+          dateAdded,
+        },
+        { merge: true } // update existing member instead of overwriting isPledger/isArchived flags they may have set manually
+      );
     }
 
     await batch.commit();

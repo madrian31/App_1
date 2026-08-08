@@ -8,6 +8,14 @@ interface ImportPreviewModalProps {
   onImported: () => void;
 }
 
+/** Formats an ISO date string (YYYY-MM-DD) as "Jan 01 2002" for display. */
+function formatDisplayDate(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(`${iso}T00:00:00`); // avoid timezone shift
+  if (isNaN(d.getTime())) return iso; // fallback: show raw value if unparseable
+  return d.toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" });
+}
+
 export default function ImportPreviewModal({ importState, currentUser, onClose, onImported }: ImportPreviewModalProps) {
   const { step, parseResult, error, progress, confirmImport, reset } = importState;
   const [previewSearch, setPreviewSearch] = useState("");
@@ -85,7 +93,7 @@ export default function ImportPreviewModal({ importState, currentUser, onClose, 
                       <td>{r.rowNumber}</td>
                       <td>{r.data.firstName} {r.data.middleInitial} {r.data.lastName}</td>
                       <td>{r.data.gender || "—"}</td>
-                      <td>{r.data.birthday || "—"}</td>
+                      <td>{r.data.birthday ? formatDisplayDate(r.data.birthday) : "—"}</td>
                       <td>{r.data.category || "—"}</td>
                       <td>{r.data.status || "—"}</td>
                     </tr>
