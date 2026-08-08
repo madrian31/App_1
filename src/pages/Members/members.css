@@ -313,6 +313,36 @@
 
 
 /* =========================================================
+   Badges (Category, Small Group Leader)
+   ========================================================= */
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+
+    padding: 3px 10px;
+
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-category {
+    background: #eef1ff;
+    color: var(--primary);
+    border: 1px solid #dbe0ff;
+}
+
+.badge-leader {
+    background: #ecfdf5;
+    color: var(--success);
+    border: 1px solid #a7f3d0;
+}
+
+
+/* =========================================================
    Pledger
    ========================================================= */
 
@@ -668,8 +698,9 @@
         overflow-x: auto;
     }
 
-    .members-table {
-        min-width: 700px;
+    /* Hide secondary columns on small screens instead of forcing horizontal scroll */
+    .members-table .col-hide-mobile {
+        display: none;
     }
 
     .table-footer {

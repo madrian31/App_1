@@ -9,79 +9,67 @@ import Toast from "../../components/members/Toast";
 import "./members.css";
 
 export default function Members() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const {
+    loading,
+    members,
+    activeCount,
+    filteredCount,
+    search,
+    filter,
+    pageSize,
+    currentPage,
+    totalPages,
+    start,
+    toast,
+    onSearchChange,
+    onFilterChange,
+    onPageSizeChange,
+    goFirst,
+    goPrev,
+    goNext,
+    goLast,
+    archiveMember,
+  } = useMembers();
 
-    const {
-        loading,
-        members,
-        activeCount,
-        filteredCount,
-        search,
-        filter,
-        pageSize,
-        currentPage,
-        totalPages,
-        start,
-        toast,
-        onSearchChange,
-        onFilterChange,
-        onPageSizeChange,
-        goFirst,
-        goPrev,
-        goNext,
-        goLast,
-        archiveMember,
-        togglePledger,
-    } = useMembers();
+  return (
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <Sidebar />
+      <main style={{ flex: 1, padding: "2rem", background: "#ededed" }}>
+        <div className="page">
+          <PageHeader title="Members" count={activeCount} onAddMember={() => navigate("/Profile/new")} />
 
-    return (
-        <div style={{ display: "flex", minHeight: "100vh" }}>
-            <Sidebar />
+          <MembersToolbar
+            search={search}
+            onSearchChange={onSearchChange}
+            filter={filter}
+            onFilterChange={onFilterChange}
+          />
 
-            <main
-                style={{
-                    flex: 1,
-                    padding: "2rem",
-                    background: "#ededed",
-                }}
-            >
-                <PageHeader
-                    title="Members"
-                    count={activeCount}
-                    onAddMember={() => navigate("/Profile/new")}
-                />
+          <div className="members-card">
+            <MembersTable
+              members={members}
+              loading={loading}
+              onArchive={archiveMember}
+              showPledgerColumn={false}
+            />
+            <Pagination
+              pageSize={pageSize}
+              onPageSizeChange={onPageSizeChange}
+              currentPage={currentPage}
+              totalPages={totalPages}
+              start={start}
+              filteredCount={filteredCount}
+              onFirst={goFirst}
+              onPrev={goPrev}
+              onNext={goNext}
+              onLast={goLast}
+            />
+          </div>
 
-                <MembersToolbar
-                    search={search}
-                    onSearchChange={onSearchChange}
-                    filter={filter}
-                    onFilterChange={onFilterChange}
-                />
-
-                <div className="members-card">
-                    <MembersTable
-                        members={members}
-                        loading={loading}
-                        onArchive={archiveMember}
-                        onTogglePledger={togglePledger}
-                    />
-
-                    <Pagination
-                        pageSize={pageSize}
-                        onPageSizeChange={onPageSizeChange}
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        start={start}
-                        filteredCount={filteredCount}
-                        onFirst={goFirst}
-                        onPrev={goPrev}
-                        onNext={goNext}
-                        onLast={goLast}
-                    />
-                </div>
-
-                <Toast message={toast} />
-            </main>
+          <Toast message={toast} />
         </div>
-    );
+      </main>
+    </div>
+  );
 }

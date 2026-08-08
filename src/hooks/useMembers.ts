@@ -100,7 +100,7 @@ export default function useMembers(
 
             // Search
             const fullName =
-                `${m.firstName} ${m.middleName} ${m.lastName}`.toLowerCase();
+                `${m.firstName} ${m.middleInitial} ${m.lastName}`.toLowerCase();
 
             if (
                 search &&

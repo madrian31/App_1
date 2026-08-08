@@ -1,30 +1,25 @@
 export interface Member {
   id: string;
-  firstName: string;
-  middleName: string;
-  lastName: string;
-  userId: number;
-  isPledger: boolean;
-  addedBy: string;
-  dateAdded: string; // ISO date string, e.g. "2025-01-12"
-  isArchived: boolean;
 
-  // ── Optional profile fields (filled in / edited via the Profile page) ──
-  nickname?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  civilStatus?: string;
-  motherName?: string;
-  fatherName?: string;
-  numberOfSiblings?: number;
-  siblingNames?: string;
-  phoneNumber?: string;
-  emailAddress?: string;
-  address?: string;
-  emergencyContactName?: string;
-  emergencyContactNumber?: string;
-  dateRegistered?: string;
-  membershipStatus?: string;
-  ministry?: string;
-  remarks?: string;
+  // ── Basic Information (Directory columns 1–6) ──
+  lastName: string;
+  firstName: string;
+  middleInitial: string; // M.I.
+  gender: string;
+  birthday: string; // ISO date string, e.g. "1990-05-24" — Age is computed from this, never stored
+  dateOfBaptism?: string; // ISO date string
+
+  // ── Church Information (Directory columns 8–13) ──
+  facebookName?: string;
+  status?: string; // e.g. "Working", "College", "Senior High School"
+  category?: string; // e.g. "Men", "Women", "Youth Boys", "Youth Girls", "Young Adult/Young Professional"
+  ministry?: string; // comma-separated list, e.g. "Sunday School, Ushering"
+  isSmallGroupLeader: boolean; // Directory "Small Group" column: "Leader" or blank
+  us2cgLevel?: string;
+
+  // ── System / meta fields (used by app features, not part of the directory) ──
+  addedBy: string;
+  dateAdded: string; // ISO date string
+  isArchived: boolean;
+  isPledger: boolean;
 }

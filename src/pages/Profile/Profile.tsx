@@ -2,23 +2,21 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/sidebar/Sidebar';
 import type { Member } from '../../types/member';
-import { getAllMembers, addMember, updateMember } from '../../services/members/memberService/membersService';
+import { getMemberById, addMember, updateMember } from '../../services/members/memberService/membersService';
 import './profile.css';
 
-function initials(firstName: string, lastName: string, nickname?: string) {
-  const fromName = (firstName?.[0] || '') + (lastName?.[0] || '');
-  if (fromName) return fromName;
-  return (nickname || '').slice(0, 2);
+function initials(firstName: string, lastName: string) {
+  return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
 }
 
-function fullName(m: { firstName: string; middleName?: string; lastName: string; nickname?: string }) {
-  const name = `${m.firstName}${m.middleName ? ` ${m.middleName}` : ''} ${m.lastName}`.trim().replace(/\s+/g, ' ');
-  return name || (m.nickname || '').trim();
+function fullName(m: { firstName: string; middleInitial?: string; lastName: string }) {
+  const name = `${m.firstName}${m.middleInitial ? ` ${m.middleInitial}` : ''} ${m.lastName}`.trim().replace(/\s+/g, ' ');
+  return name;
 }
 
-function computeAge(dateOfBirth?: string) {
-  if (!dateOfBirth) return '';
-  const dob = new Date(dateOfBirth);
+function computeAge(birthday?: string) {
+  if (!birthday) return '';
+  const dob = new Date(birthday);
   if (isNaN(dob.getTime())) return '';
   const today = new Date();
   let age = today.getFullYear() - dob.getFullYear();
@@ -33,31 +31,75 @@ function formatDate() {
   });
 }
 
+// Common ministries seen across the directory — used as autocomplete suggestions.
+// Members can still type any custom value.
+const MINISTRY_SUGGESTIONS = [
+  'Worker',
+  'Sunday School',
+  'Praise & Worship',
+  'Multimedia',
+  'Ushering',
+  'Council Member',
+  'Youth Officer',
+  'Tambourine Dancer',
+];
+
+const STATUS_OPTIONS = [
+  'Elementary',
+  'Junior High School',
+  'Senior High School',
+  'College',
+  'Working Student',
+  'Working',
+  'Worker',
+  'Senior',
+];
+
+const CATEGORY_OPTIONS = [
+  'Men',
+  'Women',
+  'Youth Boys',
+  'Youth Girls',
+  'Young Adult/Young Professional',
+];
+
+const US2CG_LEVEL_OPTIONS = [
+  'SALT 1',
+  'SALT 2',
+  'SALT 3',
+  'Pre-RDSR',
+  'Post-RDSR',
+  'SOLD 3',
+  'M2M',
+];
+
 interface FormState {
-  firstName: string; middleName: string; lastName: string;
-  nickname: string; gender: string; dateOfBirth: string; civilStatus: string;
-  motherName: string; fatherName: string;
-  numberOfSiblings: string; siblingNames: string;
-  phoneNumber: string; emailAddress: string; address: string;
-  emergencyContactName: string; emergencyContactNumber: string;
-  dateRegistered: string; membershipStatus: string; ministry: string; remarks: string;
+  lastName: string;
+  firstName: string;
+  middleInitial: string;
+  gender: string;
+  birthday: string;
+  dateOfBaptism: string;
+  facebookName: string;
+  status: string;
+  category: string;
+  ministryNames: string; // comma-separated, mirrors Member.ministry
+  isSmallGroupLeader: boolean;
+  us2cgLevel: string;
 }
 
 const emptyForm: FormState = {
-  firstName: '', middleName: '', lastName: '',
-  nickname: '', gender: '', dateOfBirth: '', civilStatus: '',
-  motherName: '', fatherName: '',
-  numberOfSiblings: '', siblingNames: '',
-  phoneNumber: '', emailAddress: '', address: '',
-  emergencyContactName: '', emergencyContactNumber: '',
-  dateRegistered: '', membershipStatus: '', ministry: '', remarks: '',
+  lastName: '', firstName: '', middleInitial: '',
+  gender: '', birthday: '', dateOfBaptism: '',
+  facebookName: '', status: '', category: '',
+  ministryNames: '', isSmallGroupLeader: false, us2cgLevel: '',
 };
 
 export default function Profile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const [members, setMembers] = useState<Member[]>([]);
+  const [member, setMember] = useState<Member | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   const isAddMode = id === 'new';
@@ -67,20 +109,22 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const [motherOpen, setMotherOpen] = useState(false);
-  const [fatherOpen, setFatherOpen] = useState(false);
-  const [siblingOpen, setSiblingOpen] = useState(false);
-  const [siblingInput, setSiblingInput] = useState('');
+  const [ministryInput, setMinistryInput] = useState('');
+  const [ministryOpen, setMinistryOpen] = useState(false);
 
   useEffect(() => {
+    if (isAddMode) {
+      setLoading(false);
+      return;
+    }
     let active = true;
     setLoading(true);
-    getAllMembers()
+    getMemberById(id as string)
       .then((data) => {
-        if (active) setMembers(data);
+        if (active) setMember(data ?? undefined);
       })
       .catch((err) => {
-        console.error('Failed to fetch members:', err);
+        console.error('Failed to fetch member:', err);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -88,33 +132,23 @@ export default function Profile() {
     return () => {
       active = false;
     };
-  }, []);
-
-  const member = isAddMode ? undefined : members.find((m: Member) => m.id === id);
+  }, [id, isAddMode]);
 
   useEffect(() => {
     if (member) {
       setForm({
-        firstName: member.firstName || '',
-        middleName: member.middleName || '',
         lastName: member.lastName || '',
-        nickname: member.nickname || '',
+        firstName: member.firstName || '',
+        middleInitial: member.middleInitial || '',
         gender: member.gender || '',
-        dateOfBirth: member.dateOfBirth || '',
-        civilStatus: member.civilStatus || '',
-        motherName: member.motherName || '',
-        fatherName: member.fatherName || '',
-        numberOfSiblings: String(member.numberOfSiblings ?? ''),
-        siblingNames: member.siblingNames || '',
-        phoneNumber: member.phoneNumber || '',
-        emailAddress: member.emailAddress || '',
-        address: member.address || '',
-        emergencyContactName: member.emergencyContactName || '',
-        emergencyContactNumber: member.emergencyContactNumber || '',
-        dateRegistered: member.dateRegistered || '',
-        membershipStatus: member.membershipStatus || '',
-        ministry: member.ministry || '',
-        remarks: member.remarks || '',
+        birthday: member.birthday || '',
+        dateOfBaptism: member.dateOfBaptism || '',
+        facebookName: member.facebookName || '',
+        status: member.status || '',
+        category: member.category || '',
+        ministryNames: member.ministry || '',
+        isSmallGroupLeader: member.isSmallGroupLeader || false,
+        us2cgLevel: member.us2cgLevel || '',
       });
     }
   }, [member?.id]);
@@ -124,56 +158,56 @@ export default function Profile() {
     setForm(prev => ({ ...prev, [fieldId]: value }));
   }
 
-  // Suggest member names matching a query, excluding self and already-picked names
-  function suggestionsFor(query: string, exclude: string[] = []): string[] {
-    const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return members
-      .filter((m: Member) => m.id !== id)
-      .map(fullName)
-      .filter((name: string, idx: number, arr: string[]) => name && arr.indexOf(name) === idx)
-      .filter((name: string) => name.toLowerCase().includes(q) && !exclude.includes(name))
-      .slice(0, 6);
-  }
-
-  const siblingList = form.siblingNames
-    ? form.siblingNames.split(',').map(s => s.trim()).filter(Boolean)
+  const ministryList = form.ministryNames
+    ? form.ministryNames.split(',').map(s => s.trim()).filter(Boolean)
     : [];
 
-  function addSibling(name: string) {
-    if (!name.trim() || siblingList.includes(name.trim())) return;
-    setForm(prev => ({ ...prev, siblingNames: [...siblingList, name.trim()].join(', ') }));
-    setSiblingInput('');
-    setSiblingOpen(false);
+  function ministrySuggestionsFor(query: string): string[] {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return MINISTRY_SUGGESTIONS.filter(
+      (name) => name.toLowerCase().includes(q) && !ministryList.includes(name)
+    ).slice(0, 6);
   }
 
-  function removeSibling(name: string) {
-    setForm(prev => ({ ...prev, siblingNames: siblingList.filter(n => n !== name).join(', ') }));
+  function addMinistry(name: string) {
+    if (!name.trim() || ministryList.includes(name.trim())) return;
+    setForm(prev => ({ ...prev, ministryNames: [...ministryList, name.trim()].join(', ') }));
+    setMinistryInput('');
+    setMinistryOpen(false);
+  }
+
+  function removeMinistry(name: string) {
+    setForm(prev => ({ ...prev, ministryNames: ministryList.filter(n => n !== name).join(', ') }));
   }
 
   async function handleSave() {
-    const hasFullName = form.firstName.trim() && form.lastName.trim();
-    const hasNickname = form.nickname.trim();
-    if (!hasFullName && !hasNickname) {
-      setError('Please provide either a First Name & Last Name, or a Nickname.');
+    if (!form.lastName.trim() || !form.firstName.trim()) {
+      setError('Last Name and First Name are required.');
       return;
     }
     setError('');
     setSaving(true);
 
     const changes = {
-      ...form,
-      firstName: form.firstName.trim(),
-      middleName: form.middleName.trim(),
       lastName: form.lastName.trim(),
-      numberOfSiblings: form.numberOfSiblings ? Number(form.numberOfSiblings) : 0,
+      firstName: form.firstName.trim(),
+      middleInitial: form.middleInitial.trim(),
+      gender: form.gender,
+      birthday: form.birthday,
+      dateOfBaptism: form.dateOfBaptism,
+      facebookName: form.facebookName.trim(),
+      status: form.status,
+      category: form.category,
+      ministry: form.ministryNames,
+      isSmallGroupLeader: form.isSmallGroupLeader,
+      us2cgLevel: form.us2cgLevel,
     };
 
     try {
       if (isAddMode) {
         await addMember({
           ...changes,
-          userId: 0,
           isPledger: false,
           addedBy: currentUser,
           dateAdded: formatDate(),
@@ -219,7 +253,7 @@ export default function Profile() {
                 <div className="profile-avatar">
                   {isAddMode
                     ? <i className="fa-solid fa-user-plus" aria-hidden="true" />
-                    : initials(form.firstName, form.lastName, form.nickname)}
+                    : initials(form.firstName, form.lastName)}
                 </div>
                 <div>
                   <h1>
@@ -241,36 +275,25 @@ export default function Profile() {
               <p className="section-label">Basic Information</p>
               <div className="row-2">
                 <div className="field">
-                  <label htmlFor="firstName">First Name</label>
-                  <div className="input-wrap">
-                    <input type="text" id="firstName" placeholder="e.g. John" value={form.firstName} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className="field">
-                  <label htmlFor="middleName">Middle Name</label>
-                  <div className="input-wrap">
-                    <input type="text" id="middleName" placeholder="e.g. Joe" value={form.middleName} onChange={handleChange} />
-                  </div>
-                </div>
-              </div>
-              <div className="row-2">
-                <div className="field">
-                  <label htmlFor="lastName">Last Name</label>
+                  <label htmlFor="lastName">Last Name<span className="req">*</span></label>
                   <div className="input-wrap">
                     <input type="text" id="lastName" placeholder="e.g. Smith" value={form.lastName} onChange={handleChange} />
                   </div>
                 </div>
                 <div className="field">
-                  <label htmlFor="nickname">Nickname</label>
+                  <label htmlFor="firstName">First Name<span className="req">*</span></label>
                   <div className="input-wrap">
-                    <input type="text" id="nickname" value={form.nickname} onChange={handleChange} />
+                    <input type="text" id="firstName" placeholder="e.g. John" value={form.firstName} onChange={handleChange} />
                   </div>
                 </div>
               </div>
-              <p className="field-note">
-                <span className="req">*</span> Required: First Name &amp; Last Name, or a Nickname.
-              </p>
               <div className="row-2">
+                <div className="field">
+                  <label htmlFor="middleInitial">M.I.</label>
+                  <div className="input-wrap">
+                    <input type="text" id="middleInitial" placeholder="e.g. T." maxLength={4} value={form.middleInitial} onChange={handleChange} />
+                  </div>
+                </div>
                 <div className="field">
                   <label htmlFor="gender">Gender</label>
                   <div className="input-wrap">
@@ -281,25 +304,15 @@ export default function Profile() {
                     </select>
                   </div>
                 </div>
-                <div className="field">
-                  <label htmlFor="civilStatus">Civil Status</label>
-                  <div className="input-wrap">
-                    <select id="civilStatus" value={form.civilStatus} onChange={handleChange}>
-                      <option value="">Select…</option>
-                      <option value="Single">Single</option>
-                      <option value="Married">Married</option>
-                      <option value="Widowed">Widowed</option>
-                      <option value="Separated">Separated</option>
-                      <option value="Divorced">Divorced</option>
-                    </select>
-                  </div>
-                </div>
               </div>
+              <p className="field-note">
+                <span className="req">*</span> Required: Last Name &amp; First Name.
+              </p>
               <div className="row-2">
                 <div className="field">
-                  <label htmlFor="dateOfBirth">Date of Birth</label>
+                  <label htmlFor="birthday">Birthday</label>
                   <div className="input-wrap">
-                    <input type="date" id="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} />
+                    <input type="date" id="birthday" value={form.birthday} onChange={handleChange} />
                   </div>
                 </div>
                 <div className="field">
@@ -307,158 +320,11 @@ export default function Profile() {
                   <div className="input-wrap" style={{ opacity: 0.7 }}>
                     <input
                       type="text" id="age"
-                      value={computeAge(form.dateOfBirth)}
+                      value={computeAge(form.birthday)}
                       readOnly
                       placeholder="Auto-computed"
                       style={{ cursor: 'default', backgroundColor: 'var(--input-disabled-bg, #f5f5f5)' }}
                     />
-                  </div>
-                </div>
-              </div>
-              <div className="row-2">
-                <div className="field autocomplete-field">
-                  <label htmlFor="motherName">Mother's Name (Optional)</label>
-                  <div className="input-wrap">
-                    <input
-                      type="text" id="motherName" autoComplete="off"
-                      value={form.motherName}
-                      onChange={handleChange}
-                      onFocus={() => setMotherOpen(true)}
-                      onBlur={() => setTimeout(() => setMotherOpen(false), 150)}
-                    />
-                  </div>
-                  {motherOpen && suggestionsFor(form.motherName).length > 0 && (
-                    <div className="suggestion-dropdown">
-                      {suggestionsFor(form.motherName).map(name => (
-                        <div
-                          key={name}
-                          className="suggestion-item"
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => { setForm(prev => ({ ...prev, motherName: name })); setMotherOpen(false); }}
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="field autocomplete-field">
-                  <label htmlFor="fatherName">Father's Name (Optional)</label>
-                  <div className="input-wrap">
-                    <input
-                      type="text" id="fatherName" autoComplete="off"
-                      value={form.fatherName}
-                      onChange={handleChange}
-                      onFocus={() => setFatherOpen(true)}
-                      onBlur={() => setTimeout(() => setFatherOpen(false), 150)}
-                    />
-                  </div>
-                  {fatherOpen && suggestionsFor(form.fatherName).length > 0 && (
-                    <div className="suggestion-dropdown">
-                      {suggestionsFor(form.fatherName).map(name => (
-                        <div
-                          key={name}
-                          className="suggestion-item"
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => { setForm(prev => ({ ...prev, fatherName: name })); setFatherOpen(false); }}
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Family Information ── */}
-              <p className="section-label">Family Information</p>
-              <div className="row-2">
-                <div className="field">
-                  <label htmlFor="numberOfSiblings">Number of Siblings (Optional)</label>
-                  <div className="input-wrap">
-                    <input type="number" min="0" id="numberOfSiblings" value={form.numberOfSiblings} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className="field autocomplete-field">
-                  <label htmlFor="siblingInput">Sibling Name(s) (Optional)</label>
-                  {siblingList.length > 0 && (
-                    <div className="chip-list">
-                      {siblingList.map(name => (
-                        <span className="chip" key={name}>
-                          {name}
-                          <button type="button" onClick={() => removeSibling(name)} aria-label={`Remove ${name}`}>
-                            <i className="fa-solid fa-xmark" aria-hidden="true" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="input-wrap">
-                    <input
-                      type="text" id="siblingInput" autoComplete="off"
-                      placeholder="Type a name…"
-                      value={siblingInput}
-                      onChange={e => setSiblingInput(e.target.value)}
-                      onFocus={() => setSiblingOpen(true)}
-                      onBlur={() => setTimeout(() => setSiblingOpen(false), 150)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter' && siblingInput.trim()) {
-                          e.preventDefault();
-                          addSibling(siblingInput);
-                        }
-                      }}
-                    />
-                  </div>
-                  {siblingOpen && suggestionsFor(siblingInput, siblingList).length > 0 && (
-                    <div className="suggestion-dropdown">
-                      {suggestionsFor(siblingInput, siblingList).map(name => (
-                        <div
-                          key={name}
-                          className="suggestion-item"
-                          onMouseDown={e => e.preventDefault()}
-                          onClick={() => addSibling(name)}
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ── Contact Information ── */}
-              <p className="section-label">Contact Information</p>
-              <div className="row-2">
-                <div className="field">
-                  <label htmlFor="phoneNumber">Phone Number</label>
-                  <div className="input-wrap">
-                    <input type="tel" id="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className="field">
-                  <label htmlFor="emailAddress">Email Address (Optional)</label>
-                  <div className="input-wrap">
-                    <input type="email" id="emailAddress" value={form.emailAddress} onChange={handleChange} />
-                  </div>
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="address">Complete Address</label>
-                <div className="input-wrap">
-                  <input type="text" id="address" value={form.address} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="row-2">
-                <div className="field">
-                  <label htmlFor="emergencyContactName">Emergency Contact Person</label>
-                  <div className="input-wrap">
-                    <input type="text" id="emergencyContactName" value={form.emergencyContactName} onChange={handleChange} />
-                  </div>
-                </div>
-                <div className="field">
-                  <label htmlFor="emergencyContactNumber">Emergency Contact Number</label>
-                  <div className="input-wrap">
-                    <input type="tel" id="emergencyContactNumber" value={form.emergencyContactNumber} onChange={handleChange} />
                   </div>
                 </div>
               </div>
@@ -467,35 +333,106 @@ export default function Profile() {
               <p className="section-label">Church Information</p>
               <div className="row-2">
                 <div className="field">
-                  <label htmlFor="dateRegistered">Date Registered</label>
+                  <label htmlFor="dateOfBaptism">Date of Baptism (Optional)</label>
                   <div className="input-wrap">
-                    <input type="date" id="dateRegistered" value={form.dateRegistered} onChange={handleChange} />
+                    <input type="date" id="dateOfBaptism" value={form.dateOfBaptism} onChange={handleChange} />
                   </div>
                 </div>
                 <div className="field">
-                  <label htmlFor="membershipStatus">Membership Status</label>
+                  <label htmlFor="facebookName">Facebook Name (Optional)</label>
                   <div className="input-wrap">
-                    <select id="membershipStatus" value={form.membershipStatus} onChange={handleChange}>
+                    <input type="text" id="facebookName" value={form.facebookName} onChange={handleChange} />
+                  </div>
+                </div>
+              </div>
+              <div className="row-2">
+                <div className="field">
+                  <label htmlFor="status">Status</label>
+                  <div className="input-wrap">
+                    <select id="status" value={form.status} onChange={handleChange}>
                       <option value="">Select…</option>
-                      <option value="Council">Council</option>
-                      <option value="Visitor">Visitor</option>
-                      <option value="Regular Attendee">Regular Attendee</option>
-                      <option value="Member">Member</option>
+                      {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label htmlFor="category">Category</label>
+                  <div className="input-wrap">
+                    <select id="category" value={form.category} onChange={handleChange}>
+                      <option value="">Select…</option>
+                      {CATEGORY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   </div>
                 </div>
               </div>
-              <div className="field">
-                <label htmlFor="ministry">Ministry / Department (Optional)</label>
-                <div className="input-wrap">
-                  <input type="text" id="ministry" value={form.ministry} onChange={handleChange} />
+              <div className="row-2">
+                <div className="field">
+                  <label htmlFor="us2cgLevel">US2CG Level (Optional)</label>
+                  <div className="input-wrap">
+                    <select id="us2cgLevel" value={form.us2cgLevel} onChange={handleChange}>
+                      <option value="">Select…</option>
+                      {US2CG_LEVEL_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="field">
+                  <label>Small Group</label>
+                  <div className="input-wrap" style={{ border: 'none' }}>
+                    <button
+                      type="button"
+                      className={`toggle-pledger${form.isSmallGroupLeader ? ' active' : ''}`}
+                      onClick={() => setForm(prev => ({ ...prev, isSmallGroupLeader: !prev.isSmallGroupLeader }))}
+                    >
+                      <i className={`fa-solid ${form.isSmallGroupLeader ? 'fa-check' : 'fa-people-group'}`} />
+                      {form.isSmallGroupLeader ? 'Small Group Leader' : 'Mark as Leader'}
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div className="field">
-                <label htmlFor="remarks">Remarks (Optional)</label>
+              <div className="field autocomplete-field">
+                <label htmlFor="ministryInput">Ministry / Department (Optional)</label>
+                {ministryList.length > 0 && (
+                  <div className="chip-list">
+                    {ministryList.map(name => (
+                      <span className="chip" key={name}>
+                        {name}
+                        <button type="button" onClick={() => removeMinistry(name)} aria-label={`Remove ${name}`}>
+                          <i className="fa-solid fa-xmark" aria-hidden="true" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div className="input-wrap">
-                  <textarea id="remarks" rows={3} value={form.remarks} onChange={handleChange} />
+                  <input
+                    type="text" id="ministryInput" autoComplete="off"
+                    placeholder="Type a ministry…"
+                    value={ministryInput}
+                    onChange={e => setMinistryInput(e.target.value)}
+                    onFocus={() => setMinistryOpen(true)}
+                    onBlur={() => setTimeout(() => setMinistryOpen(false), 150)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && ministryInput.trim()) {
+                        e.preventDefault();
+                        addMinistry(ministryInput);
+                      }
+                    }}
+                  />
                 </div>
+                {ministryOpen && ministrySuggestionsFor(ministryInput).length > 0 && (
+                  <div className="suggestion-dropdown">
+                    {ministrySuggestionsFor(ministryInput).map(name => (
+                      <div
+                        key={name}
+                        className="suggestion-item"
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={() => addMinistry(name)}
+                      >
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* ── Meta: Added By ── */}
