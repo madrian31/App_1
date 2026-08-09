@@ -1,8 +1,9 @@
-import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useVisitForm from "../../hooks/useVisitForm";
 import MemberSearchSelect from "../../components/visitation/MemberSearchSelect";
+import LeaderPicker from "../../components/visitation/LeaderPicker";
+import ParticipantPicker from "../../components/visitation/ParticipantPicker";
 import "./visitation.css";
 
 // TODO: replace with the actual logged-in user once auth/session wiring is in place.
@@ -26,16 +27,6 @@ export default function VisitForm() {
     removeParticipant,
     submit,
   } = useVisitForm(id, CURRENT_USER);
-
-  const [participantInput, setParticipantInput] = useState("");
-
-  function handleParticipantKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addParticipant(participantInput);
-      setParticipantInput("");
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -114,12 +105,7 @@ export default function VisitForm() {
             <div className="form-row form-row-split">
               <div>
                 <label>Leader</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Bro. Pedro"
-                  value={form.leader}
-                  onChange={(e) => update("leader", e.target.value)}
-                />
+                <LeaderPicker value={form.leader} onChange={(name) => update("leader", name)} />
               </div>
 
               <div>
@@ -141,37 +127,11 @@ export default function VisitForm() {
 
             <div className="form-row">
               <label>Participants</label>
-              <div className="participant-input-wrap">
-                <input
-                  type="text"
-                  placeholder="Type a name and press Enter…"
-                  value={participantInput}
-                  onChange={(e) => setParticipantInput(e.target.value)}
-                  onKeyDown={handleParticipantKeyDown}
-                />
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => {
-                    addParticipant(participantInput);
-                    setParticipantInput("");
-                  }}
-                >
-                  Add
-                </button>
-              </div>
-              {form.participants.length > 0 && (
-                <div className="participant-chips">
-                  {form.participants.map((p) => (
-                    <span className="participant-chip" key={p}>
-                      {p}
-                      <button type="button" onClick={() => removeParticipant(p)} aria-label={`Remove ${p}`}>
-                        <i className="fa-solid fa-xmark" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
+              <ParticipantPicker
+                participants={form.participants}
+                onAdd={addParticipant}
+                onRemove={removeParticipant}
+              />
             </div>
 
             <div className="form-row">
