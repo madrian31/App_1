@@ -322,6 +322,8 @@
 .form-row input[type="text"],
 .form-row input[type="date"],
 .form-row textarea {
+    border: 1px solid var(--border);
+    border-radius: 8px;
     padding: 10px 12px;
     font-size: 14px;
     color: var(--text);
@@ -400,6 +402,28 @@
     display: flex;
     align-items: center;
     font-size: 11px;
+}
+
+
+/* =========================================================
+   Reports
+   ========================================================= */
+
+.report-range-row {
+    margin-bottom: 16px;
+}
+
+.report-section {
+    margin-bottom: 24px;
+}
+
+.report-section-title {
+    margin: 0 0 10px;
+
+    font-size: 16px;
+    font-weight: 700;
+
+    color: var(--text);
 }
 
 

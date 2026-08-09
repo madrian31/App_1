@@ -63,6 +63,12 @@ export default function Visitation() {
             countLabel="visit"
             onAddMember={() => navigate("/Visitation/new")}
             addButtonLabel="Record Visit"
+            extraActions={
+              <button className="btn-secondary" onClick={() => navigate("/Visitation/Reports")}>
+                <i className="fa-solid fa-chart-column" aria-hidden="true" />
+                Reports
+              </button>
+            }
           />
 
           <VisitSummaryCards totalVisits={totalVisits} uniqueMembers={uniqueMembers} />
