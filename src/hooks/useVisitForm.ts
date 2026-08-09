@@ -24,7 +24,10 @@ const EMPTY_FORM: VisitFormState = {
   notes: "",
 };
 
-export default function useVisitForm(id: string | undefined, currentUser: string) {
+export default function useVisitForm(rawId: string | undefined, currentUser: string) {
+  // "/Visitation/new" matches the same :id route param — treat that literal
+  // segment as "no id" so we don't try to fetch a visit called "new".
+  const id = rawId && rawId !== "new" ? rawId : undefined;
   const isEditing = Boolean(id);
   const [form, setForm] = useState<VisitFormState>(EMPTY_FORM);
   const [loading, setLoading] = useState(isEditing);

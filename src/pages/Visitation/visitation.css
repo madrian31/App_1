@@ -322,8 +322,7 @@
 .form-row input[type="text"],
 .form-row input[type="date"],
 .form-row textarea {
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    
     padding: 10px 12px;
     font-size: 14px;
     color: var(--text);
