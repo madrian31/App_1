@@ -235,6 +235,177 @@
 
 
 /* =========================================================
+   Member Search Select (Visit form)
+   ========================================================= */
+
+.member-search-select {
+    position: relative;
+}
+
+.member-search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    max-height: 220px;
+    overflow-y: auto;
+
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.member-search-option {
+    display: block;
+    width: 100%;
+
+    text-align: left;
+
+    border: none;
+    background: transparent;
+
+    padding: 8px 12px;
+
+    font-size: 14px;
+    color: var(--text);
+
+    cursor: pointer;
+}
+
+.member-search-option:hover,
+.member-search-option.active {
+    background: #eef1ff;
+    color: var(--primary);
+}
+
+.member-search-empty {
+    margin: 0;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+
+/* =========================================================
+   Visit Form
+   ========================================================= */
+
+.visit-form {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-row-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+.form-row label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.form-row input[type="text"],
+.form-row input[type="date"],
+.form-row textarea {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--card);
+    font-family: inherit;
+}
+
+.form-row textarea {
+    resize: vertical;
+}
+
+.form-row .filter-select-wrap {
+    width: 100%;
+}
+
+.form-row .filter-select-wrap select {
+    width: 100%;
+}
+
+.visit-form-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    background: var(--danger-bg);
+    color: var(--danger);
+
+    padding: 10px 14px;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+}
+
+
+/* Participants input */
+
+.participant-input-wrap {
+    display: flex;
+    gap: 8px;
+}
+
+.participant-input-wrap input {
+    flex: 1;
+}
+
+.participant-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    margin-top: 8px;
+}
+
+.participant-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    background: #eef1ff;
+    color: var(--primary);
+
+    padding: 5px 10px;
+
+    border-radius: 999px;
+
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.participant-chip button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-size: 11px;
+}
+
+
+/* =========================================================
    Responsive
    ========================================================= */
 
