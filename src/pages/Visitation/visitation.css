@@ -1,0 +1,258 @@
+/* Reuse the shared page/table/toolbar/modal styles and design tokens. */
+@import "../members/members.css";
+
+
+/* =========================================================
+   Summary Cards
+   ========================================================= */
+
+.summary-cards {
+    display: flex;
+    gap: 12px;
+
+    margin-bottom: 16px;
+
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    display: flex;
+    flex-direction: column;
+
+    gap: 4px;
+
+    background: var(--card);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius);
+
+    padding: 16px 20px;
+
+    min-width: 160px;
+}
+
+.summary-card-value {
+    font-size: 26px;
+    font-weight: 700;
+
+    color: var(--text);
+}
+
+.summary-card-label {
+    font-size: 13px;
+
+    color: var(--text-muted);
+}
+
+
+/* =========================================================
+   Visitation Toolbar (extends .toolbar)
+   ========================================================= */
+
+.visitation-toolbar {
+    flex-direction: column;
+}
+
+.toolbar-row {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+}
+
+
+/* Quick range buttons */
+
+.quick-range-group {
+    display: flex;
+    gap: 6px;
+
+    flex-wrap: wrap;
+}
+
+.quick-range-btn {
+    border: 1.5px solid var(--border);
+
+    background: var(--card);
+
+    color: var(--text-muted);
+
+    padding: 7px 14px;
+
+    border-radius: 999px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.quick-range-btn:hover {
+    border-color: var(--primary);
+
+    color: var(--primary);
+}
+
+.quick-range-btn.active {
+    background: var(--primary);
+
+    border-color: var(--primary);
+
+    color: #fff;
+}
+
+
+/* Date range inputs */
+
+.date-range-wrap {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+}
+
+.date-input {
+    border: 1px solid var(--border);
+
+    border-radius: 8px;
+
+    padding: 8px 10px;
+
+    font-size: 14px;
+
+    color: var(--text);
+
+    background: var(--card);
+
+    height: 40px;
+}
+
+.date-range-arrow {
+    color: var(--text-muted);
+}
+
+
+/* Filter / Reset actions */
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+
+    margin-left: auto;
+}
+
+.filter-actions .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.filter-actions .btn-primary:hover {
+    background: var(--primary-dark);
+}
+
+.filter-actions .btn-secondary {
+    background: #fff;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.filter-actions .btn-secondary:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #eef1ff;
+}
+
+
+/* =========================================================
+   Participants count (table cell)
+   ========================================================= */
+
+.participants-count {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 6px;
+
+    color: var(--text-muted);
+}
+
+
+/* =========================================================
+   Visit Details Modal
+   ========================================================= */
+
+.visit-details-list {
+    margin: 0 0 1rem;
+}
+
+.visit-details-list dt {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+
+    color: var(--text-muted);
+
+    margin-top: 12px;
+}
+
+.visit-details-list dt:first-child {
+    margin-top: 0;
+}
+
+.visit-details-list dd {
+    margin: 2px 0 0;
+
+    font-size: 14px;
+
+    color: var(--text);
+}
+
+.visit-participants-list {
+    margin: 4px 0 0;
+    padding-left: 18px;
+}
+
+
+/* =========================================================
+   Responsive
+   ========================================================= */
+
+@media (max-width: 768px) {
+    .toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-actions {
+        margin-left: 0;
+    }
+
+    .date-range-wrap {
+        width: 100%;
+    }
+
+    .date-input {
+        flex: 1;
+    }
+}

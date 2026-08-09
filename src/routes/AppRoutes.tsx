@@ -4,6 +4,7 @@ import LoginPage from "../pages/Login/Login";
 import Members from "../pages/Members/Members";
 import Profile from "../pages/Profile/Profile";
 import PledgesMembers from "../pages/Pledgers/PledgesMembers";
+import Visitation from "../pages/Visitation/Visitation";
 
 export default function AppRoutes() {
   return (
@@ -14,6 +15,7 @@ export default function AppRoutes() {
       <Route path="/members" element={<Members />} />
       <Route path="/Profile/:id" element={<Profile />} />
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
+      <Route path="/visitation" element={<Visitation />} />
 
       <Route path="/login" element={<LoginPage />} />
     </Routes>
