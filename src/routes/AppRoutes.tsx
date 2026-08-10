@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import LoginPage from "../pages/Login/Login";
 import Members from "../pages/Members/Members";
+import ArchivesMembers from "../pages/Members/ArchivesMembers";
 import Profile from "../pages/Profile/Profile";
 import PledgesMembers from "../pages/Pledgers/PledgesMembers";
 import Visitation from "../pages/Visitation/Visitation";
@@ -16,6 +17,7 @@ export default function AppRoutes() {
 
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/members" element={<Members />} />
+      <Route path="/ArchivesMembers" element={<ArchivesMembers />} />
       <Route path="/Profile/:id" element={<Profile />} />
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
 

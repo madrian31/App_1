@@ -47,3 +47,9 @@ export async function archiveMember(id: string): Promise<void> {
   const ref = doc(db, "members", id);
   await updateDoc(ref, { isArchived: true });
 }
+
+/** Restores an archived member back to the active Members list. */
+export async function unarchiveMember(id: string): Promise<void> {
+  const ref = doc(db, "members", id);
+  await updateDoc(ref, { isArchived: false });
+}
