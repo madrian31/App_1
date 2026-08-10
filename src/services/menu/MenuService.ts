@@ -13,7 +13,6 @@ export class MenuService implements IMenuService {
             sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '',
             subMenuItems: [
                 { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/members' },
-                { sortOrder: 12, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
                 { sortOrder: 19, name: 'Archives', iconClass: 'fa-solid fa-box', path: '/ArchivesMembers' }
             ] 
         },
@@ -24,8 +23,9 @@ export class MenuService implements IMenuService {
             sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '/pledges',
             subMenuItems: [
                 { sortOrder: 31, name: 'All Pledges', iconClass: 'fa-solid fa-list', path: '/pledges' },
-                { sortOrder: 32, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/pledges/report' },
-                { sortOrder: 33, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger' }
+                { sortOrder: 32, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
+                { sortOrder: 33, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/pledges/report' },
+                { sortOrder: 34, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger' }
             ]
         },
 
