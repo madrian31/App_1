@@ -66,8 +66,8 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
   return (
     <div className="sidebar-shell">
       <div className="sidebar-header">
-        <span className="sidebar-header__brand">UCC</span>
-        <span className="sidebar-header__app">App</span>
+        <span className="sidebar-header__brand">LINK</span>
+        <span className="sidebar-header__app">Up</span>
       </div>
 
       <ul className="sidebar">
