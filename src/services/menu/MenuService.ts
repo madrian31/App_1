@@ -49,7 +49,13 @@ export class MenuService implements IMenuService {
         },
 
         // { sortOrder: 60, name: 'Profile', iconClass: 'fa-solid fa-user', path: '/profile' },
-        { sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '/settings' }
+        {
+            sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '',
+            subMenuItems: [
+                { sortOrder: 71, name: 'General', iconClass: 'fa-solid fa-gear', path: '/settings' },
+                { sortOrder: 72, name: 'Manage Lists', iconClass: 'fa-solid fa-list-check', path: '/Settings/ManageLists' }
+            ]
+        }
     ];
 
     getMenuItems(userAccess?: UserAccess): MenuItem[] {
