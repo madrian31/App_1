@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/sidebar/Sidebar';
 import type { Member } from '../../types/member';
 import { getMemberById, addMember, updateMember } from '../../services/members/memberService/membersService';
+import useLookupLists from '../../hooks/useLookupLists';
 import './profile.css';
 
 function initials(firstName: string, lastName: string) {
@@ -31,47 +32,12 @@ function formatDate() {
   });
 }
 
-// Common ministries seen across the directory — used as autocomplete suggestions.
-// Members can still type any custom value.
-const MINISTRY_SUGGESTIONS = [
-  'Worker',
-  'Sunday School',
-  'Praise & Worship',
-  'Multimedia',
-  'Ushering',
-  'Council Member',
-  'Youth Officer',
-  'Tambourine Dancer',
-];
-
-const STATUS_OPTIONS = [
-  'Elementary',
-  'Junior High School',
-  'Senior High School',
-  'College',
-  'Working Student',
-  'Working',
-  'Worker',
-  'Senior',
-];
-
-const CATEGORY_OPTIONS = [
-  'Men',
-  'Women',
-  'Youth Boys',
-  'Youth Girls',
-  'Young Adult/Young Professional',
-];
-
-const US2CG_LEVEL_OPTIONS = [
-  'SALT 1',
-  'SALT 2',
-  'SALT 3',
-  'Pre-RDSR',
-  'Post-RDSR',
-  'SOLD 3',
-  'M2M',
-];
+/** Ensures the member's currently saved value still shows in a <select> even if it
+ *  was since removed from the managed list (e.g. deleted in Manage Lists). */
+function withCurrentValue(options: string[], current: string): string[] {
+  if (!current || options.includes(current)) return options;
+  return [...options, current];
+}
 
 interface FormState {
   lastName: string;
@@ -111,6 +77,11 @@ export default function Profile() {
 
   const [ministryInput, setMinistryInput] = useState('');
   const [ministryOpen, setMinistryOpen] = useState(false);
+
+  const { lists: lookupLists } = useLookupLists();
+  const statusOptions = withCurrentValue(lookupLists.status, form.status);
+  const categoryOptions = withCurrentValue(lookupLists.category, form.category);
+  const us2cgLevelOptions = withCurrentValue(lookupLists.us2cgLevel, form.us2cgLevel);
 
   useEffect(() => {
     if (isAddMode) {
@@ -163,16 +134,17 @@ export default function Profile() {
     : [];
 
   function ministrySuggestionsFor(query: string): string[] {
+    const available = lookupLists.ministry.filter((name) => !ministryList.includes(name));
     const q = query.trim().toLowerCase();
-    if (!q) return [];
-    return MINISTRY_SUGGESTIONS.filter(
-      (name) => name.toLowerCase().includes(q) && !ministryList.includes(name)
-    ).slice(0, 6);
+    if (!q) return available;
+    return available.filter((name) => name.toLowerCase().includes(q));
   }
 
   function addMinistry(name: string) {
-    if (!name.trim() || ministryList.includes(name.trim())) return;
-    setForm(prev => ({ ...prev, ministryNames: [...ministryList, name.trim()].join(', ') }));
+    const trimmed = name.trim();
+    if (!trimmed || ministryList.includes(trimmed)) return;
+    if (!lookupLists.ministry.includes(trimmed)) return; // strict dropdown — must exist in Manage Lists
+    setForm(prev => ({ ...prev, ministryNames: [...ministryList, trimmed].join(', ') }));
     setMinistryInput('');
     setMinistryOpen(false);
   }
@@ -351,7 +323,7 @@ export default function Profile() {
                   <div className="input-wrap">
                     <select id="status" value={form.status} onChange={handleChange}>
                       <option value="">Select…</option>
-                      {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      {statusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   </div>
                 </div>
@@ -360,7 +332,7 @@ export default function Profile() {
                   <div className="input-wrap">
                     <select id="category" value={form.category} onChange={handleChange}>
                       <option value="">Select…</option>
-                      {CATEGORY_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      {categoryOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   </div>
                 </div>
@@ -371,7 +343,7 @@ export default function Profile() {
                   <div className="input-wrap">
                     <select id="us2cgLevel" value={form.us2cgLevel} onChange={handleChange}>
                       <option value="">Select…</option>
-                      {US2CG_LEVEL_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      {us2cgLevelOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                     </select>
                   </div>
                 </div>
@@ -406,31 +378,31 @@ export default function Profile() {
                 <div className="input-wrap">
                   <input
                     type="text" id="ministryInput" autoComplete="off"
-                    placeholder="Type a ministry…"
+                    placeholder="Search or select a ministry…"
                     value={ministryInput}
                     onChange={e => setMinistryInput(e.target.value)}
                     onFocus={() => setMinistryOpen(true)}
                     onBlur={() => setTimeout(() => setMinistryOpen(false), 150)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && ministryInput.trim()) {
-                        e.preventDefault();
-                        addMinistry(ministryInput);
-                      }
-                    }}
                   />
                 </div>
-                {ministryOpen && ministrySuggestionsFor(ministryInput).length > 0 && (
+                {ministryOpen && (
                   <div className="suggestion-dropdown">
-                    {ministrySuggestionsFor(ministryInput).map(name => (
-                      <div
-                        key={name}
-                        className="suggestion-item"
-                        onMouseDown={e => e.preventDefault()}
-                        onClick={() => addMinistry(name)}
-                      >
-                        {name}
+                    {ministrySuggestionsFor(ministryInput).length > 0 ? (
+                      ministrySuggestionsFor(ministryInput).map(name => (
+                        <div
+                          key={name}
+                          className="suggestion-item"
+                          onMouseDown={e => e.preventDefault()}
+                          onClick={() => addMinistry(name)}
+                        >
+                          {name}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="suggestion-item" style={{ color: 'var(--text-muted, #9ca3af)', cursor: 'default' }}>
+                        No matching ministry. Add it in Settings → Manage Lists.
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </div>

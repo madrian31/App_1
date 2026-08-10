@@ -17,7 +17,16 @@ const SEED_VALUES: Record<LookupListKey, string[]> = {
   ],
   category: ["Men", "Women", "Youth Boys", "Youth Girls", "Young Adult/Young Professional"],
   us2cgLevel: ["SALT 1", "SALT 2", "SALT 3", "Pre-RDSR", "Post-RDSR", "SOLD 3", "M2M"],
-  ministry: ["Praise and Worship", "Multimedia"],
+  ministry: [
+    "Worker",
+    "Sunday School",
+    "Praise & Worship",
+    "Multimedia",
+    "Ushering",
+    "Council Member",
+    "Youth Officer",
+    "Tambourine Dancer",
+  ],
 };
 
 type ListsState = Record<LookupListKey, string[]>;
