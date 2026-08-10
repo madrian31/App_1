@@ -32,8 +32,8 @@ export class MenuService implements IMenuService {
         {
             sortOrder: 40, name: 'Visitation', iconClass: 'fa-solid fa-house', path: '',
             subMenuItems: [
-                { sortOrder: 41, name: 'All Visitations', iconClass: 'fa-solid fa-list', path: '/Visitation/Visitation' },
-                { sortOrder: 42, name: 'Visitation Report', iconClass: 'fa-solid fa-chart-bar', path: '/Visitation/VisitationReport' }
+                { sortOrder: 41, name: 'All Visitations', iconClass: 'fa-solid fa-list', path: '/Visitation' },
+                { sortOrder: 42, name: 'Visitation Report', iconClass: 'fa-solid fa-chart-bar', path: '/Visitation/Reports' }
             ]
         },
 
