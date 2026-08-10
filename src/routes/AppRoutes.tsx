@@ -4,7 +4,7 @@ import LoginPage from "../pages/Login/Login";
 import Members from "../pages/Members/Members";
 import ArchivesMembers from "../pages/Members/ArchivesMembers";
 import Profile from "../pages/Profile/Profile";
-import PledgesMembers from "../pages/Pledgers/PledgesMembers";
+import PledgesMembers from "../pages/Pledges/PledgesMembers";
 import Visitation from "../pages/Visitation/Visitation";
 import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";

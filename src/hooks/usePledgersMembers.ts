@@ -108,6 +108,7 @@ export default function usePledgersMembers() {
 
   return {
     loading,
+    allMembers: members, // full list — used by the Add Members modal, independent of table pagination
     members: pagedMembers,
     activeCount,
     filteredCount: filteredMembers.length,
