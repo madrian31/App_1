@@ -10,6 +10,7 @@ import Visitation from "../pages/Visitation/Visitation";
 import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
+import PledgesReport from "../pages/Pledges/PledgesReport";
 
 export default function AppRoutes() {
   return (
@@ -23,6 +24,7 @@ export default function AppRoutes() {
 
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
       <Route path="/PledgeTracker" element={<PledgeTracker />} />
+      <Route path="/PledgesReport" element={<PledgesReport />} />
 
       <Route path="/visitation" element={<Visitation />} />
       <Route path="/Visitation/Reports" element={<VisitationReports />} />
