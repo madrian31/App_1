@@ -14,7 +14,7 @@ export default function SundaySchoolChildForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const ok = await submit();
-    if (ok) navigate("/SundaySchool/SundaySchoolKidsMembers");
+    if (ok) navigate("/SundaySchoolKidsMembers");
   }
 
   if (loading) {
@@ -109,7 +109,7 @@ export default function SundaySchoolChildForm() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => navigate("/SundaySchool/SundaySchoolKidsMembers")}
+                onClick={() => navigate("/SundaySchoolKidsMembers")}
               >
                 Cancel
               </button>
