@@ -25,8 +25,8 @@ export default function AppRoutes() {
       <Route path="/Profile/:id" element={<Profile />} />
 
       <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />
-      <Route path="/SundaySchoolChildForm/new" element={<SundaySchoolChildForm />} />
-      <Route path="/SundaySchoolChildForm/:id" element={<SundaySchoolChildForm />} />
+      <Route path="/SundaySchoolKidsMembers/new" element={<SundaySchoolChildForm />} />
+      <Route path="/SundaySchoolKidsMembers/:id" element={<SundaySchoolChildForm />} />
 
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
       <Route path="/PledgeTracker" element={<PledgeTracker />} />

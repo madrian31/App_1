@@ -41,7 +41,7 @@ export default function SundaySchoolKidsMembers() {
             title="Sunday School Kids"
             count={activeCount}
             countLabel="active child"
-            onAddMember={() => navigate("/SundaySchool/SundaySchoolKidsMembers/new")}
+            onAddMember={() => navigate("/SundaySchoolKidsMembers/new")}
             addButtonLabel="Add Child"
           />
 
