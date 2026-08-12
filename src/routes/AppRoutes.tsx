@@ -11,6 +11,8 @@ import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
 import PledgesReport from "../pages/Pledges/PledgesReport";
+import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
+import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
 
 export default function AppRoutes() {
   return (
@@ -21,6 +23,10 @@ export default function AppRoutes() {
       <Route path="/members" element={<Members />} />
       <Route path="/ArchivesMembers" element={<ArchivesMembers />} />
       <Route path="/Profile/:id" element={<Profile />} />
+
+      <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />
+      <Route path="/SundaySchoolChildForm/new" element={<SundaySchoolChildForm />} />
+      <Route path="/SundaySchoolChildForm/:id" element={<SundaySchoolChildForm />} />
 
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
       <Route path="/PledgeTracker" element={<PledgeTracker />} />
