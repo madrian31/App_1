@@ -132,6 +132,157 @@
 
 
 /* =========================================================
+   Attendance page
+   ========================================================= */
+
+.attendance-toolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.month-nav {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-btn {
+    width: 32px;
+    height: 32px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text-muted);
+
+    font-size: 13px;
+    cursor: pointer;
+
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-btn:hover {
+    background: #f5f6fa;
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.month-nav-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.count-pill {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+
+    background: #f5f6fa;
+    border: 1px solid var(--border);
+
+    padding: 3px 9px;
+    border-radius: 100px;
+}
+
+.today-btn {
+    height: 32px;
+
+    padding: 0 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--text-muted);
+
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.today-btn:hover {
+    background: #f5f6fa;
+}
+
+.attendance-table th.member-col,
+.attendance-table td.member-col {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--card);
+    z-index: 1;
+    min-width: 160px;
+}
+
+.attendance-table thead th {
+    text-align: center;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.attendance-table .dow {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.attendance-table td {
+    text-align: center;
+}
+
+.total-col {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--text);
+}
+
+/* Round attendance checkbox, matches the checked-state pattern used elsewhere
+   (toggle-pledger, teacher-role-check) but as a circular tap target. */
+.chk {
+    width: 22px;
+    height: 22px;
+
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--card);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.chk:hover {
+    border-color: var(--primary);
+}
+
+.chk.checked {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.chk i {
+    font-size: 11px;
+    color: #fff;
+}
+
+
+/* =========================================================
    Modal base (overlay + centered card)
    Referenced by AddTeachersModal — not defined in members.css,
    so defining it here rather than assuming it existed elsewhere.
@@ -429,5 +580,14 @@
         max-width: none;
         max-height: 92vh;
         border-radius: 16px 16px 0 0;
+    }
+
+    .month-nav-label {
+        font-size: 14px;
+    }
+
+    .attendance-table th.member-col,
+    .attendance-table td.member-col {
+        min-width: 130px;
     }
 }

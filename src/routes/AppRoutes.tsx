@@ -15,6 +15,7 @@ import PledgesReport from "../pages/Pledges/PledgesReport";
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
 import SundaySchoolTeachers from "../pages/SundaySchool/SundaySchoolTeachers";
+import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
 
 export default function AppRoutes() {
   return (
@@ -29,8 +30,8 @@ export default function AppRoutes() {
       <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />
       <Route path="/SundaySchoolKidsMembers/new" element={<SundaySchoolChildForm />} />
       <Route path="/SundaySchoolKidsMembers/:id" element={<SundaySchoolChildForm />} />
-      <Route path="/SundaySchoolTeachers" element={<Navigate to="/SundaySchoolTeachers/teachers" replace />} />
-      <Route path="/SundaySchoolTeachers/:filter" element={<SundaySchoolTeachers />} />
+      <Route path="/SundaySchoolAttendance" element={<Navigate to="/SundaySchoolAttendance/attendance" replace />}/>
+      <Route path="/SundaySchoolAttendance/:filter" element={<SundaySchoolAttendance />}/>
 
       <Route path="/PledgesMembers" element={<PledgesMembers />} />
       <Route path="/PledgeTracker" element={<PledgeTracker />} />
