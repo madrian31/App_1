@@ -40,11 +40,11 @@ export class MenuService implements IMenuService {
        {
             sortOrder: 50, name: 'Sunday School', iconClass: 'fa-solid fa-chalkboard-user', path: '',
             subMenuItems: [
-                { sortOrder: 51, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/SundaySchool/SundaySchoolAttendance' },
-                { sortOrder: 52, name: 'Line Up', iconClass: 'fa-solid fa-users-line', path: '/SundaySchool/SundaySchoolLineUp' },
-                { sortOrder: 53, name: 'Savings', iconClass: 'fa-solid fa-piggy-bank', path: '/SundaySchool/SundaySchool' },
-                { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/SundaySchool//SundaySchoolLedger' },
-                { sortOrder: 55, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/SundaySchool/report' },
+                { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolTeachers/teachers' },
+                { sortOrder: 52, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/SundaySchoolAttendance' },
+                { sortOrder: 53, name: 'Savings', iconClass: 'fa-solid fa-piggy-bank', path: '/SundaySchool' },
+                { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/SundaySchoolLedger' },
+                { sortOrder: 55, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/SundaySchoolReport' },
             ]
         },
 

@@ -22,4 +22,8 @@ export interface Member {
   dateAdded: string; // ISO date string
   isArchived: boolean;
   isPledger: boolean;
+
+  // ── Sunday School fields (used by Sunday School features, not part of the directory) ──
+  isSundaySchoolTeacher: boolean;
+  isSundaySchoolAssistantTeacher: boolean;
 }
