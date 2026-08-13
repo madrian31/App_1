@@ -40,7 +40,7 @@ export class MenuService implements IMenuService {
        {
             sortOrder: 50, name: 'Sunday School', iconClass: 'fa-solid fa-chalkboard-user', path: '',
             subMenuItems: [
-                { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolTeachers/teachers' },
+                { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolKidsMembers' },
                 { sortOrder: 52, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/SundaySchoolAttendance' },
                 { sortOrder: 53, name: 'Savings', iconClass: 'fa-solid fa-piggy-bank', path: '/SundaySchool' },
                 { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/SundaySchoolLedger' },
