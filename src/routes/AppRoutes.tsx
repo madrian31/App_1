@@ -11,6 +11,7 @@ import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
 import PledgesReport from "../pages/Pledges/PledgesReport";
+import Ledger from "../pages/Ledger/Ledger";
 
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
@@ -43,6 +44,8 @@ export default function AppRoutes() {
       <Route path="/Visitation/:id" element={<VisitForm />} />
 
       <Route path="/Settings/ManageLists" element={<ManageLists />} />
+
+      <Route path="/ledger/:department" element={<Ledger />} />
 
       <Route path="/login" element={<LoginPage />} />
     </Routes>
