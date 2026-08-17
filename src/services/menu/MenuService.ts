@@ -22,10 +22,10 @@ export class MenuService implements IMenuService {
         {
             sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '/pledges',
             subMenuItems: [
-                { sortOrder: 31, name: 'All Pledges', iconClass: 'fa-solid fa-list', path: '/pledges' },
+                { sortOrder: 31, name: 'All Pledges', iconClass: 'fa-solid fa-list', path: '/PledgeTracker' },
                 { sortOrder: 32, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
-                { sortOrder: 33, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/pledges/report' },
-                { sortOrder: 34, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger' }
+                { sortOrder: 33, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/PledgesReport' },
+                { sortOrder: 34, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger/pledges' }
             ]
         },
 
@@ -43,7 +43,7 @@ export class MenuService implements IMenuService {
                 { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolKidsMembers' },
                 { sortOrder: 52, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/SundaySchoolAttendance' },
                 { sortOrder: 53, name: 'Savings', iconClass: 'fa-solid fa-piggy-bank', path: '/SundaySchool' },
-                { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/SundaySchoolLedger' },
+                { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger/sundaySchool' },
                 { sortOrder: 55, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/SundaySchoolReport' },
             ]
         },

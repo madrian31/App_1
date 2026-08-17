@@ -15,7 +15,6 @@ import Ledger from "../pages/Ledger/Ledger";
 
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
-import SundaySchoolTeachers from "../pages/SundaySchool/SundaySchoolTeachers";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
 
 export default function AppRoutes() {
