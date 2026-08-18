@@ -134,6 +134,10 @@ export function parseMembersSheet(rows: unknown[][]): ParseResult {
         ministry: toText(get("ministry")),
         isSmallGroupLeader: toText(get("isSmallGroupLeader")).toLowerCase() === "leader",
         us2cgLevel: toText(get("us2cgLevel")),
+        isSundaySchoolTeacher: false,
+        isSundaySchoolAssistantTeacher: false,
+        isCouncilMember: false,
+        isWorker: false
       },
     });
   }

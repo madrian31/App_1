@@ -12,9 +12,11 @@ import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
 import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
+import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
 
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
+// import SundaySchoolTeachers from "../pages/SundaySchool/SundaySchoolTeachers";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
 
 export default function AppRoutes() {
@@ -45,6 +47,8 @@ export default function AppRoutes() {
       <Route path="/Settings/ManageLists" element={<ManageLists />} />
 
       <Route path="/ledger/:department" element={<Ledger />} />
+
+      <Route path="/ProgramLineUp" element={<ProgramLineUp />} />
 
       <Route path="/login" element={<LoginPage />} />
     </Routes>
