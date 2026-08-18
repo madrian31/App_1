@@ -5,6 +5,7 @@ import LineUpRoleRow from "../../components/programLineUp/LineUpRoleRow";
 import ReassignModal from "../../components/programLineUp/ReassignModal";
 import MonthlyCelebrants from "../../components/programLineUp/MonthlyCelebrants";
 import type { RoleAssignment, ProgramType } from "../../types/programLineUp";
+import { sundayOccurrenceInMonth } from "../../types/programLineUp";
 import "./programLineUp.css";
 
 // TODO: replace with the actual logged-in user's name once auth/session
@@ -64,6 +65,7 @@ export default function ProgramLineUp() {
 
   const [activeReassign, setActiveReassign] = useState<ActiveReassign>(null);
   const isSunday = programType !== "prayerMeeting";
+  const isSecondSunday = sundayOccurrenceInMonth(date) === 2;
   const viewedMonth = new Date(`${date}T00:00:00`).getMonth();
 
   function closeReassign() {
@@ -151,7 +153,14 @@ export default function ProgramLineUp() {
                   upNext={flowerFamily.upNext}
                   onReassign={() => setActiveReassign("flowerFamily")}
                 />
-                <LineUpRoleRow label="Tangkilik" hint="all council" current={{ id: "all", name: "All Council Members" }} upNext={[]} />
+                {isSecondSunday && (
+                  <LineUpRoleRow
+                    label="Tangkilik"
+                    hint="all council — 2nd Sunday only"
+                    current={{ id: "all", name: "All Council Members" }}
+                    upNext={[]}
+                  />
+                )}
               </>
             )}
           </div>

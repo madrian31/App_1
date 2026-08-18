@@ -43,3 +43,12 @@ export function resolveProgramType(dateISO: string): ProgramType {
   }
   return "contemporary";
 }
+
+/** Which Sunday of the month `dateISO` falls on (1st, 2nd, 3rd...), or 0 if
+ *  it isn't a Sunday at all. Used for rules like "Tangkilik only on the 2nd
+ *  Sunday" that don't map cleanly onto traditional/contemporary. */
+export function sundayOccurrenceInMonth(dateISO: string): number {
+  const d = new Date(`${dateISO}T00:00:00`);
+  if (d.getDay() !== 0) return 0;
+  return Math.floor((d.getDate() - 1) / 7) + 1;
+}
