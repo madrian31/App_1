@@ -56,12 +56,12 @@ export function getMonthlyCelebrants(members: Member[], month: number): MonthlyC
       }
     }
 
-    if (m.dateOfBaptism) {
-      const d = new Date(`${m.dateOfBaptism}T00:00:00`);
-      if (!isNaN(d.getTime()) && d.getMonth() === month) {
-        out.push({ memberId: m.id, name, day: d.getDate(), type: "anniversary" });
-      }
-    }
+    // if (m.dateOfBaptism) {
+    //   const d = new Date(`${m.dateOfBaptism}T00:00:00`);
+    //   if (!isNaN(d.getTime()) && d.getMonth() === month) {
+    //     out.push({ memberId: m.id, name, day: d.getDate(), type: "Date Of Baptism" });
+    //   }
+    // }
   }
 
   return out.sort((a, b) => a.day - b.day);
