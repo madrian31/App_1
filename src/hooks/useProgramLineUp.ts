@@ -96,12 +96,12 @@ export default function useProgramLineUp(currentUser: string) {
     setLoadingEntry(true);
 
     async function run() {
-      const councilIds = members.filter((m) => m.isCouncilMember).map((m) => m.id);
-      const workerIds = members.filter((m) => m.isWorker).map((m) => m.id);
+      const councilIds = members.filter(isCouncil).map((m) => m.id);
+      const workerIds = members.filter(isWorkerMember).map((m) => m.id);
       // Wednesday Presider pool: Youth OR Council Member, but NEVER a Worker
       // — even if that person is also Youth and/or Council.
       const wedPresiderPoolIds = members
-        .filter((m) => (m.isCouncilMember || m.category?.startsWith("Youth")) && !m.isWorker)
+        .filter((m) => (isCouncil(m) || m.category?.startsWith("Youth")) && !isWorkerMember(m))
         .map((m) => m.id);
 
       const [presiderQ, speakerQ, specialNumberQ, usherQ, flowerQ, existing] = await Promise.all([
@@ -167,25 +167,45 @@ export default function useProgramLineUp(currentUser: string) {
     return getMonthlyCelebrants(members, month);
   }, [members, date]);
 
+  // Fallback for members imported before isCouncilMember/isWorker existed:
+  // if the boolean hasn't been explicitly toggled, check the free-text
+  // `ministry` field (comma-separated) for a matching value. The boolean
+  // still wins when set — this only fills the gap for un-migrated data.
+  function ministryHas(m: Member, value: string): boolean {
+    return (m.ministry ?? "").split(",").map((s) => s.trim().toLowerCase()).includes(value.toLowerCase());
+  }
+  function isCouncil(m: Member): boolean {
+    return m.isCouncilMember || ministryHas(m, "Council Member");
+  }
+  function isWorkerMember(m: Member): boolean {
+    return m.isWorker || ministryHas(m, "Worker");
+  }
+
   // Full pools (not just queue order) — used by the Reassign modal so any
   // eligible person/category can be picked, not only whoever's next in line.
   const councilPool: RoleAssignment[] = useMemo(
-    () => members.filter((m) => m.isCouncilMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isCouncil).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
   const workerPool: RoleAssignment[] = useMemo(
-    () => members.filter((m) => m.isWorker).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isWorkerMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
   const wedPresiderPool: RoleAssignment[] = useMemo(
     () =>
       members
-        .filter((m) => (m.isCouncilMember || m.category?.startsWith("Youth")) && !m.isWorker)
+        .filter((m) => (isCouncil(m) || m.category?.startsWith("Youth")) && !isWorkerMember(m))
         .map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
   const usherPool: RoleAssignment[] = USHER_CATEGORIES.map((c) => ({ id: c, name: c }));
   const specialNumberPool: RoleAssignment[] = SPECIAL_NUMBER_CATEGORIES.map((c) => ({ id: c, name: c }));
+  // Search pool for assigning one or more specific members to Special
+  // Number, as an alternative to picking a whole category.
+  const specialNumberMemberPool: RoleAssignment[] = useMemo(
+    () => members.map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    [members]
+  );
 
   /** Presider pool depends on the day: Wednesday uses the Youth/Council mix,
    *  Sunday uses plain Council. Speaker is the mirror — Council on
@@ -227,7 +247,9 @@ export default function useProgramLineUp(currentUser: string) {
         [programType === "prayerMeeting" ? "wedPresiderPool" : "presiderCouncil", presider.current.id],
         [programType === "prayerMeeting" ? "presiderCouncil" : "speakerWorker", speaker.current.id],
       ];
-      if (specialNumber.current) advances.push(["specialNumberCategory", specialNumber.current.id]);
+      if (specialNumber.current && SPECIAL_NUMBER_CATEGORIES.includes(specialNumber.current.id)) {
+        advances.push(["specialNumberCategory", specialNumber.current.id]);
+      }
       if (usher.current) advances.push(["usherCategory", usher.current.id]);
       if (flowerFamily.current) advances.push(["flowerFamily", flowerFamily.current.id]);
 
@@ -270,6 +292,7 @@ export default function useProgramLineUp(currentUser: string) {
     speakerPool,
     usherPool,
     specialNumberPool,
+    specialNumberMemberPool,
     // Flower Family has no member-based source list (no household grouping
     // exists yet) — the Reassign UI for it takes free-text input instead.
 

@@ -53,6 +53,7 @@ export default function ProgramLineUp() {
     speakerPool,
     usherPool,
     specialNumberPool,
+    specialNumberMemberPool,
 
     reassignPresider,
     reassignSpeaker,
@@ -205,7 +206,13 @@ export default function ProgramLineUp() {
             <ReassignModal roleLabel="Speaker" options={speakerPool} onConfirm={handleConfirm} onClose={closeReassign} />
           )}
           {activeReassign === "specialNumber" && (
-            <ReassignModal roleLabel="Special Number" options={specialNumberPool} onConfirm={handleConfirm} onClose={closeReassign} />
+            <ReassignModal
+              roleLabel="Special Number"
+              options={specialNumberPool}
+              memberOptions={specialNumberMemberPool}
+              onConfirm={handleConfirm}
+              onClose={closeReassign}
+            />
           )}
           {activeReassign === "usher" && (
             <ReassignModal roleLabel="Usher" options={usherPool} onConfirm={handleConfirm} onClose={closeReassign} />
