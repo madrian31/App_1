@@ -5,6 +5,16 @@ import type { RotationRole } from "../../types/rotationQueue";
 
 export type QueueSnapshot = Record<RotationRole, string[]>;
 
+/** Formats a Date as "YYYY-MM-DD" using LOCAL date parts — NOT toISOString(),
+ *  which converts to UTC first and can roll the date back by one day for
+ *  timezones ahead of UTC (e.g. PHT, UTC+8) at local midnight. */
+function toLocalISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 /** Every Sunday and Wednesday between dateFrom and dateTo, inclusive. */
 export function getServiceDatesInRange(dateFrom: string, dateTo: string): string[] {
   const out: string[] = [];
@@ -12,7 +22,7 @@ export function getServiceDatesInRange(dateFrom: string, dateTo: string): string
   const end = new Date(`${dateTo}T00:00:00`);
   while (d <= end) {
     const day = d.getDay();
-    if (day === 0 || day === 3) out.push(d.toISOString().slice(0, 10));
+    if (day === 0 || day === 3) out.push(toLocalISODate(d));
     d.setDate(d.getDate() + 1);
   }
   return out;

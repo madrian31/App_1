@@ -18,8 +18,14 @@ export async function getLineUpsInRange(dateFrom: string, dateTo: string): Promi
     .filter((e) => e.date >= dateFrom && e.date <= dateTo);
 }
 
+function stripUndefined<T extends object>(obj: T): Partial<T> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
+}
+
 export async function saveLineUp(entry: NewProgramLineUpEntry): Promise<void> {
   const ref = doc(db, COLLECTION, entry.date);
   const payload: ProgramLineUpEntry = { ...entry, dateModified: new Date().toISOString() };
-  await setDoc(ref, payload, { merge: true });
+  // Firestore rejects explicit `undefined` field values (e.g. specialNumber/usher/
+  // flowerFamily left unassigned) — strip them so the write never silently fails.
+  await setDoc(ref, stripUndefined(payload), { merge: true });
 }
