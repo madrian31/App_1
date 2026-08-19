@@ -8,6 +8,7 @@ const MONTHS = [
 interface MonthlyCelebrantsProps {
   celebrants: MonthlyCelebrant[];
   month: number; // 0-indexed
+  
 }
 
 export default function MonthlyCelebrants({ celebrants, month }: MonthlyCelebrantsProps) {

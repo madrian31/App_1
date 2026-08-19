@@ -58,6 +58,7 @@ export interface MonthlyCelebrant {
   memberId: string;
   name: string;
   day: number; // day-of-month, for sorting
+  type?: "birthday" | "anniversary"; // optional, for display purposes  
 }
 
 /** Everyone whose birthday falls in `month` (0-indexed, matching JS Date),
@@ -67,10 +68,14 @@ export function getMonthlyCelebrants(members: Member[], month: number): MonthlyC
   const out: MonthlyCelebrant[] = [];
 
   for (const m of members) {
-    if (!m.birthday) continue;
-    const d = new Date(`${m.birthday}T00:00:00`);
-    if (isNaN(d.getTime()) || d.getMonth() !== month) continue;
-    out.push({ memberId: m.id, name: `${m.firstName} ${m.lastName}`, day: d.getDate() });
+    const name = `${m.firstName} ${m.lastName}`;
+
+    if (m.birthday) {
+      const d = new Date(`${m.birthday}T00:00:00`);
+      if (!isNaN(d.getTime()) && d.getMonth() === month) {
+        out.push({ memberId: m.id, name, day: d.getDate(), type: "birthday" });
+      }
+    }
   }
 
   return out.sort((a, b) => a.day - b.day);
