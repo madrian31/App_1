@@ -19,6 +19,20 @@
     border-bottom: 1px solid var(--border);
 }
 
+.upnext-pop-items {
+    max-height: 320px; /* ~10 items visible before scrolling */
+    overflow-y: auto;
+}
+
+.upnext-pop-items::-webkit-scrollbar {
+    width: 6px;
+}
+
+.upnext-pop-items::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+}
+
 .lineup-row:last-child {
     border-bottom: none;
 }

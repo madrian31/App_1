@@ -37,11 +37,13 @@ export default function UpNextPopover({ upNext }: UpNextPopoverProps) {
       {open && (
         <div className="upnext-pop open">
           <div className="upnext-pop-title">Up next</div>
-          {upNext.map((item, i) => (
-            <div className="upnext-pop-item" key={item.id}>
-              <span className="num">{i + 1}</span> {item.name}
-            </div>
-          ))}
+          <div className="upnext-pop-items">
+            {upNext.map((item, i) => (
+              <div className="upnext-pop-item" key={item.id}>
+                <span className="num">{i + 1}</span> {item.name}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
