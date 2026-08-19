@@ -1,11 +1,14 @@
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useLookupLists from "../../hooks/useLookupLists";
+import useThemePresets from "../../hooks/useThemePresets";
 import { LOOKUP_LISTS } from "../../types/lookupList";
 import LookupListEditor from "../../components/settings/LookupListEditor";
+import ThemePresetEditor from "../../components/settings/ThemePresetEditor";
 import "./settings.css";
 
 export default function ManageLists() {
   const { lists, loading, savingKey, error, addValue, removeValue, renameValue } = useLookupLists();
+  const themePresets = useThemePresets();
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -26,6 +29,13 @@ export default function ManageLists() {
             </div>
           )}
 
+          {themePresets.error && (
+            <div className="modal-error visit-form-error">
+              <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+              {themePresets.error}
+            </div>
+          )}
+
           {loading ? (
             <p>Loading lists…</p>
           ) : (
@@ -42,6 +52,16 @@ export default function ManageLists() {
                   />
                 </div>
               ))}
+
+              <div className="members-card lookup-list-card">
+                <ThemePresetEditor
+                  presets={themePresets.presets}
+                  saving={themePresets.saving}
+                  onAdd={themePresets.add}
+                  onEdit={themePresets.edit}
+                  onRemove={themePresets.remove}
+                />
+              </div>
             </div>
           )}
         </div>

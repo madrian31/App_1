@@ -4,12 +4,15 @@ import {
   getRotationQueue,
   seedRotationQueueIfEmpty,
   advanceRotationQueue,
+  syncRotationQueueItems,
 } from "../services/rotationQueue/rotationQueueService";
 import { getLineUpForDate, saveLineUp } from "../services/programLineUp/programLineUpService";
 import { getLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
+import { getThemePresets } from "../services/settings/themePresetsService";
 import { resolveProgramType } from "../types/programLineUp";
 import type { ProgramType, RoleAssignment } from "../types/programLineUp";
 import type { RotationRole } from "../types/rotationQueue";
+import type { ThemePreset } from "../types/themePreset";
 import { getMonthlyCelebrants, isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember } from "../types/member";
 import type { Member, MonthlyCelebrant } from "../types/member";
 
@@ -46,14 +49,24 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
   const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
 
+  // Theme presets — managed in Manage Lists, rotate the same way as the
+  // other roles: front of queue is the "next" one, advances to the back
+  // once used (see submit() below).
+  const [themePresets, setThemePresets] = useState<ThemePreset[]>([]);
+  const [loadingThemePresets, setLoadingThemePresets] = useState(true);
+
   const [presider, setPresider] = useState<RoleState>(EMPTY_ROLE);
   const [speaker, setSpeaker] = useState<RoleState>(EMPTY_ROLE);
   const [specialNumber, setSpecialNumber] = useState<RoleState>(EMPTY_ROLE);
   const [usher, setUsher] = useState<RoleState>(EMPTY_ROLE);
   const [flowerFamily, setFlowerFamily] = useState<RoleState>(EMPTY_ROLE);
 
-  const [themeTitle, setThemeTitle] = useState("");
-  const [themeVerse, setThemeVerse] = useState("");
+  const [themeTitle, setThemeTitleState] = useState("");
+  const [themeVerse, setThemeVerseState] = useState("");
+  // Which preset (if any) is currently backing the Theme fields — cleared the
+  // moment the user edits either field by hand, so a manually-tweaked theme
+  // never advances a preset it no longer matches.
+  const [themePresetId, setThemePresetId] = useState<string | null>(null);
   const [announcements, setAnnouncements] = useState("");
 
   const [loadingEntry, setLoadingEntry] = useState(false);
@@ -75,6 +88,14 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
       .then(setCategoryOptions)
       .catch((err) => console.error("Failed to load category list:", err))
       .finally(() => setLoadingCategories(false));
+  }, []);
+
+  useEffect(() => {
+    setLoadingThemePresets(true);
+    getThemePresets()
+      .then(setThemePresets)
+      .catch((err) => console.error("Failed to load theme presets:", err))
+      .finally(() => setLoadingThemePresets(false));
   }, []);
 
   function nameOf(id: string): string {
@@ -103,12 +124,20 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     return buildRoleState(q?.items ?? [], resolveName);
   }
 
+  /** Same idea as loadRole, but for sources (like theme presets) that can
+   *  gain new entries AFTER the queue doc already exists — syncs any new
+   *  ids onto the back instead of only seeding once on an empty doc. */
+  async function syncThemePresetQueue(validIds: string[]): Promise<RoleState> {
+    const items = await syncRotationQueueItems("themePreset", validIds);
+    return buildRoleState(items, (id) => id); // resolver unused — title/verse resolved separately below
+  }
+
   // Reload everything whenever the date (and therefore programType) or the
   // member list changes. If a lineup already exists for this date, its saved
   // assignments override the "front of queue" default (so re-opening an
   // already-scheduled date shows what was actually saved, not a fresh pick).
   useEffect(() => {
-    if (loadingMembers || loadingCategories) return;
+    if (loadingMembers || loadingCategories || loadingThemePresets) return;
     let cancelled = false;
     setLoadingEntry(true);
 
@@ -118,13 +147,15 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
       // Wednesday Presider pool: Youth OR Council Member, but NEVER a Worker
       // — even if that person is also Youth and/or Council.
       const wedPresiderPoolIds = members.filter(isWedPresiderPoolMember).map((m) => m.id);
+      const themePresetIds = themePresets.map((p) => p.id);
 
-      const [presiderQ, speakerQ, specialNumberQ, usherQ, flowerQ, existing] = await Promise.all([
+      const [presiderQ, speakerQ, specialNumberQ, usherQ, flowerQ, themeQ, existing] = await Promise.all([
         loadRole("presiderCouncil", councilIds, nameOf),
         loadRole("speakerWorker", workerIds, nameOf),
         loadRole("specialNumberCategory", categoryOptions, (id) => id),
         loadRole("usherCategory", categoryOptions, (id) => id),
         loadRole("flowerFamily", [], (id) => id), // family list has no auto-seed yet — added manually for now
+        syncThemePresetQueue(themePresetIds),
         getLineUpForDate(date),
       ]);
 
@@ -154,8 +185,24 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
         );
       }
 
-      setThemeTitle(existing?.themeTitle ?? "");
-      setThemeVerse(existing?.themeVerse ?? "");
+      // Theme: a saved entry's text always wins (never re-linked to a preset,
+      // since we don't persist which preset produced it). Otherwise, auto-fill
+      // from the front of the theme preset queue, if one exists.
+      if (existing?.themeTitle) {
+        setThemeTitleState(existing.themeTitle);
+        setThemeVerseState(existing.themeVerse ?? "");
+        setThemePresetId(null);
+      } else if (themeQ.current) {
+        const preset = themePresets.find((p) => p.id === themeQ.current!.id);
+        setThemeTitleState(preset?.title ?? "");
+        setThemeVerseState(preset?.verse ?? "");
+        setThemePresetId(preset ? preset.id : null);
+      } else {
+        setThemeTitleState("");
+        setThemeVerseState("");
+        setThemePresetId(null);
+      }
+
       setAnnouncements(existing?.announcements ?? "");
 
       setLoadingEntry(false);
@@ -172,7 +219,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     return () => {
       cancelled = true;
     };
-  }, [date, programType, loadingMembers, loadingCategories, members, categoryOptions]);
+  }, [date, programType, loadingMembers, loadingCategories, loadingThemePresets, members, categoryOptions, themePresets]);
 
   // Auto-computed, not stored per lineup — re-runs whenever the viewed
   // date's month changes, so it's always "whoever has a birthday/anniversary
@@ -216,6 +263,18 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     roleSetter({ current: pick, upNext: current.upNext });
   }
 
+  /** Wrapped setters — any manual edit to the theme fields breaks the link to
+   *  whichever preset auto-filled them, so submit() won't advance a preset
+   *  the saved theme no longer actually matches. */
+  function setThemeTitle(value: string) {
+    setThemeTitleState(value);
+    setThemePresetId(null);
+  }
+  function setThemeVerse(value: string) {
+    setThemeVerseState(value);
+    setThemePresetId(null);
+  }
+
   async function submit(): Promise<boolean> {
     if (!presider.current || !speaker.current) {
       setToast("Presider and Speaker are required.");
@@ -250,6 +309,10 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
       }
       if (usher.current) advances.push(["usherCategory", usher.current.id]);
       if (flowerFamily.current) advances.push(["flowerFamily", flowerFamily.current.id]);
+      // Only advance the theme preset queue if the saved theme still matches
+      // the preset that auto-filled it — an edited theme doesn't "use up" a
+      // preset it no longer represents.
+      if (themePresetId) advances.push(["themePreset", themePresetId]);
 
       await Promise.all(advances.map(([role, id]) => advanceRotationQueue(role, id)));
 
@@ -268,7 +331,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     date,
     setDate,
     programType,
-    loading: loadingMembers || loadingCategories || loadingEntry,
+    loading: loadingMembers || loadingCategories || loadingThemePresets || loadingEntry,
     saving,
     toast,
 

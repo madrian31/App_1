@@ -4,7 +4,8 @@ export type RotationRole =
   | "wedPresiderPool" // Youth OR Council Member, but never a Worker
   | "usherCategory"
   | "specialNumberCategory"
-  | "flowerFamily";
+  | "flowerFamily"
+  | "themePreset";
 
 /** One doc per role. `items` is an ORDERED list — index 0 is "current/next to
  *  assign". After an assignment, the assigned item moves to the back. Manual

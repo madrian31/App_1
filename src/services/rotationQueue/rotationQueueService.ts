@@ -40,3 +40,23 @@ export async function advanceRotationQueue(role: RotationRole, usedId: string): 
   const next = advanceQueue(items, usedId);
   await saveRotationQueue(role, next);
 }
+
+/** Merges any `validIds` not yet present in the queue onto the back —
+ *  preserves existing order/position for ids already there. Unlike
+ *  seedRotationQueueIfEmpty, this runs every time (not just on an empty/
+ *  missing doc), so newly-added items — like a fresh theme preset created
+ *  after the queue doc already existed — always show up instead of being
+ *  invisible forever behind an already-seeded doc. */
+export async function syncRotationQueueItems(role: RotationRole, validIds: string[]): Promise<string[]> {
+  const current = await getRotationQueue(role);
+  const existingItems = current?.items ?? [];
+  const newItems = validIds.filter((id) => !existingItems.includes(id));
+
+  if (newItems.length === 0 && current) {
+    return existingItems; // wala namang bago, may doc na — skip write
+  }
+
+  const merged = [...newItems, ...existingItems]; 
+  await saveRotationQueue(role, merged);
+  return merged;
+}
