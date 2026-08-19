@@ -6,14 +6,19 @@ import {
   advanceRotationQueue,
 } from "../services/rotationQueue/rotationQueueService";
 import { getLineUpForDate, saveLineUp } from "../services/programLineUp/programLineUpService";
+import { getLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
 import { resolveProgramType } from "../types/programLineUp";
 import type { ProgramType, RoleAssignment } from "../types/programLineUp";
 import type { RotationRole } from "../types/rotationQueue";
-import { getMonthlyCelebrants } from "../types/member";
+import { getMonthlyCelebrants, isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember } from "../types/member";
 import type { Member, MonthlyCelebrant } from "../types/member";
 
-const USHER_CATEGORIES = ["Men", "Women", "Youth Boys", "Youth Girls", "Young Adult/Young Professional"];
-const SPECIAL_NUMBER_CATEGORIES = ["Student", "Men", "Women", "Youth Boys", "Youth Girls"];
+// Same default set used to seed the "category" lookup list on the Settings
+// page (useLookupLists.ts) — only used here as a one-time fallback if that
+// list hasn't been seeded yet. The lookup list itself is the source of
+// truth from then on, so editing it in Manage Lists updates Usher and
+// Special Number options everywhere, including here.
+const DEFAULT_CATEGORIES = ["Men", "Women", "Youth Boys", "Youth Girls", "Young Adult/Young Professional"];
 
 interface RoleState {
   current: RoleAssignment | null;
@@ -31,12 +36,15 @@ function nextServiceDate(): string {
   return d.toISOString().slice(0, 10);
 }
 
-export default function useProgramLineUp(currentUser: string) {
-  const [date, setDate] = useState(nextServiceDate());
+export default function useProgramLineUp(currentUser: string, initialDate?: string) {
+  const [date, setDate] = useState(initialDate || nextServiceDate());
   const programType: ProgramType = resolveProgramType(date);
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
+
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
 
   const [presider, setPresider] = useState<RoleState>(EMPTY_ROLE);
   const [speaker, setSpeaker] = useState<RoleState>(EMPTY_ROLE);
@@ -58,6 +66,15 @@ export default function useProgramLineUp(currentUser: string) {
       .then((all) => setMembers(all.filter((m) => !m.isArchived)))
       .catch((err) => console.error("Failed to load members:", err))
       .finally(() => setLoadingMembers(false));
+  }, []);
+
+  useEffect(() => {
+    setLoadingCategories(true);
+    seedLookupListIfEmpty("category", DEFAULT_CATEGORIES)
+      .then(() => getLookupList("category"))
+      .then(setCategoryOptions)
+      .catch((err) => console.error("Failed to load category list:", err))
+      .finally(() => setLoadingCategories(false));
   }, []);
 
   function nameOf(id: string): string {
@@ -91,24 +108,22 @@ export default function useProgramLineUp(currentUser: string) {
   // assignments override the "front of queue" default (so re-opening an
   // already-scheduled date shows what was actually saved, not a fresh pick).
   useEffect(() => {
-    if (loadingMembers) return;
+    if (loadingMembers || loadingCategories) return;
     let cancelled = false;
     setLoadingEntry(true);
 
     async function run() {
-      const councilIds = members.filter(isCouncil).map((m) => m.id);
-      const workerIds = members.filter(isWorkerMember).map((m) => m.id);
+      const councilIds = members.filter(isCouncilPoolMember).map((m) => m.id);
+      const workerIds = members.filter(isWorkerPoolMember).map((m) => m.id);
       // Wednesday Presider pool: Youth OR Council Member, but NEVER a Worker
       // — even if that person is also Youth and/or Council.
-      const wedPresiderPoolIds = members
-        .filter((m) => (isCouncil(m) || m.category?.startsWith("Youth")) && !isWorkerMember(m))
-        .map((m) => m.id);
+      const wedPresiderPoolIds = members.filter(isWedPresiderPoolMember).map((m) => m.id);
 
       const [presiderQ, speakerQ, specialNumberQ, usherQ, flowerQ, existing] = await Promise.all([
         loadRole("presiderCouncil", councilIds, nameOf),
         loadRole("speakerWorker", workerIds, nameOf),
-        loadRole("specialNumberCategory", SPECIAL_NUMBER_CATEGORIES, (id) => id),
-        loadRole("usherCategory", USHER_CATEGORIES, (id) => id),
+        loadRole("specialNumberCategory", categoryOptions, (id) => id),
+        loadRole("usherCategory", categoryOptions, (id) => id),
         loadRole("flowerFamily", [], (id) => id), // family list has no auto-seed yet — added manually for now
         getLineUpForDate(date),
       ]);
@@ -157,7 +172,7 @@ export default function useProgramLineUp(currentUser: string) {
     return () => {
       cancelled = true;
     };
-  }, [date, programType, loadingMembers, members]);
+  }, [date, programType, loadingMembers, loadingCategories, members, categoryOptions]);
 
   // Auto-computed, not stored per lineup — re-runs whenever the viewed
   // date's month changes, so it's always "whoever has a birthday/anniversary
@@ -167,39 +182,22 @@ export default function useProgramLineUp(currentUser: string) {
     return getMonthlyCelebrants(members, month);
   }, [members, date]);
 
-  // Fallback for members imported before isCouncilMember/isWorker existed:
-  // if the boolean hasn't been explicitly toggled, check the free-text
-  // `ministry` field (comma-separated) for a matching value. The boolean
-  // still wins when set — this only fills the gap for un-migrated data.
-  function ministryHas(m: Member, value: string): boolean {
-    return (m.ministry ?? "").split(",").map((s) => s.trim().toLowerCase()).includes(value.toLowerCase());
-  }
-  function isCouncil(m: Member): boolean {
-    return m.isCouncilMember || ministryHas(m, "Council Member");
-  }
-  function isWorkerMember(m: Member): boolean {
-    return m.isWorker || ministryHas(m, "Worker");
-  }
-
   // Full pools (not just queue order) — used by the Reassign modal so any
   // eligible person/category can be picked, not only whoever's next in line.
   const councilPool: RoleAssignment[] = useMemo(
-    () => members.filter(isCouncil).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isCouncilPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
   const workerPool: RoleAssignment[] = useMemo(
-    () => members.filter(isWorkerMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isWorkerPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
   const wedPresiderPool: RoleAssignment[] = useMemo(
-    () =>
-      members
-        .filter((m) => (isCouncil(m) || m.category?.startsWith("Youth")) && !isWorkerMember(m))
-        .map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isWedPresiderPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
     [members]
   );
-  const usherPool: RoleAssignment[] = USHER_CATEGORIES.map((c) => ({ id: c, name: c }));
-  const specialNumberPool: RoleAssignment[] = SPECIAL_NUMBER_CATEGORIES.map((c) => ({ id: c, name: c }));
+  const usherPool: RoleAssignment[] = categoryOptions.map((c) => ({ id: c, name: c }));
+  const specialNumberPool: RoleAssignment[] = categoryOptions.map((c) => ({ id: c, name: c }));
   // Search pool for assigning one or more specific members to Special
   // Number, as an alternative to picking a whole category.
   const specialNumberMemberPool: RoleAssignment[] = useMemo(
@@ -247,7 +245,7 @@ export default function useProgramLineUp(currentUser: string) {
         [programType === "prayerMeeting" ? "wedPresiderPool" : "presiderCouncil", presider.current.id],
         [programType === "prayerMeeting" ? "presiderCouncil" : "speakerWorker", speaker.current.id],
       ];
-      if (specialNumber.current && SPECIAL_NUMBER_CATEGORIES.includes(specialNumber.current.id)) {
+      if (specialNumber.current && categoryOptions.includes(specialNumber.current.id)) {
         advances.push(["specialNumberCategory", specialNumber.current.id]);
       }
       if (usher.current) advances.push(["usherCategory", usher.current.id]);
@@ -270,7 +268,7 @@ export default function useProgramLineUp(currentUser: string) {
     date,
     setDate,
     programType,
-    loading: loadingMembers || loadingEntry,
+    loading: loadingMembers || loadingCategories || loadingEntry,
     saving,
     toast,
 

@@ -32,36 +32,45 @@ export interface Member {
   isWorker: boolean;
 }
 
+function ministryHas(m: Member, value: string): boolean {
+  return (m.ministry ?? "").split(",").map((s) => s.trim().toLowerCase()).includes(value.toLowerCase());
+}
+
+/** True if `m` counts as a Council Member for rotation purposes — either the
+ *  explicit boolean is set, or (for members imported before that field
+ *  existed) the free-text `ministry` list contains "Council Member". */
+export function isCouncilPoolMember(m: Member): boolean {
+  return m.isCouncilMember || ministryHas(m, "Council Member");
+}
+
+/** Same idea as isCouncilPoolMember, but for Worker. */
+export function isWorkerPoolMember(m: Member): boolean {
+  return m.isWorker || ministryHas(m, "Worker");
+}
+
+/** Wednesday Presider pool: Youth OR Council Member, but never a Worker —
+ *  even if that person is also Youth and/or Council. */
+export function isWedPresiderPoolMember(m: Member): boolean {
+  return (isCouncilPoolMember(m) || Boolean(m.category?.startsWith("Youth"))) && !isWorkerPoolMember(m);
+}
+
 export interface MonthlyCelebrant {
   memberId: string;
   name: string;
   day: number; // day-of-month, for sorting
-  type: "birthday" | "anniversary";
 }
 
-/** Everyone whose birthday OR baptism anniversary falls in `month` (0-indexed,
- *  matching JS Date), sorted by day. Re-runs automatically whenever the
- *  viewed month changes — not tied to any specific Sunday. A member with
- *  both a birthday and an anniversary in the same month appears twice. */
+/** Everyone whose birthday falls in `month` (0-indexed, matching JS Date),
+ *  sorted by day. Re-runs automatically whenever the viewed month changes —
+ *  not tied to any specific Sunday. */
 export function getMonthlyCelebrants(members: Member[], month: number): MonthlyCelebrant[] {
   const out: MonthlyCelebrant[] = [];
 
   for (const m of members) {
-    const name = `${m.firstName} ${m.lastName}`;
-
-    if (m.birthday) {
-      const d = new Date(`${m.birthday}T00:00:00`);
-      if (!isNaN(d.getTime()) && d.getMonth() === month) {
-        out.push({ memberId: m.id, name, day: d.getDate(), type: "birthday" });
-      }
-    }
-
-    // if (m.dateOfBaptism) {
-    //   const d = new Date(`${m.dateOfBaptism}T00:00:00`);
-    //   if (!isNaN(d.getTime()) && d.getMonth() === month) {
-    //     out.push({ memberId: m.id, name, day: d.getDate(), type: "Date Of Baptism" });
-    //   }
-    // }
+    if (!m.birthday) continue;
+    const d = new Date(`${m.birthday}T00:00:00`);
+    if (isNaN(d.getTime()) || d.getMonth() !== month) continue;
+    out.push({ memberId: m.id, name: `${m.firstName} ${m.lastName}`, day: d.getDate() });
   }
 
   return out.sort((a, b) => a.day - b.day);

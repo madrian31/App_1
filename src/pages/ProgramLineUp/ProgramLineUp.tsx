@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useProgramLineUp from "../../hooks/useProgramLineUp";
+import useAutoGenerateLineUps from"../../hooks/useAutoGenerateLineUps";
 import LineUpRoleRow from "../../components/programLineUp/LineUpRoleRow";
 import ReassignModal from "../../components/programLineUp/ReassignModal";
 import MonthlyCelebrants from "../../components/programLineUp/MonthlyCelebrants";
+import AutoGenerateModal from "../../components/programLineUp/AutoGenerateModal";
 import type { RoleAssignment, ProgramType } from "../../types/programLineUp";
 import { sundayOccurrenceInMonth } from "../../types/programLineUp";
 import "./programLineUp.css";
@@ -27,6 +30,10 @@ const PROGRAM_TYPE_ICONS: Record<ProgramType, string> = {
 type ActiveReassign = "presider" | "speaker" | "specialNumber" | "usher" | "flowerFamily" | null;
 
 export default function ProgramLineUp() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlDate = searchParams.get("date") ?? undefined;
+
   const {
     date,
     setDate,
@@ -62,7 +69,10 @@ export default function ProgramLineUp() {
     reassignFlowerFamily,
 
     submit,
-  } = useProgramLineUp(CURRENT_USER);
+  } = useProgramLineUp(CURRENT_USER, urlDate);
+
+  const { generate, generating } = useAutoGenerateLineUps(CURRENT_USER);
+  const [showAutoGenerate, setShowAutoGenerate] = useState(false);
 
   const [activeReassign, setActiveReassign] = useState<ActiveReassign>(null);
   const isSunday = programType !== "prayerMeeting";
@@ -71,6 +81,14 @@ export default function ProgramLineUp() {
 
   function closeReassign() {
     setActiveReassign(null);
+  }
+
+  async function handleAutoGenerate(dateFrom: string, dateTo: string) {
+    const result = await generate(dateFrom, dateTo);
+    setShowAutoGenerate(false);
+    if (result) {
+      navigate(`/ProgramLineUpSchedule?from=${dateFrom.slice(0, 7)}&to=${dateTo.slice(0, 7)}`);
+    }
   }
 
   function handleConfirm(pick: RoleAssignment) {
@@ -91,10 +109,16 @@ export default function ProgramLineUp() {
               <h1>Program Line-up</h1>
               <p>Auto-generated from the rotation for the selected service date.</p>
             </div>
-            <span className={`badge badge-${programType}`}>
-              <i className={PROGRAM_TYPE_ICONS[programType]} aria-hidden="true" />
-              {PROGRAM_TYPE_LABELS[programType]}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Link to="/ProgramLineUpSchedule" className="btn-secondary">
+                <i className="fa-solid fa-calendar-days" aria-hidden="true" />
+                View Schedule
+              </Link>
+              <span className={`badge badge-${programType}`}>
+                <i className={PROGRAM_TYPE_ICONS[programType]} aria-hidden="true" />
+                {PROGRAM_TYPE_LABELS[programType]}
+              </span>
+            </div>
           </div>
 
           <div className="toolbar">
@@ -102,6 +126,10 @@ export default function ProgramLineUp() {
               <i className="fa-regular fa-calendar" aria-hidden="true" />
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ border: "none", background: "transparent" }} />
             </div>
+            <button className="btn-secondary" onClick={() => setShowAutoGenerate(true)}>
+              <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
+              Auto-Generate
+            </button>
             <button className="btn-add" onClick={submit} disabled={saving || loading}>
               <i className="fa-solid fa-floppy-disk" aria-hidden="true" />
               {saving ? "Saving…" : "Save Line-up"}
@@ -219,6 +247,14 @@ export default function ProgramLineUp() {
           )}
           {activeReassign === "flowerFamily" && (
             <ReassignModal roleLabel="Flower Family" freeText onConfirm={handleConfirm} onClose={closeReassign} />
+          )}
+
+          {showAutoGenerate && (
+            <AutoGenerateModal
+              generating={generating}
+              onGenerate={handleAutoGenerate}
+              onClose={() => setShowAutoGenerate(false)}
+            />
           )}
         </div>
       </main>
