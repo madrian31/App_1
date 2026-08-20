@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import CalendarPage from "../pages/Calendar/Calendar";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import LoginPage from "../pages/Login/Login";
 import Members from "../pages/Members/Members";
@@ -14,16 +15,16 @@ import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
 import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
 import ProgramLineUpSchedule from "../pages/ProgramLineUp/ProgramLineUpSchedule";
-
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
-import SundaySchoolTeachers from "../pages/SundaySchool/SundaySchoolTeachers";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
+
+      <Route path="/Calendar" element={<CalendarPage />} />
 
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/members" element={<Members />} />
