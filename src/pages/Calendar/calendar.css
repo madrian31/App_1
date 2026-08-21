@@ -500,6 +500,13 @@
     padding: 2px 6px;
 }
 
+.empty-hint {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13.5px;
+}
+
 /* ===== Week / Day view ===== */
 
 .time-grid-wrap {

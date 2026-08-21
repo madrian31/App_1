@@ -41,6 +41,9 @@ export default function CalendarPage() {
     view,
     setView,
     currentDate,
+    loading,
+    error,
+    saving,
 
     activeCats,
     setActiveCats,
@@ -161,26 +164,39 @@ export default function CalendarPage() {
             onResetAll={resetAllFilters}
           />
 
+          {error && (
+            <div className="modal-error">
+              <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+              {error}
+            </div>
+          )}
+
           <div className="view-shell members-card">
-            {view === "month" && (
-              <MonthView
-                currentDate={currentDate}
-                today={today}
-                eventsForDay={eventsForDay}
-                onOpenDay={openDayModal}
-                onOpenEvent={openEditModal}
-              />
+            {loading ? (
+              <div className="empty-hint">Loading…</div>
+            ) : (
+              <>
+                {view === "month" && (
+                  <MonthView
+                    currentDate={currentDate}
+                    today={today}
+                    eventsForDay={eventsForDay}
+                    onOpenDay={openDayModal}
+                    onOpenEvent={openEditModal}
+                  />
+                )}
+                {(view === "week" || view === "day") && (
+                  <TimeGridView
+                    numDays={view === "week" ? 7 : 1}
+                    currentDate={currentDate}
+                    today={today}
+                    eventsForDay={eventsForDay}
+                    onOpenEvent={openEditModal}
+                  />
+                )}
+                {view === "agenda" && <AgendaView entries={agendaEntries} today={today} onOpenEvent={openEditModal} />}
+              </>
             )}
-            {(view === "week" || view === "day") && (
-              <TimeGridView
-                numDays={view === "week" ? 7 : 1}
-                currentDate={currentDate}
-                today={today}
-                eventsForDay={eventsForDay}
-                onOpenEvent={openEditModal}
-              />
-            )}
-            {view === "agenda" && <AgendaView entries={agendaEntries} today={today} onOpenEvent={openEditModal} />}
           </div>
 
           {toast && (
@@ -191,6 +207,7 @@ export default function CalendarPage() {
             <EventFormModal
               form={form}
               isEditing={Boolean(editingId)}
+              saving={saving}
               onChange={updateForm}
               onSave={submitEventForm}
               onDelete={() => editingId && deleteEvent(editingId)}

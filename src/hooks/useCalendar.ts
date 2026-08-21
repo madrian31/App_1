@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CATEGORY_KEYS,
   DATE_FILTERS,
@@ -9,6 +9,7 @@ import {
   type FilterChip,
 } from "../types/calendarEvent";
 import { parseICS } from "../utils/icsParser";
+import * as calendarEventsService from "../services/calendar/calendarEventsService";
 
 function pad(n: number): string {
   return n < 10 ? "0" + n : "" + n;
@@ -42,36 +43,6 @@ export function fmtTime(t: string): string {
   return `${h12}:${m} ${ap}`;
 }
 
-// TODO: replace with real fetched events once a calendarService/Firestore
-// collection exists — mirrors the seed-data placeholder pattern already used
-// while other modules were being wired up.
-function seedEvents(today: Date): CalendarEvent[] {
-  const events: CalendarEvent[] = [];
-  const mk = (offsetDays: number, start: string, end: string, title: string, cat: CalendarCategory) => {
-    events.push({
-      id: Math.random().toString(36).slice(2),
-      date: iso(addDays(today, offsetDays)),
-      start,
-      end,
-      title,
-      cat,
-    });
-  };
-  mk(0, "09:00", "09:30", "Team Standup", "meetings");
-  mk(0, "13:00", "14:00", "1:1 with Manager", "meetings");
-  mk(1, "10:00", "11:30", "Client Review Call", "meetings");
-  mk(2, "08:00", "08:45", "Doctor Checkup", "events");
-  mk(-1, "11:00", "12:00", "Budget Review", "events");
-  mk(6, "00:00", "23:59", "Wedding Anniversary — Sam & Lia", "anniversaries");
-  mk(12, "10:00", "12:00", "Mika's Birthday", "birthdays");
-  mk(14, "00:00", "23:59", "National Holiday", "holidays");
-  mk(18, "10:00", "13:00", "College Graduation Rites", "graduation");
-  mk(20, "09:00", "09:15", "Company-wide Announcement", "announcements");
-  mk(5, "20:00", "22:00", "Movie Night", "celebrations");
-  mk(-2, "17:00", "18:00", "Yoga Class", "activities");
-  return events;
-}
-
 export interface EventFormState {
   title: string;
   date: string;
@@ -87,7 +58,29 @@ export default function useCalendar() {
 
   const [view, setView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
-  const [events, setEvents] = useState<CalendarEvent[]>(() => seedEvents(today));
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    calendarEventsService
+      .getAllEvents()
+      .then((fetched) => {
+        if (!cancelled) setEvents(fetched);
+      })
+      .catch(() => {
+        if (!cancelled) setError("Could not load events. Please check your connection and try again.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Applied filters
   const [activeCats, setActiveCats] = useState<Set<CalendarCategory>>(new Set(CATEGORY_KEYS));
@@ -212,22 +205,42 @@ export default function useCalendar() {
   function updateForm<K extends keyof EventFormState>(key: K, value: EventFormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
   }
-  function submitEventForm() {
+  async function submitEventForm() {
     if (!form.title.trim() && !form.date) return;
-    if (editingId) {
-      setEvents((prev) => prev.map((ev) => (ev.id === editingId ? { ...ev, ...form, title: form.title || "Untitled Event" } : ev)));
-      showToast("Event updated ✓");
-    } else {
-      setEvents((prev) => [...prev, { id: Math.random().toString(36).slice(2), ...form, title: form.title || "Untitled Event" }]);
-      showToast("Event created ✓");
+    setSaving(true);
+    try {
+      if (editingId) {
+        await calendarEventsService.updateEvent(editingId, { ...form, title: form.title || "Untitled Event" });
+        setEvents((prev) =>
+          prev.map((ev) => (ev.id === editingId ? { ...ev, ...form, title: form.title || "Untitled Event" } : ev))
+        );
+        showToast("Event updated ✓");
+      } else {
+        const newEvent = { ...form, title: form.title || "Untitled Event" };
+        const id = await calendarEventsService.addEvent(newEvent);
+        setEvents((prev) => [...prev, { id, ...newEvent }]);
+        showToast("Event created ✓");
+      }
+      setCurrentDate(new Date(`${form.date}T00:00:00`));
+      closeEventModal();
+    } catch {
+      showToast("Could not save the event. Please try again.", true);
+    } finally {
+      setSaving(false);
     }
-    setCurrentDate(new Date(`${form.date}T00:00:00`));
-    closeEventModal();
   }
-  function deleteEvent(id: string) {
-    setEvents((prev) => prev.filter((ev) => ev.id !== id));
-    closeEventModal();
-    showToast("Event deleted");
+  async function deleteEvent(id: string) {
+    setSaving(true);
+    try {
+      await calendarEventsService.deleteEvent(id);
+      setEvents((prev) => prev.filter((ev) => ev.id !== id));
+      closeEventModal();
+      showToast("Event deleted");
+    } catch {
+      showToast("Could not delete the event. Please try again.", true);
+    } finally {
+      setSaving(false);
+    }
   }
 
   // ---- Day popover ----
@@ -241,15 +254,17 @@ export default function useCalendar() {
   // ---- Import (.ics) ----
   function importICS(file: File) {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const imported = parseICS(String(reader.result));
         if (imported.length === 0) {
           showToast("No events found in that file.", true);
           return;
         }
-        setEvents((prev) => [...prev, ...imported]);
-        showToast(`Imported ${imported.length} event${imported.length === 1 ? "" : "s"} ✓`);
+        const newEvents = imported.map(({ id: _id, ...rest }) => rest);
+        const written = await calendarEventsService.bulkAddEvents(newEvents);
+        setEvents((prev) => [...prev, ...written]);
+        showToast(`Imported ${written.length} event${written.length === 1 ? "" : "s"} ✓`);
       } catch {
         showToast("Could not read that file. Make sure it's a valid .ics calendar file.", true);
       }
@@ -271,6 +286,9 @@ export default function useCalendar() {
     view,
     setView,
     currentDate,
+    loading,
+    error,
+    saving,
     events,
 
     activeCats,

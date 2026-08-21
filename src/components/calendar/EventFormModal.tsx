@@ -5,13 +5,14 @@ import type { EventFormState } from "../../hooks/useCalendar";
 interface Props {
   form: EventFormState;
   isEditing: boolean;
+  saving: boolean;
   onChange: <K extends keyof EventFormState>(key: K, value: EventFormState[K]) => void;
   onSave: () => void;
   onDelete: () => void;
   onClose: () => void;
 }
 
-export default function EventFormModal({ form, isEditing, onChange, onSave, onDelete, onClose }: Props) {
+export default function EventFormModal({ form, isEditing, saving, onChange, onSave, onDelete, onClose }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   function handleDeleteClick() {
@@ -81,15 +82,16 @@ export default function EventFormModal({ form, isEditing, onChange, onSave, onDe
                 className={`btn-danger${confirmingDelete ? " confirming" : ""}`}
                 style={{ marginRight: "auto" }}
                 onClick={handleDeleteClick}
+                disabled={saving}
               >
                 {confirmingDelete ? "Confirm delete?" : "Delete"}
               </button>
             )}
-            <button type="button" className="btn-secondary" onClick={onClose}>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary">
-              Save
+            <button type="submit" className="btn-primary" disabled={saving}>
+              {saving ? "Saving…" : "Save"}
             </button>
           </div>
         </form>
