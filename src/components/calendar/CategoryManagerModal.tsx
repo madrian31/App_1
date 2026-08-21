@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CalendarCategoryItem } from "../../types/calendarEvent";
+import IconPicker from "./IconPicker";
 
 interface Props {
   categories: CalendarCategoryItem[];
@@ -32,13 +33,13 @@ export default function CategoryManagerModal({ categories, saving, onAdd, onUpda
 
   function saveEdit(id: string) {
     if (!editLabel.trim()) return;
-    onUpdate(id, { label: editLabel.trim(), icon: editIcon.trim() || DEFAULT_NEW_ICON });
+    onUpdate(id, { label: editLabel.trim(), icon: editIcon || DEFAULT_NEW_ICON });
     setEditingId(null);
   }
 
   function handleAdd() {
     if (!newLabel.trim()) return;
-    onAdd(newLabel.trim(), newIcon.trim() || DEFAULT_NEW_ICON, newColor);
+    onAdd(newLabel.trim(), newIcon, newColor);
     setNewLabel("");
     setNewIcon(DEFAULT_NEW_ICON);
     setNewColor(DEFAULT_NEW_COLOR);
@@ -66,13 +67,7 @@ export default function CategoryManagerModal({ categories, saving, onAdd, onUpda
         <div className="category-manager-body">
           <div className="category-manager-add-row">
             <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} title="Color" />
-            <input
-              type="text"
-              placeholder="fa-solid fa-tag"
-              value={newIcon}
-              onChange={(e) => setNewIcon(e.target.value)}
-              title="Font Awesome class"
-            />
+            <IconPicker value={newIcon} onChange={setNewIcon} />
             <input
               type="text"
               placeholder="Category name"
@@ -84,7 +79,7 @@ export default function CategoryManagerModal({ categories, saving, onAdd, onUpda
               <i className="fa-solid fa-plus" aria-hidden="true" />
             </button>
           </div>
-          <p className="category-manager-hint">Icon uses a Font Awesome class, e.g. "fa-solid fa-star".</p>
+          <p className="category-manager-hint">Tap the color swatch and icon to customize, then name it and add.</p>
 
           <div className="category-manager-list">
             {categories.length === 0 && <p className="cat-empty-hint">No categories yet — add one above.</p>}
@@ -98,12 +93,7 @@ export default function CategoryManagerModal({ categories, saving, onAdd, onUpda
                 />
                 {editingId === cat.id ? (
                   <>
-                    <input
-                      type="text"
-                      value={editIcon}
-                      onChange={(e) => setEditIcon(e.target.value)}
-                      className="cat-edit-icon"
-                    />
+                    <IconPicker value={editIcon} onChange={setEditIcon} />
                     <input
                       type="text"
                       value={editLabel}
