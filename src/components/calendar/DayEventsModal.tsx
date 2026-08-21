@@ -1,15 +1,16 @@
-import { CATEGORIES, MONTHS, WEEKDAYS, type CalendarEvent } from "../../types/calendarEvent";
+import { findCategory, MONTHS, WEEKDAYS, type CalendarCategoryItem, type CalendarEvent } from "../../types/calendarEvent";
 import { fmtTime } from "../../hooks/useCalendar";
 
 interface Props {
   dateIso: string;
   events: CalendarEvent[];
+  categories: CalendarCategoryItem[];
   onOpenEvent: (id: string) => void;
   onAddOnThisDay: () => void;
   onClose: () => void;
 }
 
-export default function DayEventsModal({ dateIso, events, onOpenEvent, onAddOnThisDay, onClose }: Props) {
+export default function DayEventsModal({ dateIso, events, categories, onOpenEvent, onAddOnThisDay, onClose }: Props) {
   const d = new Date(`${dateIso}T00:00:00`);
   const title = `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
 
@@ -27,7 +28,7 @@ export default function DayEventsModal({ dateIso, events, onOpenEvent, onAddOnTh
             <div className="day-modal-empty">No events on this day.</div>
           ) : (
             events.map((e) => {
-              const c = CATEGORIES[e.cat];
+              const c = findCategory(categories, e.cat);
               return (
                 <div key={e.id} className="day-modal-row" onClick={() => onOpenEvent(e.id)}>
                   <div className="bar" style={{ background: c.color }} />
@@ -35,7 +36,7 @@ export default function DayEventsModal({ dateIso, events, onOpenEvent, onAddOnTh
                   <div className="info">
                     <div className="title">{e.title}</div>
                     <div className="meta">
-                      {fmtTime(e.start)} – {fmtTime(e.end)} · {c.label}
+                      {e.allDay ? "All day" : `${fmtTime(e.start)} – ${fmtTime(e.end)}`} · {c.label}
                     </div>
                   </div>
                 </div>

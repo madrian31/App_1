@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
-  CATEGORY_KEYS,
   DATE_FILTERS,
-  type CalendarCategory,
+  type CalendarCategoryItem,
   type CalendarEvent,
   type CalendarView,
   type DateFilterKey,
@@ -10,6 +9,7 @@ import {
 } from "../types/calendarEvent";
 import { parseICS } from "../utils/icsParser";
 import * as calendarEventsService from "../services/calendar/calendarEventsService";
+import * as calendarCategoriesService from "../services/calendar/calendarCategoriesService";
 
 function pad(n: number): string {
   return n < 10 ? "0" + n : "" + n;
@@ -48,10 +48,11 @@ export interface EventFormState {
   date: string;
   start: string;
   end: string;
-  cat: CalendarCategory;
+  allDay: boolean;
+  cat: string;
 }
 
-const EMPTY_FORM: EventFormState = { title: "", date: "", start: "09:00", end: "10:00", cat: "events" };
+const EMPTY_FORM: EventFormState = { title: "", date: "", start: "09:00", end: "10:00", allDay: false, cat: "" };
 
 export default function useCalendar() {
   const today = useMemo(() => new Date(), []);
@@ -59,35 +60,44 @@ export default function useCalendar() {
   const [view, setView] = useState<CalendarView>("month");
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [categories, setCategories] = useState<CalendarCategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    calendarEventsService
-      .getAllEvents()
-      .then((fetched) => {
-        if (!cancelled) setEvents(fetched);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Could not load events. Please check your connection and try again.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [savingCategory, setSavingCategory] = useState(false);
 
   // Applied filters
-  const [activeCats, setActiveCats] = useState<Set<CalendarCategory>>(new Set(CATEGORY_KEYS));
+  const [activeCats, setActiveCats] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<DateFilterKey>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        await calendarCategoriesService.seedCategoriesIfEmpty();
+        const [fetchedEvents, fetchedCategories] = await Promise.all([
+          calendarEventsService.getAllEvents(),
+          calendarCategoriesService.getAllCategories(),
+        ]);
+        if (!cancelled) {
+          setEvents(fetchedEvents);
+          setCategories(fetchedCategories);
+          setActiveCats(new Set(fetchedCategories.map((c) => c.id)));
+        }
+      } catch {
+        if (!cancelled) setError("Could not load the calendar. Please check your connection and try again.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Modal state
   const [showEventModal, setShowEventModal] = useState(false);
@@ -95,6 +105,7 @@ export default function useCalendar() {
   const [form, setForm] = useState<EventFormState>(EMPTY_FORM);
   const [dayModalDate, setDayModalDate] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; error?: boolean } | null>(null);
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
 
   function showToast(message: string, error = false) {
     setToast({ message, error });
@@ -129,19 +140,29 @@ export default function useCalendar() {
     return true;
   }
 
-  const filteredEvents = useMemo(() => events.filter(matchesFilters), [events, activeCats, searchQuery, dateFilter, customFrom, customTo]);
+  const filteredEvents = useMemo(
+    () => events.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [events, activeCats, searchQuery, dateFilter, customFrom, customTo]
+  );
 
   function eventsForDay(dateObj: Date): CalendarEvent[] {
     const key = iso(dateObj);
-    return filteredEvents.filter((e) => e.date === key).sort((a, b) => timeToMinutes(a.start) - timeToMinutes(b.start));
+    return filteredEvents
+      .filter((e) => e.date === key)
+      .sort((a, b) => {
+        if (a.allDay && !b.allDay) return -1;
+        if (!a.allDay && b.allDay) return 1;
+        return timeToMinutes(a.start) - timeToMinutes(b.start);
+      });
   }
 
   // ---- Active filter chips ----
   const chips: FilterChip[] = [];
   if (searchQuery) chips.push({ type: "search" });
-  if (activeCats.size < CATEGORY_KEYS.length) {
-    CATEGORY_KEYS.forEach((k) => {
-      if (activeCats.has(k)) chips.push({ type: "cat", key: k });
+  if (categories.length > 0 && activeCats.size < categories.length) {
+    categories.forEach((c) => {
+      if (activeCats.has(c.id)) chips.push({ type: "cat", key: c.id });
     });
   }
   if (dateFilter !== "all") chips.push({ type: "date" });
@@ -152,7 +173,7 @@ export default function useCalendar() {
       setActiveCats((prev) => {
         const next = new Set(prev);
         next.delete(chip.key);
-        return next.size === 0 ? new Set(CATEGORY_KEYS) : next;
+        return next.size === 0 ? new Set(categories.map((c) => c.id)) : next;
       });
     } else if (chip.type === "date") {
       setDateFilter("all");
@@ -162,7 +183,7 @@ export default function useCalendar() {
   }
 
   function resetAllFilters() {
-    setActiveCats(new Set(CATEGORY_KEYS));
+    setActiveCats(new Set(categories.map((c) => c.id)));
     setSearchQuery("");
     setDateFilter("all");
     setCustomFrom("");
@@ -187,14 +208,18 @@ export default function useCalendar() {
   // ---- Event modal ----
   function openCreateModal(prefillDateIso?: string) {
     setEditingId(null);
-    setForm({ ...EMPTY_FORM, date: prefillDateIso || iso(view === "month" ? today : currentDate) });
+    setForm({
+      ...EMPTY_FORM,
+      date: prefillDateIso || iso(view === "month" ? today : currentDate),
+      cat: categories[0]?.id ?? "",
+    });
     setShowEventModal(true);
   }
   function openEditModal(eventId: string) {
     const e = events.find((ev) => ev.id === eventId);
     if (!e) return;
     setEditingId(eventId);
-    setForm({ title: e.title, date: e.date, start: e.start, end: e.end, cat: e.cat });
+    setForm({ title: e.title, date: e.date, start: e.start, end: e.end, allDay: Boolean(e.allDay), cat: e.cat });
     setShowEventModal(true);
   }
   function closeEventModal() {
@@ -209,16 +234,21 @@ export default function useCalendar() {
     if (!form.title.trim() && !form.date) return;
     setSaving(true);
     try {
+      const payload = {
+        title: form.title || "Untitled Event",
+        date: form.date,
+        start: form.allDay ? "00:00" : form.start,
+        end: form.allDay ? "23:59" : form.end,
+        allDay: form.allDay,
+        cat: form.cat,
+      };
       if (editingId) {
-        await calendarEventsService.updateEvent(editingId, { ...form, title: form.title || "Untitled Event" });
-        setEvents((prev) =>
-          prev.map((ev) => (ev.id === editingId ? { ...ev, ...form, title: form.title || "Untitled Event" } : ev))
-        );
+        await calendarEventsService.updateEvent(editingId, payload);
+        setEvents((prev) => prev.map((ev) => (ev.id === editingId ? { ...ev, ...payload } : ev)));
         showToast("Event updated ✓");
       } else {
-        const newEvent = { ...form, title: form.title || "Untitled Event" };
-        const id = await calendarEventsService.addEvent(newEvent);
-        setEvents((prev) => [...prev, { id, ...newEvent }]);
+        const id = await calendarEventsService.addEvent(payload);
+        setEvents((prev) => [...prev, { id, ...payload }]);
         showToast("Event created ✓");
       }
       setCurrentDate(new Date(`${form.date}T00:00:00`));
@@ -273,6 +303,53 @@ export default function useCalendar() {
     reader.readAsText(file);
   }
 
+  // ---- Category management ----
+  async function addCategory(label: string, icon: string, color: string) {
+    setSavingCategory(true);
+    try {
+      const id = await calendarCategoriesService.addCategory(label, icon, color);
+      const newCat = { id, label, icon, color };
+      setCategories((prev) => [...prev, newCat]);
+      setActiveCats((prev) => new Set(prev).add(id));
+      showToast("Category added ✓");
+    } catch {
+      showToast("Could not add the category. Please try again.", true);
+    } finally {
+      setSavingCategory(false);
+    }
+  }
+  async function updateCategory(id: string, data: Partial<Omit<CalendarCategoryItem, "id">>) {
+    setSavingCategory(true);
+    try {
+      await calendarCategoriesService.updateCategory(id, data);
+      setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)));
+    } catch {
+      showToast("Could not update the category. Please try again.", true);
+    } finally {
+      setSavingCategory(false);
+    }
+  }
+  async function removeCategory(id: string) {
+    setSavingCategory(true);
+    try {
+      await calendarCategoriesService.removeCategory(id);
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+      setActiveCats((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        if (next.size === 0) {
+          categories.filter((c) => c.id !== id).forEach((c) => next.add(c.id));
+        }
+        return next;
+      });
+      showToast("Category deleted");
+    } catch {
+      showToast("Could not delete the category. Please try again.", true);
+    } finally {
+      setSavingCategory(false);
+    }
+  }
+
   // ---- Agenda (upcoming, respects date filter) ----
   const agendaEntries = useMemo(() => {
     return filteredEvents
@@ -289,7 +366,14 @@ export default function useCalendar() {
     loading,
     error,
     saving,
-    events,
+
+    categories,
+    showCategoryManager,
+    setShowCategoryManager,
+    addCategory,
+    updateCategory,
+    removeCategory,
+    savingCategory,
 
     activeCats,
     setActiveCats,

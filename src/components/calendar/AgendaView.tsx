@@ -1,13 +1,14 @@
-import { CATEGORIES, MONTHS, WEEKDAYS, type CalendarEvent } from "../../types/calendarEvent";
+import { categorySoftBg, findCategory, MONTHS, WEEKDAYS, type CalendarCategoryItem, type CalendarEvent } from "../../types/calendarEvent";
 import { fmtTime, sameDay } from "../../hooks/useCalendar";
 
 interface Props {
   entries: { e: CalendarEvent; d: Date }[];
   today: Date;
+  categories: CalendarCategoryItem[];
   onOpenEvent: (id: string) => void;
 }
 
-export default function AgendaView({ entries, today, onOpenEvent }: Props) {
+export default function AgendaView({ entries, today, categories, onOpenEvent }: Props) {
   if (entries.length === 0) {
     return <div className="agenda-empty">No events match your filters. Try clearing a filter or search term.</div>;
   }
@@ -20,7 +21,7 @@ export default function AgendaView({ entries, today, onOpenEvent }: Props) {
         const key = e.date;
         const showDateHeader = key !== lastKey;
         lastKey = key;
-        const c = CATEGORIES[e.cat];
+        const c = findCategory(categories, e.cat);
 
         return (
           <div key={e.id}>
@@ -34,11 +35,11 @@ export default function AgendaView({ entries, today, onOpenEvent }: Props) {
             )}
             <div className="agenda-row" onClick={() => onOpenEvent(e.id)}>
               <div className="bar" style={{ background: c.color }} />
-              <div className="time">{fmtTime(e.start)}</div>
+              <div className="time">{e.allDay ? "All day" : fmtTime(e.start)}</div>
               <div className="title">
                 <i className={c.icon} aria-hidden="true" /> {e.title}
               </div>
-              <div className="cat" style={{ background: c.soft, color: c.color }}>
+              <div className="cat" style={{ background: categorySoftBg(c.color), color: c.color }}>
                 {c.label}
               </div>
             </div>

@@ -42,15 +42,19 @@ export function parseICS(text: string): CalendarEvent[] {
     if (!summaryMatch || !startMatch) return;
 
     const title = summaryMatch[1].trim().replace(/\\,/g, ",").replace(/\\n/g, " ").replace(/\\;/g, ";");
-    const startParsed = parseICSDate(startMatch[1].trim());
+    const rawStart = startMatch[1].trim();
+    const startParsed = parseICSDate(rawStart);
     const endParsed = endMatch ? parseICSDate(endMatch[1].trim()) : null;
     const endTime = endParsed && endParsed.date === startParsed.date ? endParsed.time : addOneHour(startParsed.time);
+    // ICS marks a whole-day event with a date-only value (8 digits, no "T...").
+    const isAllDay = rawStart.length === 8;
 
     results.push({
       id: Math.random().toString(36).slice(2),
       date: startParsed.date,
-      start: startParsed.time,
-      end: endTime,
+      start: isAllDay ? "00:00" : startParsed.time,
+      end: isAllDay ? "23:59" : endTime,
+      allDay: isAllDay,
       title: title || "Untitled Event",
       cat: "events", // ICS has no concept of our categories — default bucket, user can re-categorize later
       location: locMatch ? locMatch[1].trim() : "",

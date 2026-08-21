@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import {
-  CATEGORIES,
-  CATEGORY_KEYS,
-  type CalendarCategory,
+  findCategory,
+  type CalendarCategoryItem,
   type DateFilterKey,
   type FilterChip,
 } from "../../types/calendarEvent";
@@ -13,11 +12,12 @@ interface DateFilterOption {
 }
 
 interface Props {
+  categories: CalendarCategoryItem[];
   searchQuery: string;
   onSearchChange: (v: string) => void;
 
-  activeCats: Set<CalendarCategory>;
-  onActiveCatsChange: (cats: Set<CalendarCategory>) => void;
+  activeCats: Set<string>;
+  onActiveCatsChange: (cats: Set<string>) => void;
   dateFilter: DateFilterKey;
   onDateFilterChange: (v: DateFilterKey) => void;
   customFrom: string;
@@ -29,9 +29,11 @@ interface Props {
   chips: FilterChip[];
   onRemoveChip: (chip: FilterChip) => void;
   onResetAll: () => void;
+  onManageCategories: () => void;
 }
 
 export default function CalendarFilters({
+  categories,
   searchQuery,
   onSearchChange,
   activeCats,
@@ -46,6 +48,7 @@ export default function CalendarFilters({
   chips,
   onRemoveChip,
   onResetAll,
+  onManageCategories,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [draftCats, setDraftCats] = useState(activeCats);
@@ -63,17 +66,17 @@ export default function CalendarFilters({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  function toggleDraftCat(key: CalendarCategory) {
+  function toggleDraftCat(id: string) {
     setDraftCats((prev) => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   function apply() {
-    onActiveCatsChange(draftCats.size > 0 ? draftCats : new Set(CATEGORY_KEYS));
+    onActiveCatsChange(draftCats.size > 0 ? draftCats : new Set(categories.map((c) => c.id)));
     onDateFilterChange(draftDateFilter);
     onCustomFromChange(draftFrom);
     onCustomToChange(draftTo);
@@ -81,7 +84,7 @@ export default function CalendarFilters({
   }
 
   function clearDraft() {
-    setDraftCats(new Set(CATEGORY_KEYS));
+    setDraftCats(new Set(categories.map((c) => c.id)));
     setDraftDateFilter("all");
     setDraftFrom("");
     setDraftTo("");
@@ -89,10 +92,7 @@ export default function CalendarFilters({
 
   function chipLabel(chip: FilterChip): string {
     if (chip.type === "search") return `Search: "${searchQuery}"`;
-    if (chip.type === "cat" && chip.key) {
-      const c = CATEGORIES[chip.key];
-      return c.label;
-    }
+    if (chip.type === "cat") return findCategory(categories, chip.key).label;
     if (chip.type === "date") {
       if (dateFilter === "custom" && (customFrom || customTo)) {
         return `Range: ${customFrom || "…"} – ${customTo || "…"}`;
@@ -136,20 +136,30 @@ export default function CalendarFilters({
           {open && (
             <div className="filters-panel open" onClick={(e) => e.stopPropagation()}>
               <div className="filters-panel-section">
-                <div className="filters-panel-title">
-                  <i className="fa-solid fa-tag" aria-hidden="true" /> Category
+                <div className="filters-panel-title-row">
+                  <div className="filters-panel-title">
+                    <i className="fa-solid fa-tag" aria-hidden="true" /> Category
+                  </div>
+                  <button
+                    type="button"
+                    className="manage-categories-link"
+                    onClick={() => {
+                      setOpen(false);
+                      onManageCategories();
+                    }}
+                  >
+                    Manage
+                  </button>
                 </div>
-                {CATEGORY_KEYS.map((key) => {
-                  const cat = CATEGORIES[key];
-                  return (
-                    <label className="cat-check-row" key={key}>
-                      <input type="checkbox" checked={draftCats.has(key)} onChange={() => toggleDraftCat(key)} />
-                      <i className={cat.icon} style={{ color: cat.color, width: 14 }} aria-hidden="true" />
-                      <span className="label">{cat.label}</span>
-                      <span className="dot" style={{ background: cat.color }} />
-                    </label>
-                  );
-                })}
+                {categories.length === 0 && <p className="cat-empty-hint">No categories yet.</p>}
+                {categories.map((cat) => (
+                  <label className="cat-check-row" key={cat.id}>
+                    <input type="checkbox" checked={draftCats.has(cat.id)} onChange={() => toggleDraftCat(cat.id)} />
+                    <i className={cat.icon} style={{ color: cat.color, width: 14 }} aria-hidden="true" />
+                    <span className="label">{cat.label}</span>
+                    <span className="dot" style={{ background: cat.color }} />
+                  </label>
+                ))}
               </div>
 
               <div className="filters-panel-section">

@@ -8,6 +8,7 @@ import AgendaView from "../../components/calendar/AgendaView";
 import CalendarFilters from "../../components/calendar/CalendarFilters";
 import EventFormModal from "../../components/calendar/EventFormModal";
 import DayEventsModal from "../../components/calendar/DayEventsModal";
+import CategoryManagerModal from "../../components/calendar/CategoryManagerModal";
 import "./calendar.css";
 
 const VIEW_OPTIONS: { key: CalendarView; label: string }[] = [
@@ -44,6 +45,14 @@ export default function CalendarPage() {
     loading,
     error,
     saving,
+
+    categories,
+    showCategoryManager,
+    setShowCategoryManager,
+    addCategory,
+    updateCategory,
+    removeCategory,
+    savingCategory,
 
     activeCats,
     setActiveCats,
@@ -148,6 +157,7 @@ export default function CalendarPage() {
           </div>
 
           <CalendarFilters
+            categories={categories}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             activeCats={activeCats}
@@ -162,6 +172,7 @@ export default function CalendarPage() {
             chips={chips}
             onRemoveChip={removeChip}
             onResetAll={resetAllFilters}
+            onManageCategories={() => setShowCategoryManager(true)}
           />
 
           {error && (
@@ -180,6 +191,7 @@ export default function CalendarPage() {
                   <MonthView
                     currentDate={currentDate}
                     today={today}
+                    categories={categories}
                     eventsForDay={eventsForDay}
                     onOpenDay={openDayModal}
                     onOpenEvent={openEditModal}
@@ -190,28 +202,31 @@ export default function CalendarPage() {
                     numDays={view === "week" ? 7 : 1}
                     currentDate={currentDate}
                     today={today}
+                    categories={categories}
                     eventsForDay={eventsForDay}
                     onOpenEvent={openEditModal}
                   />
                 )}
-                {view === "agenda" && <AgendaView entries={agendaEntries} today={today} onOpenEvent={openEditModal} />}
+                {view === "agenda" && (
+                  <AgendaView entries={agendaEntries} today={today} categories={categories} onOpenEvent={openEditModal} />
+                )}
               </>
             )}
           </div>
 
-          {toast && (
-            <div className={`calendar-toast show${toast.error ? " error" : ""}`}>{toast.message}</div>
-          )}
+          {toast && <div className={`calendar-toast show${toast.error ? " error" : ""}`}>{toast.message}</div>}
 
           {showEventModal && (
             <EventFormModal
               form={form}
               isEditing={Boolean(editingId)}
               saving={saving}
+              categories={categories}
               onChange={updateForm}
               onSave={submitEventForm}
               onDelete={() => editingId && deleteEvent(editingId)}
               onClose={closeEventModal}
+              onManageCategories={() => setShowCategoryManager(true)}
             />
           )}
 
@@ -219,6 +234,7 @@ export default function CalendarPage() {
             <DayEventsModal
               dateIso={dayModalDate}
               events={eventsForDay(new Date(`${dayModalDate}T00:00:00`))}
+              categories={categories}
               onOpenEvent={openEditModal}
               onAddOnThisDay={() => {
                 const d = dayModalDate;
@@ -226,6 +242,17 @@ export default function CalendarPage() {
                 openCreateModal(d);
               }}
               onClose={closeDayModal}
+            />
+          )}
+
+          {showCategoryManager && (
+            <CategoryManagerModal
+              categories={categories}
+              saving={savingCategory}
+              onAdd={addCategory}
+              onUpdate={updateCategory}
+              onRemove={removeCategory}
+              onClose={() => setShowCategoryManager(false)}
             />
           )}
         </div>

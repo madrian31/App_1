@@ -1,15 +1,16 @@
-import { CATEGORIES, WEEKDAYS, type CalendarEvent } from "../../types/calendarEvent";
+import { categorySoftBg, findCategory, WEEKDAYS, type CalendarCategoryItem, type CalendarEvent } from "../../types/calendarEvent";
 import { addDays, iso, sameDay } from "../../hooks/useCalendar";
 
 interface Props {
   currentDate: Date;
   today: Date;
+  categories: CalendarCategoryItem[];
   eventsForDay: (d: Date) => CalendarEvent[];
   onOpenDay: (dateIso: string) => void;
   onOpenEvent: (id: string) => void;
 }
 
-export default function MonthView({ currentDate, today, eventsForDay, onOpenDay, onOpenEvent }: Props) {
+export default function MonthView({ currentDate, today, categories, eventsForDay, onOpenDay, onOpenEvent }: Props) {
   const firstOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
   const startOffset = firstOfMonth.getDay();
   const gridStart = addDays(firstOfMonth, -startOffset);
@@ -44,12 +45,12 @@ export default function MonthView({ currentDate, today, eventsForDay, onOpenDay,
               </div>
               <div className="day-events">
                 {visible.map((e) => {
-                  const c = CATEGORIES[e.cat];
+                  const c = findCategory(categories, e.cat);
                   return (
                     <div
                       key={e.id}
                       className="evt-chip"
-                      style={{ background: c.soft, color: c.color }}
+                      style={{ background: categorySoftBg(c.color), color: c.color }}
                       title={e.title}
                       onClick={(ev) => {
                         ev.stopPropagation();
