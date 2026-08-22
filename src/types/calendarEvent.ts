@@ -14,6 +14,14 @@ export interface CalendarEvent {
   allDay?: boolean;
   cat: string; // references a CalendarCategoryItem id
   location?: string;
+  /**
+   * Optional extra context captured when an event is imported from the
+   * Calendar of Activities spreadsheet (see calendarExcelMapper.ts). Not yet
+   * editable through the New/Edit Event form, but preserved in Firestore so
+   * nothing from the source file is silently dropped.
+   */
+  inCharge?: string;
+  budget?: string;
 }
 
 export type CalendarView = "month" | "week" | "day" | "agenda";
@@ -39,6 +47,24 @@ export const DEFAULT_CATEGORIES: CalendarCategoryItem[] = [
   { id: "celebrations", label: "Celebrations", icon: "fa-solid fa-champagne-glasses", color: "#a2377d" },
   { id: "announcements", label: "Announcements", icon: "fa-solid fa-bullhorn", color: "#3f688a" },
 ];
+
+/**
+ * Colors used when the Calendar of Activities import encounters a CATEGORY
+ * label that doesn't exist yet in Firestore and has to create it on the fly.
+ * Keyed to this church's own color-guide legend (National/District/Local/
+ * Pledges/Departmental/Mission); anything else falls back to a neutral tone.
+ */
+export const CALENDAR_IMPORT_LEGEND_COLORS: Record<string, string> = {
+  NATIONAL: "#8a8a8a",
+  DISTRICT: "#2f6b47",
+  LOCAL: "#c9a227",
+  "PLEDGES & SPECIAL OFFERINGS": "#c0435a",
+  PLEDGES: "#c0435a",
+  "DEPARTMENTAL MEETINGS": "#654a91",
+  DEPARTMENTAL: "#654a91",
+  MISSION: "#3a3a3a",
+  UNCATEGORIZED: "#5a6b7a",
+};
 
 /** Shown for an event whose category was deleted after the event was created. */
 export const FALLBACK_CATEGORY: CalendarCategoryItem = {

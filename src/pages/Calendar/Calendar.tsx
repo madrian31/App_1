@@ -1,6 +1,7 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useCalendar from "../../hooks/useCalendar";
+import useCalendarImport from "../../hooks/useCalendarImport";
 import { MONTHS, WEEKDAYS, type CalendarView } from "../../types/calendarEvent";
 import MonthView from "../../components/calendar/MonthView";
 import TimeGridView from "../../components/calendar/TimeGridView";
@@ -9,6 +10,7 @@ import CalendarFilters from "../../components/calendar/CalendarFilters";
 import EventFormModal from "../../components/calendar/EventFormModal";
 import DayEventsModal from "../../components/calendar/DayEventsModal";
 import CategoryManagerModal from "../../components/calendar/CategoryManagerModal";
+import CalendarImportPreviewModal from "../../components/calendar/CalendarImportPreviewModal";
 import "./calendar.css";
 
 const VIEW_OPTIONS: { key: CalendarView; label: string }[] = [
@@ -34,8 +36,13 @@ function periodLabel(view: CalendarView, d: Date): string {
   return `Starting ${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 
+function isExcelFile(file: File): boolean {
+  return /\.(xlsx|xls)$/i.test(file.name);
+}
+
 export default function CalendarPage() {
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [showCalendarImportModal, setShowCalendarImportModal] = useState(false);
 
   const {
     today,
@@ -90,18 +97,28 @@ export default function CalendarPage() {
     closeDayModal,
 
     importICS,
+    refetchAll,
     agendaEntries,
 
     toast,
   } = useCalendar();
 
+  const calendarImport = useCalendarImport();
+
   function handleImportClick() {
     importInputRef.current?.click();
   }
-  function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImportChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = "";
-    if (file) importICS(file);
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (isExcelFile(file)) {
+      setShowCalendarImportModal(true);
+      await calendarImport.selectFile(file, categories);
+    } else {
+      importICS(file);
+    }
   }
 
   return (
@@ -115,14 +132,14 @@ export default function CalendarPage() {
               <p>Events, activities, birthdays, and more — all in one place.</p>
             </div>
             <div className="page-header-actions">
-              <button className="btn-secondary" onClick={handleImportClick}>
+              <button className="btn-secondary" onClick={handleImportClick} title="Import a .ics calendar file, or the Calendar of Activities .xlsx">
                 <i className="fa-solid fa-file-import" aria-hidden="true" />
                 <span className="label">Import</span>
               </button>
               <input
                 ref={importInputRef}
                 type="file"
-                accept=".ics,text/calendar"
+                accept=".ics,text/calendar,.xlsx,.xls"
                 style={{ display: "none" }}
                 onChange={handleImportChange}
               />
@@ -253,6 +270,14 @@ export default function CalendarPage() {
               onUpdate={updateCategory}
               onRemove={removeCategory}
               onClose={() => setShowCategoryManager(false)}
+            />
+          )}
+
+          {showCalendarImportModal && (
+            <CalendarImportPreviewModal
+              importState={calendarImport}
+              onClose={() => setShowCalendarImportModal(false)}
+              onImported={refetchAll}
             />
           )}
         </div>

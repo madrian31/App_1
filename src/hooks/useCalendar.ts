@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   DATE_FILTERS,
   type CalendarCategoryItem,
@@ -73,31 +73,28 @@ export default function useCalendar() {
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
 
-  useEffect(() => {
-    let cancelled = false;
+  const loadAll = useCallback(async () => {
     setLoading(true);
-    (async () => {
-      try {
-        await calendarCategoriesService.seedCategoriesIfEmpty();
-        const [fetchedEvents, fetchedCategories] = await Promise.all([
-          calendarEventsService.getAllEvents(),
-          calendarCategoriesService.getAllCategories(),
-        ]);
-        if (!cancelled) {
-          setEvents(fetchedEvents);
-          setCategories(fetchedCategories);
-          setActiveCats(new Set(fetchedCategories.map((c) => c.id)));
-        }
-      } catch {
-        if (!cancelled) setError("Could not load the calendar. Please check your connection and try again.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    try {
+      await calendarCategoriesService.seedCategoriesIfEmpty();
+      const [fetchedEvents, fetchedCategories] = await Promise.all([
+        calendarEventsService.getAllEvents(),
+        calendarCategoriesService.getAllCategories(),
+      ]);
+      setEvents(fetchedEvents);
+      setCategories(fetchedCategories);
+      setActiveCats(new Set(fetchedCategories.map((c) => c.id)));
+      setError("");
+    } catch {
+      setError("Could not load the calendar. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
   // Modal state
   const [showEventModal, setShowEventModal] = useState(false);
@@ -303,6 +300,18 @@ export default function useCalendar() {
     reader.readAsText(file);
   }
 
+  /**
+   * Called after the Calendar of Activities Excel import finishes — it
+   * writes events and possibly new categories directly through the
+   * services (see useCalendarImport), so the simplest way to bring this
+   * hook's state back in sync is to reload everything from Firestore,
+   * same as the initial page load.
+   */
+  async function refetchAll() {
+    await loadAll();
+    showToast("Calendar refreshed ✓");
+  }
+
   // ---- Category management ----
   async function addCategory(label: string, icon: string, color: string) {
     setSavingCategory(true);
@@ -411,6 +420,7 @@ export default function useCalendar() {
     closeDayModal,
 
     importICS,
+    refetchAll,
     agendaEntries,
 
     toast,
