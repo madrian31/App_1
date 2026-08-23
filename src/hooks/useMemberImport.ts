@@ -1,22 +1,16 @@
 import { useState, useCallback } from "react";
 import type { ImportedMember, ParseResult } from "../utils/memberExcelMapper";
-import { parseMembersFile, bulkImportMembers } from "../services/members/memberService/memberImportExport";
+import { parseMembersFile, bulkImportMembers, type BulkImportSummary } from "../services/members/memberService/memberImportExport";
 
 export type ImportStep = "idle" | "parsing" | "preview" | "importing" | "done" | "error";
 
-export interface ImportSummary {
-  written: number;
-  inserted: number;
-  updated: number;
-  unchanged: number;
-}
+export type ImportSummary = BulkImportSummary;
 
 export interface UseMemberImportResult {
   step: ImportStep;
   parseResult: ParseResult | null;
   error: string | null;
   progress: { written: number; total: number } | null;
-  /** Breakdown of the last completed import — how many rows were brand-new vs. already existed. */
   summary: ImportSummary | null;
   selectFile: (file: File) => Promise<void>;
   confirmImport: (addedBy: string) => Promise<void>;

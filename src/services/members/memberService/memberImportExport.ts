@@ -23,24 +23,8 @@ export async function parseMembersFile(file: File, sheetName = "MEMBERS DATA"): 
   return parseMembersSheet(rows);
 }
 
-/**
- * Builds a stable, deterministic document ID for a member based on identifying fields.
- * Re-importing the same person (same name + birthday) will always resolve to the same
- * ID, so bulkImportMembers can safely overwrite/merge instead of creating a duplicate.
- *
- * NOTE: two different people who happen to share last name, first name, AND birthday
- * would collide under this scheme (rare, but possible). If that's a real concern, add
- * another distinguishing field (e.g. middleInitial) into the key below.
- */
-function buildMemberId(m: ImportedMember): string {
-  const key = `${m.lastName}-${m.firstName}-${m.birthday || "no-bday"}`;
-  return key
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // strip accents (e.g. "José" -> "jose")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+function nameKey(lastName: string, firstName: string): string {
+  return `${lastName.trim().toLowerCase()}|${firstName.trim().toLowerCase()}`;
 }
 
 /** Fields that come from the imported file — compared to tell "updated" apart from "already existed, unchanged". */
@@ -65,44 +49,68 @@ function isSameData(existing: Record<string, unknown> | undefined, incoming: Imp
   return COMPARABLE_FIELDS.every((field) => (existing[field] ?? "") === (incoming[field] ?? ""));
 }
 
-/**
- * Writes parsed rows to Firestore in batches of 450 (Firestore's hard limit is 500 writes/batch).
- * Uses a deterministic doc ID per member (see buildMemberId) with `merge: true`, so importing
- * the same file — or a file with overlapping rows — twice updates existing members in place
- * instead of creating duplicate entries.
- *
- * Before writing, fetches all existing member docs once so it can classify every row as:
- *  - inserted: no existing doc with this ID (brand-new member)
- *  - updated: existing doc found, but at least one field differs from the incoming row
- *  - unchanged: existing doc found and every field already matches (already existed, no-op)
- *
- * Reports progress via onProgress(written, total) after each batch commits.
- */
+export interface BulkImportSummary {
+  written: number;
+  inserted: number;
+  updated: number;
+  unchanged: number;
+  ambiguous: number;
+  ambiguousNames: string[];
+}
 export async function bulkImportMembers(
   members: ImportedMember[],
   addedBy: string,
   onProgress?: (written: number, total: number) => void
-): Promise<{ written: number; inserted: number; updated: number; unchanged: number }> {
+): Promise<BulkImportSummary> {
   const BATCH_SIZE = 450;
   const dateAdded = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
-  // One read of all existing members, done up front, so we can classify every row
-  // (new / updated / unchanged) without a separate read per member.
   const existingSnap = await getDocs(membersCol);
-  const existingById = new Map(existingSnap.docs.map((d) => [d.id, d.data()]));
+  const byName = new Map<string, { id: string; data: Record<string, unknown> }[]>();
+  existingSnap.docs.forEach((d) => {
+    const data = d.data();
+    const key = nameKey(String(data.lastName ?? ""), String(data.firstName ?? ""));
+    const list = byName.get(key) ?? [];
+    list.push({ id: d.id, data });
+    byName.set(key, list);
+  });
 
-  let written = 0;
+  const newlyAssigned = new Map<string, { id: string; data: Record<string, unknown> }>();
+
   let inserted = 0;
   let updated = 0;
   let unchanged = 0;
+  let ambiguous = 0;
+  const ambiguousNames: string[] = [];
+  let totalWritten = 0;
 
   for (let i = 0; i < members.length; i += BATCH_SIZE) {
     const chunk = members.slice(i, i + BATCH_SIZE);
     const batch = writeBatch(db);
+    let chunkWritten = 0;
 
     for (const m of chunk) {
-      const id = buildMemberId(m);
-      const existingData = existingById.get(id);
+      const key = nameKey(m.lastName, m.firstName);
+      const pendingNew = newlyAssigned.get(key);
+      const existingCandidates = byName.get(key);
+
+      let targetId: string;
+      let existingData: Record<string, unknown> | undefined;
+
+      if (pendingNew) {
+        targetId = pendingNew.id;
+        existingData = pendingNew.data;
+      } else if (existingCandidates && existingCandidates.length === 1) {
+        targetId = existingCandidates[0].id;
+        existingData = existingCandidates[0].data;
+      } else if (existingCandidates && existingCandidates.length > 1) {
+        ambiguous++;
+        ambiguousNames.push(`${m.firstName} ${m.lastName}`);
+        continue;
+      } else {
+        targetId = doc(membersCol).id; // brand-new member — auto-generated id
+        existingData = undefined;
+      }
 
       if (!existingData) {
         inserted++;
@@ -111,30 +119,32 @@ export async function bulkImportMembers(
       } else {
         updated++;
       }
-      // Track this row's data so duplicate rows within the same file are classified
-      // against each other too, not just against what was already in Firestore.
-      existingById.set(id, m as unknown as Record<string, unknown>);
 
-      const ref = doc(membersCol, id);
+      newlyAssigned.set(key, { id: targetId, data: m as unknown as Record<string, unknown> });
+
+      const ref = doc(membersCol, targetId);
       batch.set(
         ref,
         {
           ...m,
-          isPledger: false,
-          isArchived: false,
-          addedBy,
-          dateAdded,
+          // Preserve flags/meta that live outside the imported file, rather
+          // than resetting them every re-import.
+          isPledger: (existingData?.isPledger as boolean) ?? false,
+          isArchived: (existingData?.isArchived as boolean) ?? false,
+          addedBy: (existingData?.addedBy as string) ?? addedBy,
+          dateAdded: (existingData?.dateAdded as string) ?? dateAdded,
         },
-        { merge: true } // update existing member instead of overwriting isPledger/isArchived flags they may have set manually
+        { merge: true }
       );
+      chunkWritten++;
     }
 
     await batch.commit();
-    written += chunk.length;
-    onProgress?.(written, members.length);
+    totalWritten += chunkWritten;
+    onProgress?.(totalWritten, members.length);
   }
 
-  return { written, inserted, updated, unchanged };
+  return { written: totalWritten, inserted, updated, unchanged, ambiguous, ambiguousNames };
 }
 
 /** Builds and downloads an .xlsx export of the given members, matching the directory's original column layout. */

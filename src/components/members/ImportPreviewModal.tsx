@@ -160,6 +160,47 @@ export default function ImportPreviewModal({ importState, currentUser, onClose, 
                   )}
                 </ul>
               )}
+              {step === "done" && (
+                  <>
+                    <div className="import-success">
+                      <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                      <p>Import complete!</p>
+                      {summary && (
+                        <ul className="import-summary-list">
+                          {summary.inserted > 0 && (
+                            <li>{summary.inserted} new member{summary.inserted !== 1 ? "s" : ""} added</li>
+                          )}
+                          {summary.updated > 0 && (
+                            <li>{summary.updated} existing member{summary.updated !== 1 ? "s" : ""} updated</li>
+                          )}
+                          {summary.unchanged > 0 && (
+                            <li>{summary.unchanged} already existed (no changes)</li>
+                          )}
+                        </ul>
+                      )}
+                    </div>
+                  {summary && summary.ambiguous > 0 && (
+                    <div className="modal-error" style={{ background: "#fff8e6", color: "#7a5a00", borderColor: "#f0dca0" }}>
+                      <i className="fa-solid fa-circle-info" aria-hidden="true" />
+                      {summary.ambiguous} row{summary.ambiguous !== 1 ? "s" : ""} skipped — matched more than one existing
+                      member with the same name and couldn't be safely updated: {summary.ambiguousNames.join(", ")}. Please
+                      update these manually, or check for duplicate members already in the system.
+                    </div>
+                  )}
+
+                  <div className="modal-actions">
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        onImported();
+                        handleClose();
+                      }}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
             <div className="modal-actions">
               <button
