@@ -30,6 +30,7 @@ export default function ImportExportBar({ currentUser, onImported }: ImportExpor
   function handleImportClick() {
     fileInputRef.current?.click();
   }
+  
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
