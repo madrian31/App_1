@@ -10,6 +10,8 @@ import {
 import { parseICS } from "../utils/icsParser";
 import * as calendarEventsService from "../services/calendar/calendarEventsService";
 import * as calendarCategoriesService from "../services/calendar/calendarCategoriesService";
+import { getAllMembers } from "../services/members/memberService/membersService";
+import type { Member } from "../types/member";
 
 function pad(n: number): string {
   return n < 10 ? "0" + n : "" + n;
@@ -54,6 +56,13 @@ export interface EventFormState {
 
 const EMPTY_FORM: EventFormState = { title: "", date: "", start: "09:00", end: "10:00", allDay: false, cat: "" };
 
+/** memberId + which occasion — used to build a stable, collision-proof virtual event id per day. */
+interface CelebrantEntry {
+  memberId: string;
+  title: string;
+  cat: "birthdays" | "anniversaries";
+}
+
 export default function useCalendar() {
   const today = useMemo(() => new Date(), []);
 
@@ -61,6 +70,7 @@ export default function useCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), today.getDate()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [categories, setCategories] = useState<CalendarCategoryItem[]>([]);
+  const [members, setMembers] = useState<Member[]>([]); // NEW — powers virtual birthday/anniversary events
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -77,12 +87,14 @@ export default function useCalendar() {
     setLoading(true);
     try {
       await calendarCategoriesService.seedCategoriesIfEmpty();
-      const [fetchedEvents, fetchedCategories] = await Promise.all([
+      const [fetchedEvents, fetchedCategories, fetchedMembers] = await Promise.all([
         calendarEventsService.getAllEvents(),
         calendarCategoriesService.getAllCategories(),
+        getAllMembers(),
       ]);
       setEvents(fetchedEvents);
       setCategories(fetchedCategories);
+      setMembers(fetchedMembers.filter((m) => !m.isArchived));
       setActiveCats(new Set(fetchedCategories.map((c) => c.id)));
       setError("");
     } catch {
@@ -95,6 +107,52 @@ export default function useCalendar() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // NEW — every member's birthday/weddingAnniversary, indexed by "MM-DD" so it
+  // recurs every year automatically without being stored as a dated event.
+  const celebrantsByMonthDay = useMemo(() => {
+    const map = new Map<string, CelebrantEntry[]>();
+
+    function addEntry(dateStr: string | undefined, memberId: string, name: string, cat: CelebrantEntry["cat"], label: string) {
+      if (!dateStr) return;
+      const d = new Date(`${dateStr}T00:00:00`);
+      if (isNaN(d.getTime())) return;
+      const key = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const list = map.get(key) ?? [];
+      list.push({ memberId, title: `${name}'s ${label}`, cat });
+      map.set(key, list);
+    }
+
+    for (const m of members) {
+      const name = `${m.firstName} ${m.lastName}`;
+      addEntry(m.birthday, m.id, name, "birthdays", "Birthday");
+      addEntry(m.weddingAnniversary, m.id, name, "anniversaries", "Wedding Anniversary");
+    }
+
+    return map;
+  }, [members]);
+
+  // NEW — turns a day's celebrants into CalendarEvent-shaped objects so every
+  // view (Month/Week/Day) can render them exactly like a real event, without
+  // any of it being written to Firestore.
+  function virtualEventsForDay(dateObj: Date): CalendarEvent[] {
+    const key = iso(dateObj);
+    const monthDayKey = `${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
+    const celebrants = celebrantsByMonthDay.get(monthDayKey) ?? [];
+
+    return celebrants
+      .filter((c) => activeCats.has(c.cat)) // still respects the category filter
+      .filter((c) => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase())) // still respects search
+      .map((c) => ({
+        id: `virtual-${c.cat}-${c.memberId}-${key}`,
+        title: c.title,
+        date: key,
+        start: "00:00",
+        end: "23:59",
+        allDay: true,
+        cat: c.cat,
+      }));
+  }
 
   // Modal state
   const [showEventModal, setShowEventModal] = useState(false);
@@ -145,13 +203,13 @@ export default function useCalendar() {
 
   function eventsForDay(dateObj: Date): CalendarEvent[] {
     const key = iso(dateObj);
-    return filteredEvents
-      .filter((e) => e.date === key)
-      .sort((a, b) => {
-        if (a.allDay && !b.allDay) return -1;
-        if (!a.allDay && b.allDay) return 1;
-        return timeToMinutes(a.start) - timeToMinutes(b.start);
-      });
+    const real = filteredEvents.filter((e) => e.date === key);
+    const virtual = virtualEventsForDay(dateObj); // NEW
+    return [...real, ...virtual].sort((a, b) => {
+      if (a.allDay && !b.allDay) return -1;
+      if (!a.allDay && b.allDay) return 1;
+      return timeToMinutes(a.start) - timeToMinutes(b.start);
+    });
   }
 
   // ---- Active filter chips ----
@@ -213,6 +271,9 @@ export default function useCalendar() {
     setShowEventModal(true);
   }
   function openEditModal(eventId: string) {
+    // Virtual birthday/anniversary events aren't editable — they're derived
+    // from the member record, not a real calendarEvents doc.
+    if (eventId.startsWith("virtual-")) return;
     const e = events.find((ev) => ev.id === eventId);
     if (!e) return;
     setEditingId(eventId);
@@ -257,6 +318,7 @@ export default function useCalendar() {
     }
   }
   async function deleteEvent(id: string) {
+    if (id.startsWith("virtual-")) return;
     setSaving(true);
     try {
       await calendarEventsService.deleteEvent(id);
@@ -300,13 +362,6 @@ export default function useCalendar() {
     reader.readAsText(file);
   }
 
-  /**
-   * Called after the Calendar of Activities Excel import finishes — it
-   * writes events and possibly new categories directly through the
-   * services (see useCalendarImport), so the simplest way to bring this
-   * hook's state back in sync is to reload everything from Firestore,
-   * same as the initial page load.
-   */
   async function refetchAll() {
     await loadAll();
     showToast("Calendar refreshed ✓");
@@ -361,11 +416,26 @@ export default function useCalendar() {
 
   // ---- Agenda (upcoming, respects date filter) ----
   const agendaEntries = useMemo(() => {
-    return filteredEvents
-      .map((e) => ({ e, d: new Date(`${e.date}T00:00:00`) }))
+    // Real events, same as before.
+    const real = filteredEvents.map((e) => ({ e, d: new Date(`${e.date}T00:00:00`) }));
+
+    // NEW — project virtual celebrant events across a reasonable forward
+    // window so Agenda view can show upcoming birthdays/anniversaries too,
+    // not just the currently-visible month grid.
+    const windowStart = dateFilter === "custom" && customFrom ? new Date(`${customFrom}T00:00:00`) : today;
+    const windowEnd = dateFilter === "custom" && customTo ? new Date(`${customTo}T00:00:00`) : addDays(today, 90);
+    const virtual: { e: CalendarEvent; d: Date }[] = [];
+    for (let d = new Date(windowStart); d <= windowEnd; d = addDays(d, 1)) {
+      for (const ve of virtualEventsForDay(d)) {
+        virtual.push({ e: ve, d: new Date(d) });
+      }
+    }
+
+    return [...real, ...virtual]
       .filter((x) => dateFilter !== "all" || x.d >= new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()))
       .sort((a, b) => a.d.getTime() - b.d.getTime() || timeToMinutes(a.e.start) - timeToMinutes(b.e.start));
-  }, [filteredEvents, dateFilter, currentDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredEvents, dateFilter, currentDate, celebrantsByMonthDay, activeCats, searchQuery, customFrom, customTo]);
 
   return {
     today,

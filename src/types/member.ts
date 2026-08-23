@@ -30,6 +30,13 @@ export interface Member {
   // ── Program Line-up fields (rotation pools) ──
   isCouncilMember: boolean;
   isWorker: boolean;
+
+  // ── Wedding Anniversary ──
+  // ISO date string. Populated by the "BIRTHDAYS & ANNIVERSARIES" sheet import
+  // (see anniversaryExcelMapper.ts) — matched to this member by name, confirmed
+  // manually in AnniversaryImportPreviewModal before being written. Both spouses
+  // in a couple get the same date on their own member record.
+  weddingAnniversary?: string;
 }
 
 function ministryHas(m: Member, value: string): boolean {
@@ -58,7 +65,7 @@ export interface MonthlyCelebrant {
   memberId: string;
   name: string;
   day: number; // day-of-month, for sorting
-  type?: "birthday" | "anniversary"; // optional, for display purposes  
+  type?: "birthday" | "anniversary"; // optional, for display purposes
 }
 
 /** Everyone whose birthday falls in `month` (0-indexed, matching JS Date),
@@ -74,6 +81,15 @@ export function getMonthlyCelebrants(members: Member[], month: number): MonthlyC
       const d = new Date(`${m.birthday}T00:00:00`);
       if (!isNaN(d.getTime()) && d.getMonth() === month) {
         out.push({ memberId: m.id, name, day: d.getDate(), type: "birthday" });
+      }
+    }
+
+    // Wedding anniversaries. Each spouse's own member record carries the same
+    // date, so a couple who are both active members shows up as two rows.
+    if (m.weddingAnniversary) {
+      const d = new Date(`${m.weddingAnniversary}T00:00:00`);
+      if (!isNaN(d.getTime()) && d.getMonth() === month) {
+        out.push({ memberId: m.id, name, day: d.getDate(), type: "anniversary" });
       }
     }
   }

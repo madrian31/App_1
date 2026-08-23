@@ -1,19 +1,24 @@
 import { useRef, useState } from "react";
 import useMemberImport from "../../hooks/useMemberImport";
+import useAnniversaryImport from "../../hooks/useAnniversaryImport";
 import { getAllMembers } from "../../services/members/memberService/membersService";
 import { exportMembersToFile } from "../../services/members/memberService/memberImportExport";
 import ImportPreviewModal from "./ImportPreviewModal";
+import AnniversaryImportPreviewModal from "../calendar/AnniversaryImportPreviewModal";
 
 interface ImportExportBarProps {
   currentUser: string;
-  /** Called after a successful import so the caller can refetch the members list. */
   onImported: () => void;
 }
 
 export default function ImportExportBar({ currentUser, onImported }: ImportExportBarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importState = useMemberImport();
+  const anniversaryImport = useAnniversaryImport();
+
   const [showModal, setShowModal] = useState(false);
+  const [showAnniversaryModal, setShowAnniversaryModal] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [exporting, setExporting] = useState(false);
 
   function handleImportClick() {
@@ -22,10 +27,25 @@ export default function ImportExportBar({ currentUser, onImported }: ImportExpor
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    e.target.value = ""; // allow re-selecting the same file later
+    e.target.value = "";
     if (!file) return;
+    setPendingFile(file); // keep a reference — we'll re-read it for anniversaries after members import
     setShowModal(true);
     await importState.selectFile(file);
+  }
+
+  // Runs after the Members import modal's "Done" is clicked. Members are
+  // already in Firestore at this point, so anniversary name-matching sees
+  // the freshest data (including anyone just imported in this same file).
+  async function handleMembersImported() {
+    onImported();
+    setShowModal(false);
+
+    if (pendingFile) {
+      const found = await anniversaryImport.selectFile(pendingFile);
+      if (found) setShowAnniversaryModal(true);
+      setPendingFile(null);
+    }
   }
 
   async function handleExportClick() {
@@ -63,6 +83,14 @@ export default function ImportExportBar({ currentUser, onImported }: ImportExpor
           importState={importState}
           currentUser={currentUser}
           onClose={() => setShowModal(false)}
+          onImported={handleMembersImported}
+        />
+      )}
+
+      {showAnniversaryModal && (
+        <AnniversaryImportPreviewModal
+          importState={anniversaryImport}
+          onClose={() => setShowAnniversaryModal(false)}
           onImported={onImported}
         />
       )}
