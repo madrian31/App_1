@@ -37,11 +37,13 @@ function normalizeHeader(raw: string): string {
 
 function toIsoDate(value: unknown): string {
   if (!value) return "";
-  if (value instanceof Date && !isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  const parsed = new Date(String(value));
-  return isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+
+  const d = value instanceof Date ? value : new Date(String(value));
+  if (isNaN(d.getTime())) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function toText(value: unknown): string {
