@@ -5,6 +5,7 @@ import LoginPage from "../pages/Login/Login";
 import Members from "../pages/Members/Members";
 import ArchivesMembers from "../pages/Members/ArchivesMembers";
 import MembersAttendance from "../pages/Attendance/Attendance";
+import AttendanceReport from "../pages/Attendance/AttendanceReport";
 import Profile from "../pages/Profile/Profile";
 import PledgesMembers from "../pages/Pledges/PledgesMembers";
 import PledgeTracker from "../pages/Pledges/PledgeTracker";
@@ -31,6 +32,7 @@ export default function AppRoutes() {
       <Route path="/members" element={<Members />} />
       <Route path="/ArchivesMembers" element={<ArchivesMembers />} />
       <Route path="/MembersAttendance" element={<MembersAttendance />} />
+      <Route path="/MembersAttendanceReport" element={<AttendanceReport />} />
       <Route path="/Profile/:id" element={<Profile />} />
 
       <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />

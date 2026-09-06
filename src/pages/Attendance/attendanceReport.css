@@ -1,0 +1,193 @@
+.attendance-report-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.report-eyebrow {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+.report-title {
+  margin: 0 0 0.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+/* ── KPI strip ── */
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.kpi-card--alert {
+  background: #fdf1f1;
+  border: 1px solid #f3c8c8;
+}
+
+.kpi-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+
+.kpi-tone-purple .kpi-icon { background: #efe8fb; color: #7c3aed; }
+.kpi-tone-blue .kpi-icon { background: #e6f0ff; color: #2563eb; }
+.kpi-tone-green .kpi-icon { background: #e5f7ec; color: #16a34a; }
+.kpi-tone-gray .kpi-icon { background: #ececec; color: #6b7280; }
+.kpi-tone-orange .kpi-icon { background: #fdf1e0; color: #d97706; }
+.kpi-tone-red .kpi-icon { background: #fde3e3; color: #dc2626; }
+
+.kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.3;
+}
+
+/* ── Trend chart ── */
+
+.trend-card {
+  padding: 1.25rem 1.5rem;
+}
+
+.trend-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  color: #374151;
+}
+
+.trend-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.trend-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.trend-col {
+  flex: 1 0 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trend-bar-track {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: flex-end;
+  border-bottom: 1px solid #c7d2fe;
+}
+
+.trend-bar {
+  width: 100%;
+  background: #4f6ef7;
+  border-radius: 6px 6px 0 0;
+  min-height: 6px;
+}
+
+.trend-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+/* ── Report table ── */
+
+.report-table {
+  min-width: 980px; /* forces horizontal scroll on narrow screens instead of squishing */
+}
+
+.report-table .report-cell {
+  text-align: center;
+  color: #4b5563;
+  font-size: 0.85rem;
+}
+
+.badge-followup,
+.badge-good {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-followup {
+  background: #fde3e3;
+  color: #dc2626;
+}
+
+.badge-good {
+  background: #e5f7ec;
+  color: #16a34a;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 768px) {
+  .report-title {
+    font-size: 1.5rem;
+  }
+  .kpi-strip {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  .kpi-value {
+    font-size: 1.2rem;
+  }
+  .trend-bar-track {
+    height: 90px;
+  }
+  .trend-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .attendance-report-page {
+    gap: 1rem;
+  }
+}
