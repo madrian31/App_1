@@ -13,6 +13,8 @@ export class MenuService implements IMenuService {
             sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '',
             subMenuItems: [
                 { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/members' },
+                { sortOrder: 12, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/MembersAttendance' },
+                { sortOrder: 13, name: 'Attendance Report', iconClass: 'fa-solid fa-chart-bar', path: '/MembersAttendanceReport' },
                 { sortOrder: 19, name: 'Archives', iconClass: 'fa-solid fa-box', path: '/ArchivesMembers' }
             ] 
         },
@@ -61,9 +63,6 @@ export class MenuService implements IMenuService {
     ];
 
     getMenuItems(userAccess?: UserAccess): MenuItem[] {
-        // No access info yet (still loading the user's profile) — show only
-        // items that have no restriction at all, to avoid a flash of items
-        // the user isn't actually allowed to see.
         const access = userAccess ?? { role: '', departments: [], departmentNames: [] };
         return this.filterItems(this.menuItems, access);
     }
@@ -82,10 +81,6 @@ export class MenuService implements IMenuService {
         // No restrictions at all -> visible to everyone.
         if (!hasRoleRule && !hasDeptRule) return true;
 
-        // Both rules set on the same item -> satisfying EITHER one is enough
-        // (e.g. Moderators should see "Members" even without a Membership
-        // department, and Membership-department users should see it even
-        // without the Moderator role).
         if (hasRoleRule && hasDeptRule) return roleMatch || deptMatch;
 
         // Only one rule set -> that rule alone decides.
