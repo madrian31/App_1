@@ -20,6 +20,74 @@
   color: #1f1f1f;
 }
 
+/* ── Range picker ── */
+
+.range-picker {
+  padding: 1rem 1.25rem;
+}
+
+.range-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1.5rem;
+}
+
+.range-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.range-picker-field label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.range-picker-field select {
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+  background: #fff;
+  min-width: 140px;
+}
+
+.range-picker-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.range-picker-select-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.range-picker-select-group select {
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.range-picker-summary {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.range-picker-label {
+  font-weight: 600;
+  color: #1f1f1f;
+  font-size: 0.9rem;
+}
+
 /* ── KPI strip ── */
 
 .kpi-strip {
@@ -132,7 +200,7 @@
 /* ── Report table ── */
 
 .report-table {
-  min-width: 980px; /* forces horizontal scroll on narrow screens instead of squishing */
+  min-width: 700px; /* forces horizontal scroll on narrow screens instead of squishing */
 }
 
 .report-table .report-cell {
@@ -181,6 +249,14 @@
   .trend-card {
     padding: 1rem;
   }
+  .range-picker-row {
+    gap: 1rem;
+  }
+  .range-picker-summary {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
 }
 
 @media (max-width: 480px) {
@@ -189,5 +265,14 @@
   }
   .attendance-report-page {
     gap: 1rem;
+  }
+  .range-picker-custom {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .range-picker-field select,
+  .range-picker-select-group select {
+    min-width: 0;
+    flex: 1;
   }
 }

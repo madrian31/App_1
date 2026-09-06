@@ -2,20 +2,20 @@ import type { MonthlyTrendPoint } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportTrendChartProps {
   data: MonthlyTrendPoint[];
-  year: number;
+  rangeLabel: string;
 }
 
-export default function AttendanceReportTrendChart({ data, year }: AttendanceReportTrendChartProps) {
+export default function AttendanceReportTrendChart({ data, rangeLabel }: AttendanceReportTrendChartProps) {
   return (
     <div className="members-card trend-card">
       <div className="trend-header">
         <i className="fa-solid fa-chart-column" aria-hidden="true" />
-        <h3>Monthly Attendance Trend — {year}</h3>
+        <h3>Attendance Trend — {rangeLabel}</h3>
       </div>
 
       <div className="trend-chart">
         {data.map((point) => (
-          <div key={point.month} className="trend-col">
+          <div key={point.key} className="trend-col">
             <div className="trend-bar-track">
               {point.percent > 0 && (
                 <div

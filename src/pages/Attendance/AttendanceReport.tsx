@@ -1,5 +1,6 @@
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useMembersAttendanceReport from "../../hooks/useMembersAttendanceReport";
+import AttendanceReportRangePicker from "../../components/attendance/AttendanceReportRangePicker";
 import AttendanceReportKpiStrip from "../../components/attendance/AttendanceReportKpiStrip";
 import AttendanceReportTrendChart from "../../components/attendance/AttendanceReportTrendChart";
 import AttendanceReportTable from "../../components/attendance/AttendanceReportTable";
@@ -9,12 +10,16 @@ import "./attendanceReport.css";
 export default function AttendanceReport() {
   const {
     loading,
-    viewYear,
-    goPrevYear,
-    goNextYear,
+    preset,
+    setPreset,
+    customFrom,
+    customTo,
+    setCustomFrom,
+    setCustomTo,
+    rangeLabel,
+    totalSundaysInRange,
+    monthLabels,
     sundayCounts,
-    totalSundaysInYear,
-    monthsShort,
     search,
     onSearchChange,
     paginatedRows,
@@ -36,21 +41,28 @@ export default function AttendanceReport() {
       <main style={{ flex: 1, padding: "2rem", background: "#ededed" }}>
         <div className="page attendance-report-page">
           <p className="report-eyebrow">Attendance Report</p>
-          <h1 className="report-title">Yearly Attendance Summary</h1>
+          <h1 className="report-title">Attendance Summary</h1>
+
+          <AttendanceReportRangePicker
+            preset={preset}
+            onPresetChange={setPreset}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+            rangeLabel={rangeLabel}
+            totalSundaysInRange={totalSundaysInRange}
+          />
 
           <AttendanceReportKpiStrip {...kpis} />
 
-          <AttendanceReportTrendChart data={monthlyTrend} year={viewYear} />
+          <AttendanceReportTrendChart data={monthlyTrend} rangeLabel={rangeLabel} />
 
           <AttendanceReportTable
             rows={paginatedRows}
             sundayCounts={sundayCounts}
-            monthsShort={monthsShort}
+            monthLabels={monthLabels}
             loading={loading}
-            viewYear={viewYear}
-            totalSundaysInYear={totalSundaysInYear}
-            goPrevYear={goPrevYear}
-            goNextYear={goNextYear}
             search={search}
             onSearchChange={onSearchChange}
             filteredCount={filteredCount}

@@ -1,14 +1,10 @@
-import type { MemberYearRow } from "../../hooks/useMembersAttendanceReport";
+import type { MemberRangeRow } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportTableProps {
-  rows: MemberYearRow[];
+  rows: MemberRangeRow[];
   sundayCounts: number[];
-  monthsShort: string[];
+  monthLabels: string[];
   loading: boolean;
-  viewYear: number;
-  totalSundaysInYear: number;
-  goPrevYear: () => void;
-  goNextYear: () => void;
   search: string;
   onSearchChange: (value: string) => void;
   filteredCount: number;
@@ -24,12 +20,8 @@ interface AttendanceReportTableProps {
 export default function AttendanceReportTable({
   rows,
   sundayCounts,
-  monthsShort,
+  monthLabels,
   loading,
-  viewYear,
-  totalSundaysInYear,
-  goPrevYear,
-  goNextYear,
   search,
   onSearchChange,
   filteredCount,
@@ -41,24 +33,11 @@ export default function AttendanceReportTable({
   goNext,
   goLast,
 }: AttendanceReportTableProps) {
-  const colCount = monthsShort.length + 3; // Member + 12 months + Total + % + Status
+  const colCount = monthLabels.length + 3; // Member + selected months + Total + % + Status
 
   return (
     <div className="members-card">
       <div className="toolbar attendance-toolbar">
-        <div className="attendance-month-nav">
-          <button className="nav-btn" aria-label="Previous year" onClick={goPrevYear}>
-            <i className="fa-solid fa-chevron-left" aria-hidden="true" />
-          </button>
-          <span className="period-label">
-            {viewYear}
-            <span className="badge badge-category attendance-count-badge">{totalSundaysInYear} Sundays</span>
-          </span>
-          <button className="nav-btn" aria-label="Next year" onClick={goNextYear}>
-            <i className="fa-solid fa-chevron-right" aria-hidden="true" />
-          </button>
-        </div>
-
         <div className="attendance-search-wrap">
           <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
           <input
@@ -75,8 +54,8 @@ export default function AttendanceReportTable({
           <thead>
             <tr>
               <th className="member-col">Member</th>
-              {monthsShort.map((label) => (
-                <th key={label}>{label}</th>
+              {monthLabels.map((label, i) => (
+                <th key={`${label}-${i}`}>{label}</th>
               ))}
               <th>Total</th>
               <th>%</th>
@@ -107,9 +86,9 @@ export default function AttendanceReportTable({
                   <td className="member-col">
                     <span className="member-name">{row.name}</span>
                   </td>
-                  {row.perMonth.map((attended, month) => (
-                    <td key={month} className="report-cell">
-                      {attended}/{sundayCounts[month]}
+                  {row.perMonth.map((attended, i) => (
+                    <td key={i} className="report-cell">
+                      {attended}/{sundayCounts[i]}
                     </td>
                   ))}
                   <td className="total-col">
