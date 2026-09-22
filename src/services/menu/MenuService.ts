@@ -39,7 +39,7 @@ export class MenuService implements IMenuService {
             ]
         },
 
-       {
+        {
             sortOrder: 50, name: 'Sunday School', iconClass: 'fa-solid fa-chalkboard-user', path: '',
             subMenuItems: [
                 { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolKidsMembers' },
@@ -47,6 +47,23 @@ export class MenuService implements IMenuService {
                 { sortOrder: 53, name: 'Savings', iconClass: 'fa-solid fa-piggy-bank', path: '/SundaySchool' },
                 { sortOrder: 54, name: 'Ledger', iconClass: 'fa-solid fa-book', path: '/ledger/sundaySchool' },
                 { sortOrder: 55, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/SundaySchoolReport' },
+            ]
+        },
+
+        {
+            sortOrder: 56, name: 'Finance', iconClass: 'fa-solid fa-money-bill-trend-up', path: '',
+            subMenuItems: [
+                { sortOrder: 57, name: 'Tithes', iconClass: 'fa-solid fa-hand-holding-dollar', path: '/Finance/Tithes' },
+                { sortOrder: 58, name: 'Offerings', iconClass: 'fa-solid fa-gift', path: '/Finance/Offerings' },
+                {
+                    sortOrder: 59, name: 'Monthly Expenses', iconClass: 'fa-solid fa-file-invoice-dollar', path: '',
+                    subMenuItems: [
+                        { sortOrder: 591, name: 'Electricity', iconClass: 'fa-solid fa-bolt', path: '/Finance/Expenses/Electricity' },
+                        { sortOrder: 592, name: 'Internet', iconClass: 'fa-solid fa-wifi', path: '/Finance/Expenses/Internet' },
+                        { sortOrder: 593, name: 'Water', iconClass: 'fa-solid fa-droplet', path: '/Finance/Expenses/Water' },
+                    ]
+                },
+                { sortOrder: 594, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/Finance/Report' },
             ]
         },
 
@@ -138,6 +155,10 @@ export class MenuService implements IMenuService {
     }
 
     visitation(sortOrder: number): MenuItem {
+        return this.findMenuItem(sortOrder) ?? this.menuItems[0];
+    }
+
+    finance(sortOrder: number): MenuItem {
         return this.findMenuItem(sortOrder) ?? this.menuItems[0];
     }
 }
