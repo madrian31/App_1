@@ -332,3 +332,43 @@
     color: var(--success);
     border: 1px solid #a7f3d0;
 }
+
+/* =========================================================
+   Auto-Generate modal — "Include in rotation" checklist
+   ========================================================= */
+.autogen-pool-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.autogen-pool-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.autogen-pool-toolbar .search-wrap {
+  flex: 1 1 180px;
+}
+
+.autogen-pool-tags {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.autogen-pool-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--sidebar-tint, #eef0ff);
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.modal-actions.pledger-checklist-footer {
+  margin-top: 14px;
+}

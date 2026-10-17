@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { getAllMembers } from "../services/members/memberService/membersService";
+import { getAllMembers, updateMember } from "../services/members/memberService/membersService";
 import { getLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
 import { getRotationQueue, seedRotationQueueIfEmpty, saveRotationQueue } from "../services/rotationQueue/rotationQueueService";
 import { getLineUpsInRange, saveLineUp } from "../services/programLineUp/programLineUpService";
 import { generateLineUpBatch, type QueueSnapshot } from "../services/programLineUp/lineUpGeneratorServices";
-import { isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember } from "../types/member";
+import { isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember, isLineUpPoolMember } from "../types/member";
 import type { RotationRole } from "../types/rotationQueue";
 
 const DEFAULT_CATEGORIES = ["Men", "Women", "Youth Boys", "Youth Girls", "Young Adult/Young Professional"];
@@ -26,7 +26,13 @@ export default function useAutoGenerateLineUps(currentUser: string) {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function generate(dateFrom: string, dateTo: string): Promise<AutoGenerateResult | null> {
+  /** `excludedIds`: members left unchecked in the modal. Saved to each member
+   *  (only those whose flag changed) so the next run remembers the choice. */
+  async function generate(
+    dateFrom: string,
+    dateTo: string,
+    excludedIds: string[] = []
+  ): Promise<AutoGenerateResult | null> {
     setGenerating(true);
     setError(null);
     try {
@@ -35,6 +41,14 @@ export default function useAutoGenerateLineUps(currentUser: string) {
         seedLookupListIfEmpty("category", DEFAULT_CATEGORIES).then(() => getLookupList("category")),
         getLineUpsInRange(dateFrom, dateTo),
       ]);
+
+      const excluded = new Set(excludedIds);
+      await Promise.all(
+        members
+          .filter(isLineUpPoolMember)
+          .filter((m) => Boolean(m.excludeFromAutoLineUp) !== excluded.has(m.id))
+          .map((m) => updateMember(m.id, { excludeFromAutoLineUp: excluded.has(m.id) }))
+      );
 
       const councilIds = members.filter(isCouncilPoolMember).map((m) => m.id);
       const workerIds = members.filter(isWorkerPoolMember).map((m) => m.id);
@@ -65,7 +79,8 @@ export default function useAutoGenerateLineUps(currentUser: string) {
         categoryOptions,
         startingQueues,
         existingDates,
-        currentUser
+        currentUser,
+        excluded
       );
 
       // Persist every newly generated entry, then persist the final queue

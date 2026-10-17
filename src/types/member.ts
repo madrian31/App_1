@@ -38,6 +38,10 @@ export interface Member {
   // ── Program Line-up fields (rotation pools) ──
   isCouncilMember: boolean;
   isWorker: boolean;
+  // true = unchecked in the Auto-Generate modal: still in the rotation
+  // queues (keeps their place), but skipped when line-ups are auto-generated.
+  // Stored as an exclusion so existing members default to included.
+  excludeFromAutoLineUp?: boolean;
 
   // ── Wedding Anniversary ──
   // ISO date string. Populated by the "BIRTHDAYS & ANNIVERSARIES" sheet import
@@ -67,6 +71,11 @@ export function isWorkerPoolMember(m: Member): boolean {
  *  even if that person is also Youth and/or Council. */
 export function isWedPresiderPoolMember(m: Member): boolean {
   return (isCouncilPoolMember(m) || Boolean(m.category?.startsWith("Youth"))) && !isWorkerPoolMember(m);
+}
+
+/** Anyone the auto-generator could assign as Presider or Speaker. */
+export function isLineUpPoolMember(m: Member): boolean {
+  return isCouncilPoolMember(m) || isWorkerPoolMember(m) || isWedPresiderPoolMember(m);
 }
 
 export interface MonthlyCelebrant {

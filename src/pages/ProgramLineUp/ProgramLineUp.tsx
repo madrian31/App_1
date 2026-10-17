@@ -83,8 +83,8 @@ export default function ProgramLineUp() {
     setActiveReassign(null);
   }
 
-  async function handleAutoGenerate(dateFrom: string, dateTo: string) {
-    const result = await generate(dateFrom, dateTo);
+  async function handleAutoGenerate(dateFrom: string, dateTo: string, excludedIds: string[]) {
+    const result = await generate(dateFrom, dateTo, excludedIds);
     setShowAutoGenerate(false);
     if (result) {
       navigate(`/ProgramLineUpSchedule?from=${dateFrom.slice(0, 7)}&to=${dateTo.slice(0, 7)}`);

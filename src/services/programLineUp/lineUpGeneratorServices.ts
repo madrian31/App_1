@@ -24,12 +24,18 @@ function nameFor(members: Member[], id: string): string {
   return m ? `${m.firstName} ${m.lastName}` : id;
 }
 
-/** Takes the front of a queue and returns the advanced version (front moved
- *  to the back) alongside the picked id. Returns null if the queue is empty
- *  — there's nothing eligible to assign for that role. */
-function pickAndAdvance(queue: string[]): { current: string; rest: string[] } | null {
-  if (queue.length === 0) return null;
-  const [current, ...rest] = queue;
+/** Takes the first non-excluded id in a queue and returns the advanced
+ *  version (that id moved to the back) alongside the picked id. Excluded ids
+ *  stay where they are, so they keep their turn if they're re-included later.
+ *  Returns null if nobody in the queue is eligible to assign for that role. */
+function pickAndAdvance(
+  queue: string[],
+  excluded: Set<string> = new Set()
+): { current: string; rest: string[] } | null {
+  const index = queue.findIndex((id) => !excluded.has(id));
+  if (index === -1) return null;
+  const current = queue[index];
+  const rest = [...queue.slice(0, index), ...queue.slice(index + 1)];
   return { current, rest: [...rest, current] };
 }
 
@@ -55,7 +61,8 @@ export function generateLineUpBatch(
   categoryOptions: string[],
   startingQueues: QueueSnapshot,
   existingDates: Set<string>,
-  currentUser: string
+  currentUser: string,
+  excludedMemberIds: Set<string> = new Set()
 ): GenerateBatchResult {
   const dates = getServiceDatesInRange(dateFrom, dateTo);
   const queues: QueueSnapshot = { ...startingQueues };
@@ -72,8 +79,8 @@ export function generateLineUpBatch(
     const programType = resolveProgramType(date);
 
     if (programType === "prayerMeeting") {
-      const presiderPick = pickAndAdvance(queues.wedPresiderPool ?? []);
-      const speakerPick = pickAndAdvance(queues.presiderCouncil ?? []); // Wed speaker uses the Council pool
+      const presiderPick = pickAndAdvance(queues.wedPresiderPool ?? [], excludedMemberIds);
+      const speakerPick = pickAndAdvance(queues.presiderCouncil ?? [], excludedMemberIds); // Wed speaker uses the Council pool
       if (!presiderPick || !speakerPick) {
         skippedDates.push(date);
         continue;
@@ -91,8 +98,8 @@ export function generateLineUpBatch(
         dateAdded: nowISO,
       });
     } else {
-      const presiderPick = pickAndAdvance(queues.presiderCouncil ?? []);
-      const speakerPick = pickAndAdvance(queues.speakerWorker ?? []);
+      const presiderPick = pickAndAdvance(queues.presiderCouncil ?? [], excludedMemberIds);
+      const speakerPick = pickAndAdvance(queues.speakerWorker ?? [], excludedMemberIds);
       if (!presiderPick || !speakerPick) {
         skippedDates.push(date);
         continue;
