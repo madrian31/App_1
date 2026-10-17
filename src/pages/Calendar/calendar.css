@@ -114,13 +114,13 @@
     flex-wrap: wrap;
 }
 
-.search-wrap {
+.calendar-page .search-wrap {
     position: relative;
     flex: 1;
     min-width: 200px;
 }
 
-.search-wrap i.fa-magnifying-glass {
+.calendar-page .search-wrap i.fa-magnifying-glass {
     position: absolute;
     left: 12px;
     top: 50%;
