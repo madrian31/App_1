@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useMembers, { ACTIVE_WINDOW_MONTHS, type ActivityFilter } from "../../hooks/useMembers";
+import useMembers, { ALL_CATEGORIES, UNCATEGORIZED } from "../../hooks/useMembers";
 import PageHeader from "../../components/members/PageHeader";
 import MembersToolbar, { type FilterOption } from "../../components/members/MembersToolbar";
 import MembersTable from "../../components/members/MembersTable";
@@ -12,12 +12,6 @@ import "./members.css";
 // TODO: replace with the actual logged-in user once auth/session wiring is in place.
 const CURRENT_USER = "Unknown";
 
-const ACTIVITY_FILTER_OPTIONS: FilterOption<ActivityFilter>[] = [
-  { value: "all", label: "All Members" },
-  { value: "active", label: `Active (last ${ACTIVE_WINDOW_MONTHS} months)` },
-  { value: "inactive", label: "Inactive" },
-];
-
 export default function Members() {
   const navigate = useNavigate();
   const {
@@ -27,6 +21,8 @@ export default function Members() {
     filteredCount,
     search,
     filter,
+    categories,
+    hasUncategorized,
     pageSize,
     currentPage,
     totalPages,
@@ -42,6 +38,12 @@ export default function Members() {
     archiveMember,
     refetch,
   } = useMembers();
+
+  const categoryFilterOptions: FilterOption<string>[] = [
+    { value: ALL_CATEGORIES, label: "All Departments" },
+    ...categories.map((c) => ({ value: c, label: c })),
+    ...(hasUncategorized ? [{ value: UNCATEGORIZED, label: "Uncategorized" }] : []),
+  ];
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -60,7 +62,7 @@ export default function Members() {
             onSearchChange={onSearchChange}
             filter={filter}
             onFilterChange={onFilterChange}
-            filterOptions={ACTIVITY_FILTER_OPTIONS}
+            filterOptions={categoryFilterOptions}
           />
 
           <div className="members-card">

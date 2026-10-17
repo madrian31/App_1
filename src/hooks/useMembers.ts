@@ -5,7 +5,6 @@ import {
     archiveMember as archiveMemberService,
     updateMember,
 } from "../services/members/memberService/membersService";
-import { getRecentAttendeeIds } from "../services/attendance/memberActivityService";
 
 export function initials(
     m: Pick<Member, "firstName" | "lastName">
@@ -15,10 +14,9 @@ export function initials(
 
 export type PledgerFilter = "all" | "yes" | "no";
 
-/** "active" = marked present at least once in the last ACTIVE_WINDOW_MONTHS months. */
-export type ActivityFilter = "all" | "active" | "inactive";
-
-export const ACTIVE_WINDOW_MONTHS = 3;
+/** Category filter: "all", UNCATEGORIZED, or a category name (e.g. "Women"). */
+export const ALL_CATEGORIES = "all";
+export const UNCATEGORIZED = "__uncategorized__";
 
 export interface UseMembersOptions {
     pledgersOnly?: boolean;
@@ -30,7 +28,10 @@ export interface UseMembersResult {
     activeCount: number;
     filteredCount: number;
     search: string;
-    filter: ActivityFilter;
+    filter: string;
+    /** Categories in use among listed members, alphabetical. */
+    categories: string[];
+    hasUncategorized: boolean;
     pageSize: number;
     currentPage: number;
     totalPages: number;
@@ -38,7 +39,7 @@ export interface UseMembersResult {
     toast: string | null;
 
     onSearchChange: (value: string) => void;
-    onFilterChange: (value: ActivityFilter) => void;
+    onFilterChange: (value: string) => void;
     onPageSizeChange: (size: number) => void;
 
     goFirst: () => void;
@@ -62,8 +63,7 @@ export default function useMembers(
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
-    const [filter, setFilter] = useState<ActivityFilter>("all");
-    const [recentAttendeeIds, setRecentAttendeeIds] = useState<Set<string>>(new Set());
+    const [filter, setFilter] = useState<string>(ALL_CATEGORIES);
 
     const [pageSize, setPageSize] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
@@ -75,16 +75,8 @@ export default function useMembers(
         setLoading(true);
 
         try {
-            const [data, attendeeIds] = await Promise.all([
-                getAllMembers(),
-                // Non-fatal: if attendance can't load, the list still shows.
-                getRecentAttendeeIds(ACTIVE_WINDOW_MONTHS).catch((err) => {
-                    console.error("Failed to load recent attendance:", err);
-                    return new Set<string>();
-                }),
-            ]);
+            const data = await getAllMembers();
             setMembers(data);
-            setRecentAttendeeIds(attendeeIds);
         } catch (err) {
             console.error("Failed to fetch members:", err);
         } finally {
@@ -105,9 +97,10 @@ export default function useMembers(
             // Pledgers page restriction
             if (pledgersOnly && !m.isPledger) return false;
 
-            // Activity filter
-            if (filter === "active" && !recentAttendeeIds.has(m.id)) return false;
-            if (filter === "inactive" && recentAttendeeIds.has(m.id)) return false;
+            // Category filter
+            const category = (m.category ?? "").trim();
+            if (filter === UNCATEGORIZED && category) return false;
+            if (filter !== ALL_CATEGORIES && filter !== UNCATEGORIZED && category !== filter) return false;
 
             // Search
             const fullName =
@@ -122,7 +115,18 @@ export default function useMembers(
 
             return true;
         });
-    }, [members, search, filter, pledgersOnly, recentAttendeeIds]);
+    }, [members, search, filter, pledgersOnly]);
+
+    // Dropdown options come from the data, so only categories someone actually
+    // has are offered (archived members and visitors don't count).
+    const { categories, hasUncategorized } = useMemo(() => {
+        const listed = members.filter((m) => !m.isArchived && !m.isVisitor);
+        const set = new Set(listed.map((m) => (m.category ?? "").trim()).filter(Boolean));
+        return {
+            categories: Array.from(set).sort((a, b) => a.localeCompare(b)),
+            hasUncategorized: listed.some((m) => !(m.category ?? "").trim()),
+        };
+    }, [members]);
 
     const totalPages = Math.max(
         1,
@@ -243,7 +247,7 @@ export default function useMembers(
     }, []);
 
     const onFilterChange = useCallback(
-        (value: ActivityFilter) => {
+        (value: string) => {
             setFilter(value);
             setCurrentPage(1);
         },
@@ -288,6 +292,8 @@ export default function useMembers(
         filteredCount: filtered.length,
         search,
         filter,
+        categories,
+        hasUncategorized,
         pageSize,
         currentPage,
         totalPages,
