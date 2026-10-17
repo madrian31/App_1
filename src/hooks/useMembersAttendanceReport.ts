@@ -7,6 +7,9 @@ const MEMBERS_COLLECTION = "members";
 const ATTENDANCE_COLLECTION = "membersAttendance";
 const PAGE_SIZE = 10;
 
+/** Missing this many of the most recent Sundays in a row flags a member for follow-up. */
+export const FOLLOW_UP_MISSED_SUNDAYS = 3;
+
 export const MONTHS_SHORT = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
@@ -22,7 +25,7 @@ export const KPI_FILTER_LABELS: Record<KpiFilter, string> = {
   inactive: "Inactive This Month",
   today: "Present Today",
   perfect: "Perfect Attendance",
-  followup: "Needs Follow-up",
+  followup: `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays)`,
 };
 
 export type ReportPreset ="thisMonth" | "last3Months" | "thisQuarter" | "thisYear" | "custom";
@@ -51,6 +54,8 @@ export interface MemberRangeRow {
 export interface MonthlyTrendPoint {
   key: string;
   label: string;
+  /** false for months with no Sundays yet (still in the future) — nothing to click. */
+  hasData: boolean;
   attended: number;
   possible: number;
   percent: number;
@@ -177,11 +182,19 @@ export default function useMembersAttendanceReport() {
 
   const [search, setSearch] = useState("");
   const [kpiFilter, setKpiFilter] = useState<KpiFilter | null>(null);
+  // Month clicked on the trend chart ("year-month" key). Only one of
+  // kpiFilter / monthFilter is ever set — picking one clears the other.
+  const [monthFilter, setMonthFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, kpiFilter, preset, customFrom, customTo]);
+  }, [search, kpiFilter, monthFilter, preset, customFrom, customTo]);
+
+  // A clicked month may fall outside a newly selected range.
+  useEffect(() => {
+    setMonthFilter(null);
+  }, [monthsSignature]);
 
   // Active members only.
   useEffect(() => {
@@ -324,6 +337,19 @@ export default function useMembersAttendanceReport() {
     return f === l ? f : `${f} – ${l}`;
   }, [months]);
 
+  // The most recent Sundays that have already happened inside the range,
+  // newest first — used to spot members who've stopped coming.
+  const recentSundays = useMemo(() => {
+    const out: { key: string; day: number }[] = [];
+    for (let i = months.length - 1; i >= 0 && out.length < FOLLOW_UP_MISSED_SUNDAYS; i--) {
+      const days = getSundays(months[i].year, months[i].month, new Date());
+      for (let j = days.length - 1; j >= 0 && out.length < FOLLOW_UP_MISSED_SUNDAYS; j--) {
+        out.push({ key: monthKey(months[i]), day: days[j] });
+      }
+    }
+    return out;
+  }, [months]);
+
   const rows: MemberRangeRow[] = useMemo(() => {
     return members.map((m) => {
       const perMonth = months.map((p) => {
@@ -333,7 +359,11 @@ export default function useMembersAttendanceReport() {
       const totalAttended = perMonth.reduce((a, b) => a + b, 0);
       const totalPossible = totalSundaysInRange;
       const percent = totalPossible > 0 ? Math.round((totalAttended / totalPossible) * 100) : 0;
-      const absences = totalPossible - totalAttended;
+      // Absent on every one of the most recent Sundays — not total absences
+      // across the range, which flagged even 85%-attendance members.
+      const missedRecent =
+        recentSundays.length > 0 &&
+        recentSundays.every(({ key, day }) => !attendanceByMember[m.id]?.[key]?.[day]);
 
       return {
         id: m.id,
@@ -342,10 +372,10 @@ export default function useMembersAttendanceReport() {
         totalAttended,
         totalPossible,
         percent,
-        needsFollowUp: absences >= 3,
+        needsFollowUp: missedRecent,
       };
     });
-  }, [members, attendanceByMember, months, totalSundaysInRange]);
+  }, [members, attendanceByMember, months, totalSundaysInRange, recentSundays]);
 
   // One predicate per clickable KPI card — used for both the card's count and
   // the table filter, so the number on the card always matches the rows shown.
@@ -364,16 +394,36 @@ export default function useMembersAttendanceReport() {
     };
   }, [currentMonthAttendance, isTodaySunday, currentDay]);
 
+  const monthFilterIndex = monthFilter ? months.findIndex((p) => monthKey(p) === monthFilter) : -1;
+
+  /** Members marked present at least once in the given month of the range. */
+  const attendedInMonth = (key: string) => {
+    const i = months.findIndex((p) => monthKey(p) === key);
+    return i < 0 ? [] : rows.filter((r) => r.perMonth[i] > 0);
+  };
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     const out = rows.filter(
       (r) =>
         (!kpiFilter || kpiPredicates[kpiFilter](r)) &&
+        (monthFilterIndex < 0 || r.perMonth[monthFilterIndex] > 0) &&
         (!q || r.name.toLowerCase().includes(q))
     );
     if (kpiFilter === "rate") out.sort((a, b) => a.percent - b.percent || a.name.localeCompare(b.name));
     return out;
-  }, [rows, search, kpiFilter, kpiPredicates]);
+  }, [rows, search, kpiFilter, kpiPredicates, monthFilterIndex]);
+
+  const monthFilterLabel = (key: string) => {
+    const p = months.find((m) => monthKey(m) === key);
+    return p ? `Attended in ${MONTHS_SHORT[p.month]} ${p.year}` : "";
+  };
+
+  const filterLabel = kpiFilter
+    ? KPI_FILTER_LABELS[kpiFilter]
+    : monthFilterIndex >= 0 && monthFilter
+      ? monthFilterLabel(monthFilter)
+      : null;
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -399,7 +449,7 @@ export default function useMembersAttendanceReport() {
       const attended = rows.reduce((sum, r) => sum + r.perMonth[i], 0);
       const possible = sundayCounts[i] * members.length;
       const percent = possible > 0 ? Math.round((attended / possible) * 100) : 0;
-      return { key: monthKey(p), label: monthLabels[i], attended, possible, percent };
+      return { key: monthKey(p), label: monthLabels[i], hasData: sundayCounts[i] > 0, attended, possible, percent };
     });
   }, [months, rows, sundayCounts, members.length, monthLabels]);
 
@@ -423,7 +473,27 @@ export default function useMembersAttendanceReport() {
     kpiFilter,
     countForKpi: (filter: KpiFilter | null) => (filter ? rows.filter(kpiPredicates[filter]).length : rows.length),
     // Clicking the active card again (or "Total Members") clears the filter.
-    onKpiFilterChange: (next: KpiFilter | null) => setKpiFilter((cur) => (cur === next ? null : next)),
+    onKpiFilterChange: (next: KpiFilter | null) => {
+      setMonthFilter(null);
+      setKpiFilter((cur) => (cur === next ? null : next));
+    },
+
+    monthFilter,
+    monthFilterIndex,
+    countForMonth: (key: string) => attendedInMonth(key).length,
+    monthFilterLabel,
+    // Clicking the selected bar again clears it.
+    onMonthFilterChange: (next: string | null) => {
+      setKpiFilter(null);
+      setMonthFilter((cur) => (cur === next ? null : next));
+    },
+
+    /** Label of whichever filter (KPI card or chart month) is narrowing the table. */
+    filterLabel,
+    clearFilters: () => {
+      setKpiFilter(null);
+      setMonthFilter(null);
+    },
 
     paginatedRows,
     filteredCount: filteredRows.length,

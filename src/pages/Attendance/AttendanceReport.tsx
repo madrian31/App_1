@@ -27,6 +27,13 @@ export default function AttendanceReport() {
     kpiFilter,
     onKpiFilterChange,
     countForKpi,
+    monthFilter,
+    monthFilterIndex,
+    countForMonth,
+    monthFilterLabel,
+    onMonthFilterChange,
+    filterLabel,
+    clearFilters,
     paginatedRows,
     filteredCount,
     currentPage,
@@ -57,8 +64,26 @@ export default function AttendanceReport() {
       detail: next === "rate" ? `All ${people}, sorted by attendance %` : people,
     });
 
+    scrollToTable(!!next);
+  }
+
+  function selectMonth(key: string) {
+    const next = key === monthFilter ? null : key;
+    onMonthFilterChange(key);
+
+    const count = next ? countForMonth(next) : countForKpi(null);
+    setNotice({
+      id: Date.now(),
+      icon: next ? "fa-solid fa-calendar-check" : "fa-solid fa-people-group",
+      title: next ? `Showing: ${monthFilterLabel(next)}` : "Showing all members",
+      detail: `${count} member${count === 1 ? "" : "s"}`,
+    });
+    scrollToTable(!!next);
+  }
+
+  function scrollToTable(shouldScroll: boolean) {
     // The table sits below the chart — bring it into view so the click visibly does something.
-    if (next) {
+    if (shouldScroll) {
       tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }
@@ -84,7 +109,12 @@ export default function AttendanceReport() {
 
           <AttendanceReportKpiStrip {...kpis} activeFilter={kpiFilter} onFilterChange={selectKpi} />
 
-          <AttendanceReportTrendChart data={monthlyTrend} rangeLabel={rangeLabel} />
+          <AttendanceReportTrendChart
+            data={monthlyTrend}
+            rangeLabel={rangeLabel}
+            selectedKey={monthFilter}
+            onSelectMonth={selectMonth}
+          />
 
           <div ref={tableRef} className="report-table-anchor">
           <AttendanceReportTable
@@ -94,8 +124,9 @@ export default function AttendanceReport() {
             loading={loading}
             search={search}
             onSearchChange={onSearchChange}
-            kpiFilter={kpiFilter}
-            onClearKpiFilter={() => onKpiFilterChange(null)}
+            filterLabel={filterLabel}
+            onClearFilter={clearFilters}
+            highlightMonthIndex={monthFilterIndex}
             filteredCount={filteredCount}
             currentPage={currentPage}
             totalPages={totalPages}

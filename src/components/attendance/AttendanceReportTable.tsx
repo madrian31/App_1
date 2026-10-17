@@ -1,4 +1,4 @@
-import { KPI_FILTER_LABELS, type KpiFilter, type MemberRangeRow } from "../../hooks/useMembersAttendanceReport";
+import { FOLLOW_UP_MISSED_SUNDAYS, type MemberRangeRow } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportTableProps {
   rows: MemberRangeRow[];
@@ -7,8 +7,11 @@ interface AttendanceReportTableProps {
   loading: boolean;
   search: string;
   onSearchChange: (value: string) => void;
-  kpiFilter: KpiFilter | null;
-  onClearKpiFilter: () => void;
+  /** Label of the active KPI/month filter, shown as a removable chip. */
+  filterLabel: string | null;
+  onClearFilter: () => void;
+  /** Month column to highlight (index into monthLabels), or -1. */
+  highlightMonthIndex: number;
   filteredCount: number;
   currentPage: number;
   totalPages: number;
@@ -26,8 +29,9 @@ export default function AttendanceReportTable({
   loading,
   search,
   onSearchChange,
-  kpiFilter,
-  onClearKpiFilter,
+  filterLabel,
+  onClearFilter,
+  highlightMonthIndex,
   filteredCount,
   currentPage,
   totalPages,
@@ -52,10 +56,10 @@ export default function AttendanceReportTable({
           />
         </div>
 
-        {kpiFilter && (
+        {filterLabel && (
           <span className="report-filter-chip">
-            Showing: {KPI_FILTER_LABELS[kpiFilter]}
-            <button type="button" onClick={onClearKpiFilter} aria-label="Clear filter" title="Clear filter">
+            Showing: {filterLabel}
+            <button type="button" onClick={onClearFilter} aria-label="Clear filter" title="Clear filter">
               <i className="fa-solid fa-xmark" aria-hidden="true" />
             </button>
           </span>
@@ -68,7 +72,9 @@ export default function AttendanceReportTable({
             <tr>
               <th className="member-col">Member</th>
               {monthLabels.map((label, i) => (
-                <th key={`${label}-${i}`}>{label}</th>
+                <th key={`${label}-${i}`} className={i === highlightMonthIndex ? "report-col--highlight" : undefined}>
+                  {label}
+                </th>
               ))}
               <th>Total</th>
               <th>%</th>
@@ -90,7 +96,7 @@ export default function AttendanceReportTable({
                   <div className="empty-state">
                     <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
                     <p>
-                      {search || kpiFilter ? "No members match this filter." : "No members found."}
+                      {search || filterLabel ? "No members match this filter." : "No members found."}
                     </p>
                   </div>
                 </td>
@@ -102,7 +108,7 @@ export default function AttendanceReportTable({
                     <span className="member-name">{row.name}</span>
                   </td>
                   {row.perMonth.map((attended, i) => (
-                    <td key={i} className="report-cell">
+                    <td key={i} className={`report-cell${i === highlightMonthIndex ? " report-col--highlight" : ""}`}>
                       {attended}/{sundayCounts[i]}
                     </td>
                   ))}
@@ -112,7 +118,7 @@ export default function AttendanceReportTable({
                   <td className="report-cell">{row.percent}%</td>
                   <td>
                     {row.needsFollowUp ? (
-                      <span className="badge badge-followup">
+                      <span className="badge badge-followup" title={`Absent the last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays`}>
                         <i className="fa-solid fa-arrow-trend-down" aria-hidden="true" /> Follow-up
                       </span>
                     ) : (

@@ -1,4 +1,4 @@
-import type { KpiFilter } from "../../hooks/useMembersAttendanceReport";
+import { FOLLOW_UP_MISSED_SUNDAYS, type KpiFilter } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportKpiStripProps {
   totalMembers: number;
@@ -43,7 +43,7 @@ export default function AttendanceReportKpiStrip({
     { key: "inactive", icon: "fa-solid fa-calendar-xmark", tone: "gray", value: inactiveThisMonth, label: "Inactive This Month", filter: "inactive" },
     { key: "today", icon: "fa-solid fa-calendar-day", tone: "green", value: presentToday, label: "Present Today", filter: "today" },
     { key: "perfect", icon: "fa-solid fa-star", tone: "orange", value: perfectAttendance, label: "Perfect Attendance", filter: "perfect" },
-    { key: "followup", icon: "fa-solid fa-arrow-trend-down", tone: "red", value: needsFollowUp, label: "Needs Follow-up (3+ absences)", alert: true, filter: "followup" },
+    { key: "followup", icon: "fa-solid fa-arrow-trend-down", tone: "red", value: needsFollowUp, label: `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays)`, alert: true, filter: "followup" },
   ];
 
   return (

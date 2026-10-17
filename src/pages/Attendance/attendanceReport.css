@@ -204,6 +204,52 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  /* <button> reset */
+  font: inherit;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 2px 2px;
+  cursor: pointer;
+}
+
+.trend-col:hover:not(:disabled) .trend-bar {
+  background: #3b5bdb;
+}
+
+.trend-col:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.trend-col:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.trend-col--selected {
+  background: #eef2ff;
+}
+
+.trend-col--selected .trend-bar {
+  background: #1d4ed8;
+}
+
+.trend-col--selected .trend-label {
+  color: #1d4ed8;
+  font-weight: 700;
+}
+
+.trend-hint {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.report-col--highlight {
+  background: #eef2ff;
+  color: #1d4ed8;
+  font-weight: 700;
 }
 
 .trend-bar-track {
