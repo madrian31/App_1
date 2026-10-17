@@ -112,6 +112,35 @@
   border: 1px solid #f3c8c8;
 }
 
+/* Clickable cards are <button>s — reset native button styling. */
+.kpi-card--clickable {
+  font: inherit;
+  text-align: left;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.kpi-card--clickable.kpi-card--alert {
+  border-color: #f3c8c8;
+}
+
+.kpi-card--clickable:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.kpi-card--clickable:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.kpi-card--selected,
+.kpi-card--selected.kpi-card--alert {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
 .kpi-icon {
   width: 32px;
   height: 32px;
@@ -275,4 +304,83 @@
     min-width: 0;
     flex: 1;
   }
+}
+/* ── KPI filter chip (report table toolbar) ── */
+
+.report-table-anchor {
+  scroll-margin-top: 1rem;
+}
+
+.report-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: #e6f0ff;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.report-filter-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.report-filter-chip button:hover {
+  background: rgba(37, 99, 235, 0.15);
+}
+
+/* ── KPI click notice (center of screen) ── */
+
+.kpi-notice {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100vw - 32px);
+  padding: 16px 22px;
+  border-radius: 12px;
+  background: #171a23;
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.kpi-notice.show {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.kpi-notice > i {
+  font-size: 1.25rem;
+  color: #93c5fd;
+}
+
+.kpi-notice-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.kpi-notice-detail {
+  margin: 2px 0 0;
+  font-size: 0.8rem;
+  color: #c7cbd6;
 }

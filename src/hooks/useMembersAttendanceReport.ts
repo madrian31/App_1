@@ -12,7 +12,20 @@ export const MONTHS_SHORT = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export type ReportPreset = "thisMonth" | "last3Months" | "thisQuarter" | "thisYear" | "custom";
+/** KPI cards that act on the table when clicked. All of them filter, except
+ *  "rate", which keeps everyone but sorts by lowest attendance % first. */
+export type KpiFilter = "rate" | "active" | "inactive" | "today" | "perfect" | "followup";
+
+export const KPI_FILTER_LABELS: Record<KpiFilter, string> = {
+  rate: "Lowest Attendance Rate First",
+  active: "Active This Month",
+  inactive: "Inactive This Month",
+  today: "Present Today",
+  perfect: "Perfect Attendance",
+  followup: "Needs Follow-up",
+};
+
+export type ReportPreset ="thisMonth" | "last3Months" | "thisQuarter" | "thisYear" | "custom";
 
 export interface MonthPoint {
   year: number;
@@ -163,11 +176,12 @@ export default function useMembersAttendanceReport() {
   const [currentMonthAttendance, setCurrentMonthAttendance] = useState<Record<string, Record<number, boolean>>>({});
 
   const [search, setSearch] = useState("");
+  const [kpiFilter, setKpiFilter] = useState<KpiFilter | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, preset, customFrom, customTo]);
+  }, [search, kpiFilter, preset, customFrom, customTo]);
 
   // Active members only.
   useEffect(() => {
@@ -333,11 +347,33 @@ export default function useMembersAttendanceReport() {
     });
   }, [members, attendanceByMember, months, totalSundaysInRange]);
 
+  // One predicate per clickable KPI card — used for both the card's count and
+  // the table filter, so the number on the card always matches the rows shown.
+  const kpiPredicates = useMemo<Record<KpiFilter, (r: MemberRangeRow) => boolean>>(() => {
+    const isActive = (r: MemberRangeRow) => {
+      const days = currentMonthAttendance[r.id];
+      return !!days && Object.values(days).some(Boolean);
+    };
+    return {
+      rate: () => true,
+      active: isActive,
+      inactive: (r) => !isActive(r),
+      today: (r) => isTodaySunday && !!currentMonthAttendance[r.id]?.[currentDay],
+      perfect: (r) => r.totalPossible > 0 && r.totalAttended === r.totalPossible,
+      followup: (r) => r.needsFollowUp,
+    };
+  }, [currentMonthAttendance, isTodaySunday, currentDay]);
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => r.name.toLowerCase().includes(q));
-  }, [rows, search]);
+    const out = rows.filter(
+      (r) =>
+        (!kpiFilter || kpiPredicates[kpiFilter](r)) &&
+        (!q || r.name.toLowerCase().includes(q))
+    );
+    if (kpiFilter === "rate") out.sort((a, b) => a.percent - b.percent || a.name.localeCompare(b.name));
+    return out;
+  }, [rows, search, kpiFilter, kpiPredicates]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -345,18 +381,11 @@ export default function useMembersAttendanceReport() {
   const paginatedRows = filteredRows.slice(start, start + PAGE_SIZE);
 
   // ── KPIs ──
-  const activeThisMonth = members.filter((m) => {
-    const days = currentMonthAttendance[m.id];
-    return days && Object.values(days).some(Boolean);
-  }).length;
-  const inactiveThisMonth = members.length - activeThisMonth;
-
-  const presentToday = isTodaySunday
-    ? members.filter((m) => currentMonthAttendance[m.id]?.[currentDay]).length
-    : 0;
-
-  const perfectAttendance = rows.filter((r) => r.totalPossible > 0 && r.totalAttended === r.totalPossible).length;
-  const needsFollowUpCount = rows.filter((r) => r.needsFollowUp).length;
+  const activeThisMonth = rows.filter(kpiPredicates.active).length;
+  const inactiveThisMonth = rows.filter(kpiPredicates.inactive).length;
+  const presentToday = rows.filter(kpiPredicates.today).length;
+  const perfectAttendance = rows.filter(kpiPredicates.perfect).length;
+  const needsFollowUpCount = rows.filter(kpiPredicates.followup).length;
 
   const overallAttendanceRate =
     totalSundaysInRange > 0 && members.length > 0
@@ -390,6 +419,11 @@ export default function useMembersAttendanceReport() {
 
     search,
     onSearchChange: setSearch,
+
+    kpiFilter,
+    countForKpi: (filter: KpiFilter | null) => (filter ? rows.filter(kpiPredicates[filter]).length : rows.length),
+    // Clicking the active card again (or "Total Members") clears the filter.
+    onKpiFilterChange: (next: KpiFilter | null) => setKpiFilter((cur) => (cur === next ? null : next)),
 
     paginatedRows,
     filteredCount: filteredRows.length,

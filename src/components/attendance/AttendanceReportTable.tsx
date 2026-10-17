@@ -1,4 +1,4 @@
-import type { MemberRangeRow } from "../../hooks/useMembersAttendanceReport";
+import { KPI_FILTER_LABELS, type KpiFilter, type MemberRangeRow } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportTableProps {
   rows: MemberRangeRow[];
@@ -7,6 +7,8 @@ interface AttendanceReportTableProps {
   loading: boolean;
   search: string;
   onSearchChange: (value: string) => void;
+  kpiFilter: KpiFilter | null;
+  onClearKpiFilter: () => void;
   filteredCount: number;
   currentPage: number;
   totalPages: number;
@@ -24,6 +26,8 @@ export default function AttendanceReportTable({
   loading,
   search,
   onSearchChange,
+  kpiFilter,
+  onClearKpiFilter,
   filteredCount,
   currentPage,
   totalPages,
@@ -47,6 +51,15 @@ export default function AttendanceReportTable({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+
+        {kpiFilter && (
+          <span className="report-filter-chip">
+            Showing: {KPI_FILTER_LABELS[kpiFilter]}
+            <button type="button" onClick={onClearKpiFilter} aria-label="Clear filter" title="Clear filter">
+              <i className="fa-solid fa-xmark" aria-hidden="true" />
+            </button>
+          </span>
+        )}
       </div>
 
       <div className="table-scroll">
@@ -76,7 +89,9 @@ export default function AttendanceReportTable({
                 <td colSpan={colCount} className="empty-cell">
                   <div className="empty-state">
                     <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
-                    <p>{search ? "No results match your search." : "No members found."}</p>
+                    <p>
+                      {search || kpiFilter ? "No members match this filter." : "No members found."}
+                    </p>
                   </div>
                 </td>
               </tr>
