@@ -1,4 +1,4 @@
-import type { MonthPoint, ReportPreset } from "../../hooks/useMembersAttendanceReport";
+import { UNCATEGORIZED, type MonthPoint, type ReportPreset } from "../../hooks/useMembersAttendanceReport";
 
 const MONTHS_LONG = [
   "January", "February", "March", "April", "May", "June",
@@ -22,6 +22,11 @@ interface AttendanceReportRangePickerProps {
   onCustomToChange: (point: MonthPoint) => void;
   rangeLabel: string;
   totalSundaysInRange: number;
+  /** "" = all categories, UNCATEGORIZED = members with no category. */
+  category: string;
+  onCategoryChange: (category: string) => void;
+  categories: string[];
+  hasUncategorized: boolean;
 }
 
 function yearOptions(centerYear: number): number[] {
@@ -39,6 +44,10 @@ export default function AttendanceReportRangePicker({
   onCustomToChange,
   rangeLabel,
   totalSundaysInRange,
+  category,
+  onCategoryChange,
+  categories,
+  hasUncategorized,
 }: AttendanceReportRangePickerProps) {
   const years = yearOptions(new Date().getFullYear());
 
@@ -119,6 +128,19 @@ export default function AttendanceReportRangePicker({
             </div>
           </div>
         )}
+
+        <div className="range-picker-field">
+          <label htmlFor="report-category">Department</label>
+          <select id="report-category" value={category} onChange={(e) => onCategoryChange(e.target.value)}>
+            <option value="">All Departments</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+            {hasUncategorized && <option value={UNCATEGORIZED}>Uncategorized</option>}
+          </select>
+        </div>
 
         <div className="range-picker-summary">
           <span className="range-picker-label">{rangeLabel}</span>

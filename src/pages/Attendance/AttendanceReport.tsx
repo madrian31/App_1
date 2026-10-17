@@ -21,6 +21,9 @@ export default function AttendanceReport() {
     rangeLabel,
     totalSundaysInRange,
     monthLabels,
+    categoryFilter,
+    setCategoryFilter,
+    categoryOptions,
     sundayCounts,
     search,
     onSearchChange,
@@ -99,6 +102,10 @@ export default function AttendanceReport() {
             onCustomToChange={setCustomTo}
             rangeLabel={rangeLabel}
             totalSundaysInRange={totalSundaysInRange}
+            category={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+            categories={categoryOptions.categories}
+            hasUncategorized={categoryOptions.hasUncategorized}
           />
 
           <AttendanceReportKpiStrip {...kpis} activeFilter={kpiFilter} onFilterChange={selectKpi} focusLabel={focusLabel} />

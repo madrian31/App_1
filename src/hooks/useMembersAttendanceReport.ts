@@ -47,9 +47,13 @@ export interface MonthPoint {
   month: number; // 0-indexed, matching JS Date
 }
 
+/** Category filter value for members with no category set. */
+export const UNCATEGORIZED = "__uncategorized__";
+
 interface ReportMember {
   id: string;
   name: string;
+  category: string; // "" when not set
 }
 
 export interface MemberRangeRow {
@@ -180,7 +184,25 @@ export default function useMembersAttendanceReport() {
   const spansMultipleYears = months.length > 0 && months[0].year !== months[months.length - 1].year;
   const monthsSignature = months.map(monthKey).join(",");
 
-  const [members, setMembers] = useState<ReportMember[]>([]);
+  const [allMembers, setAllMembers] = useState<ReportMember[]>([]);
+  // Scopes the whole report (KPIs, chart, table) to one category, like Period
+  // scopes it to a date range. "" = all categories.
+  const [categoryFilter, setCategoryFilter] = useState("");
+
+  /** Categories actually in use, alphabetical; plus whether anyone has none. */
+  const categoryOptions = useMemo(() => {
+    const set = new Set(allMembers.map((m) => m.category).filter(Boolean));
+    return {
+      categories: Array.from(set).sort((a, b) => a.localeCompare(b)),
+      hasUncategorized: allMembers.some((m) => !m.category),
+    };
+  }, [allMembers]);
+
+  const members = useMemo(() => {
+    if (!categoryFilter) return allMembers;
+    if (categoryFilter === UNCATEGORIZED) return allMembers.filter((m) => !m.category);
+    return allMembers.filter((m) => m.category === categoryFilter);
+  }, [allMembers, categoryFilter]);
   const [loadingMembers, setLoadingMembers] = useState(true);
 
   // { [memberId]: { ["year-month"]: { [day]: boolean } } }
@@ -201,7 +223,7 @@ export default function useMembersAttendanceReport() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, kpiFilter, monthFilter, preset, customFrom, customTo]);
+  }, [search, kpiFilter, monthFilter, categoryFilter, preset, customFrom, customTo]);
 
   // A clicked month may fall outside a newly selected range.
   useEffect(() => {
@@ -224,10 +246,10 @@ export default function useMembersAttendanceReport() {
             .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
             .join(" ")
             .trim();
-          if (fullName) list.push({ id: docSnap.id, name: fullName });
+          if (fullName) list.push({ id: docSnap.id, name: fullName, category: (data.category ?? "").trim() });
         });
         list.sort((a, b) => a.name.localeCompare(b.name));
-        if (!cancelled) setMembers(list);
+        if (!cancelled) setAllMembers(list);
       } catch (err) {
         console.error("Failed to load members for attendance report:", err);
       } finally {
@@ -483,6 +505,10 @@ export default function useMembersAttendanceReport() {
     rangeLabel,
     totalSundaysInRange,
     monthLabels,
+
+    categoryFilter,
+    setCategoryFilter,
+    categoryOptions,
     sundayCounts,
 
     search,
