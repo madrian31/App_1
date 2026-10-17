@@ -19,14 +19,26 @@ export const MONTHS_SHORT = [
  *  "rate", which keeps everyone but sorts by lowest attendance % first. */
 export type KpiFilter = "rate" | "active" | "inactive" | "today" | "perfect" | "followup";
 
-export const KPI_FILTER_LABELS: Record<KpiFilter, string> = {
-  rate: "Lowest Attendance Rate First",
-  active: "Active This Month",
-  inactive: "Inactive This Month",
-  today: "Present Today",
-  perfect: "Perfect Attendance",
-  followup: `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays)`,
-};
+/** Label for a KPI filter. `focusLabel` ("Oct 2026") is set while a month is
+ *  selected on the trend chart — the cards then describe that month. */
+export function kpiLabel(filter: KpiFilter, focusLabel: string | null): string {
+  switch (filter) {
+    case "rate":
+      return focusLabel ? `Lowest Attendance First (${focusLabel})` : "Lowest Attendance Rate First";
+    case "active":
+      return focusLabel ? `Attended in ${focusLabel}` : "Active This Month";
+    case "inactive":
+      return focusLabel ? `Absent all of ${focusLabel}` : "Inactive This Month";
+    case "today":
+      return "Present Today";
+    case "perfect":
+      return focusLabel ? `Perfect Attendance (${focusLabel})` : "Perfect Attendance";
+    case "followup":
+      return focusLabel
+        ? `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays up to ${focusLabel})`
+        : `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays)`;
+  }
+}
 
 export type ReportPreset ="thisMonth" | "last3Months" | "thisQuarter" | "thisYear" | "custom";
 
@@ -182,8 +194,8 @@ export default function useMembersAttendanceReport() {
 
   const [search, setSearch] = useState("");
   const [kpiFilter, setKpiFilter] = useState<KpiFilter | null>(null);
-  // Month clicked on the trend chart ("year-month" key). Only one of
-  // kpiFilter / monthFilter is ever set — picking one clears the other.
+  // Month clicked on the trend chart ("year-month" key). Combines with
+  // kpiFilter: e.g. "inactive" + Oct = members absent all of October.
   const [monthFilter, setMonthFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -337,18 +349,26 @@ export default function useMembersAttendanceReport() {
     return f === l ? f : `${f} – ${l}`;
   }, [months]);
 
-  // The most recent Sundays that have already happened inside the range,
-  // newest first — used to spot members who've stopped coming.
+  // Month clicked on the trend chart, as an index into `months` (-1 = none).
+  // While set, the KPI cards and their table filters are about that month.
+  const monthFilterIndex = monthFilter ? months.findIndex((p) => monthKey(p) === monthFilter) : -1;
+  const focus = monthFilterIndex >= 0 ? months[monthFilterIndex] : null;
+  const focusLabel = focus ? `${MONTHS_SHORT[focus.month]} ${focus.year}` : null;
+
+  // The most recent Sundays that have already happened, newest first, ending at
+  // the focused month (or the end of the range) — used to spot members who've
+  // stopped coming.
   const recentSundays = useMemo(() => {
     const out: { key: string; day: number }[] = [];
-    for (let i = months.length - 1; i >= 0 && out.length < FOLLOW_UP_MISSED_SUNDAYS; i--) {
+    const endIndex = monthFilterIndex >= 0 ? monthFilterIndex : months.length - 1;
+    for (let i = endIndex; i >= 0 && out.length < FOLLOW_UP_MISSED_SUNDAYS; i--) {
       const days = getSundays(months[i].year, months[i].month, new Date());
       for (let j = days.length - 1; j >= 0 && out.length < FOLLOW_UP_MISSED_SUNDAYS; j--) {
         out.push({ key: monthKey(months[i]), day: days[j] });
       }
     }
     return out;
-  }, [months]);
+  }, [months, monthFilterIndex]);
 
   const rows: MemberRangeRow[] = useMemo(() => {
     return members.map((m) => {
@@ -380,50 +400,39 @@ export default function useMembersAttendanceReport() {
   // One predicate per clickable KPI card — used for both the card's count and
   // the table filter, so the number on the card always matches the rows shown.
   const kpiPredicates = useMemo<Record<KpiFilter, (r: MemberRangeRow) => boolean>>(() => {
-    const isActive = (r: MemberRangeRow) => {
-      const days = currentMonthAttendance[r.id];
-      return !!days && Object.values(days).some(Boolean);
-    };
+    const i = monthFilterIndex;
+    const isActive =
+      i >= 0
+        ? (r: MemberRangeRow) => r.perMonth[i] > 0
+        : (r: MemberRangeRow) => {
+            const days = currentMonthAttendance[r.id];
+            return !!days && Object.values(days).some(Boolean);
+          };
     return {
       rate: () => true,
       active: isActive,
       inactive: (r) => !isActive(r),
       today: (r) => isTodaySunday && !!currentMonthAttendance[r.id]?.[currentDay],
-      perfect: (r) => r.totalPossible > 0 && r.totalAttended === r.totalPossible,
+      perfect:
+        i >= 0
+          ? (r) => sundayCounts[i] > 0 && r.perMonth[i] === sundayCounts[i]
+          : (r) => r.totalPossible > 0 && r.totalAttended === r.totalPossible,
       followup: (r) => r.needsFollowUp,
     };
-  }, [currentMonthAttendance, isTodaySunday, currentDay]);
-
-  const monthFilterIndex = monthFilter ? months.findIndex((p) => monthKey(p) === monthFilter) : -1;
-
-  /** Members marked present at least once in the given month of the range. */
-  const attendedInMonth = (key: string) => {
-    const i = months.findIndex((p) => monthKey(p) === key);
-    return i < 0 ? [] : rows.filter((r) => r.perMonth[i] > 0);
-  };
+  }, [currentMonthAttendance, isTodaySunday, currentDay, monthFilterIndex, sundayCounts]);
 
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     const out = rows.filter(
-      (r) =>
-        (!kpiFilter || kpiPredicates[kpiFilter](r)) &&
-        (monthFilterIndex < 0 || r.perMonth[monthFilterIndex] > 0) &&
-        (!q || r.name.toLowerCase().includes(q))
+      (r) => (!kpiFilter || kpiPredicates[kpiFilter](r)) && (!q || r.name.toLowerCase().includes(q))
     );
-    if (kpiFilter === "rate") out.sort((a, b) => a.percent - b.percent || a.name.localeCompare(b.name));
+    if (kpiFilter === "rate") {
+      const i = monthFilterIndex;
+      const rate = (r: MemberRangeRow) => (i >= 0 ? r.perMonth[i] / (sundayCounts[i] || 1) : r.percent);
+      out.sort((a, b) => rate(a) - rate(b) || a.name.localeCompare(b.name));
+    }
     return out;
-  }, [rows, search, kpiFilter, kpiPredicates, monthFilterIndex]);
-
-  const monthFilterLabel = (key: string) => {
-    const p = months.find((m) => monthKey(m) === key);
-    return p ? `Attended in ${MONTHS_SHORT[p.month]} ${p.year}` : "";
-  };
-
-  const filterLabel = kpiFilter
-    ? KPI_FILTER_LABELS[kpiFilter]
-    : monthFilterIndex >= 0 && monthFilter
-      ? monthFilterLabel(monthFilter)
-      : null;
+  }, [rows, search, kpiFilter, kpiPredicates, monthFilterIndex, sundayCounts]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -437,13 +446,6 @@ export default function useMembersAttendanceReport() {
   const perfectAttendance = rows.filter(kpiPredicates.perfect).length;
   const needsFollowUpCount = rows.filter(kpiPredicates.followup).length;
 
-  const overallAttendanceRate =
-    totalSundaysInRange > 0 && members.length > 0
-      ? Math.round(
-          (rows.reduce((sum, r) => sum + r.totalAttended, 0) / (totalSundaysInRange * members.length)) * 100
-        )
-      : 0;
-
   const monthlyTrend: MonthlyTrendPoint[] = useMemo(() => {
     return months.map((p, i) => {
       const attended = rows.reduce((sum, r) => sum + r.perMonth[i], 0);
@@ -452,6 +454,22 @@ export default function useMembersAttendanceReport() {
       return { key: monthKey(p), label: monthLabels[i], hasData: sundayCounts[i] > 0, attended, possible, percent };
     });
   }, [months, rows, sundayCounts, members.length, monthLabels]);
+
+  const overallAttendanceRate =
+    monthFilterIndex >= 0
+      ? monthlyTrend[monthFilterIndex]?.percent ?? 0
+      : totalSundaysInRange > 0 && members.length > 0
+        ? Math.round(
+            (rows.reduce((sum, r) => sum + r.totalAttended, 0) / (totalSundaysInRange * members.length)) * 100
+          )
+        : 0;
+
+  /** e.g. "Absent all of Oct 2026", "All members · Oct 2026", "All members". */
+  const filterSummary = kpiFilter
+    ? kpiLabel(kpiFilter, focusLabel)
+    : focusLabel
+      ? `All members · ${focusLabel}`
+      : "All members";
 
   return {
     loading: loadingMembers || loadingAttendance,
@@ -471,29 +489,25 @@ export default function useMembersAttendanceReport() {
     onSearchChange: setSearch,
 
     kpiFilter,
-    countForKpi: (filter: KpiFilter | null) => (filter ? rows.filter(kpiPredicates[filter]).length : rows.length),
-    // Clicking the active card again (or "Total Members") clears the filter.
-    onKpiFilterChange: (next: KpiFilter | null) => {
-      setMonthFilter(null);
-      setKpiFilter((cur) => (cur === next ? null : next));
-    },
+    // Clicking the selected card again (or "Total Members") clears the card
+    // filter. The selected month, if any, stays.
+    onKpiFilterChange: (next: KpiFilter | null) => setKpiFilter((cur) => (cur === next ? null : next)),
 
     monthFilter,
     monthFilterIndex,
-    countForMonth: (key: string) => attendedInMonth(key).length,
-    monthFilterLabel,
-    // Clicking the selected bar again clears it.
-    onMonthFilterChange: (next: string | null) => {
-      setKpiFilter(null);
-      setMonthFilter((cur) => (cur === next ? null : next));
+    /** "Oct 2026" while a month is selected on the chart, otherwise null. */
+    focusLabel,
+    // Clicking the selected bar again clears it. Picking a month with no card
+    // selected defaults to "who attended that month".
+    onMonthFilterChange: (key: string) => {
+      const selecting = key !== monthFilter;
+      setMonthFilter(selecting ? key : null);
+      if (selecting && !kpiFilter) setKpiFilter("active");
     },
 
-    /** Label of whichever filter (KPI card or chart month) is narrowing the table. */
-    filterLabel,
-    clearFilters: () => {
-      setKpiFilter(null);
-      setMonthFilter(null);
-    },
+    filterSummary,
+    clearKpiFilter: () => setKpiFilter(null),
+    clearMonthFilter: () => setMonthFilter(null),
 
     paginatedRows,
     filteredCount: filteredRows.length,

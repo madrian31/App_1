@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useMembersAttendanceReport, { KPI_FILTER_LABELS, type KpiFilter } from "../../hooks/useMembersAttendanceReport";
+import useMembersAttendanceReport, { kpiLabel, type KpiFilter } from "../../hooks/useMembersAttendanceReport";
 import KpiFilterNotice, { type KpiNotice } from "../../components/attendance/KpiFilterNotice";
 import AttendanceReportRangePicker from "../../components/attendance/AttendanceReportRangePicker";
 import AttendanceReportKpiStrip from "../../components/attendance/AttendanceReportKpiStrip";
@@ -26,14 +26,13 @@ export default function AttendanceReport() {
     onSearchChange,
     kpiFilter,
     onKpiFilterChange,
-    countForKpi,
     monthFilter,
     monthFilterIndex,
-    countForMonth,
-    monthFilterLabel,
+    focusLabel,
     onMonthFilterChange,
-    filterLabel,
-    clearFilters,
+    filterSummary,
+    clearKpiFilter,
+    clearMonthFilter,
     paginatedRows,
     filteredCount,
     currentPage,
@@ -49,44 +48,39 @@ export default function AttendanceReport() {
 
   const tableRef = useRef<HTMLDivElement>(null);
   const [notice, setNotice] = useState<KpiNotice | null>(null);
+  // Set by a card/bar click; the effect below announces the resulting filter
+  // once the hook has recomputed, so the count always matches the table.
+  const pendingNotice = useRef(false);
 
-  function selectKpi(filter: KpiFilter | null) {
-    // Clicking the selected card again clears it, same as the hook does.
-    const next = filter === kpiFilter ? null : filter;
-    onKpiFilterChange(filter);
-
-    const count = countForKpi(next);
-    const people = `${count} member${count === 1 ? "" : "s"}`;
+  useEffect(() => {
+    if (!pendingNotice.current) return;
+    pendingNotice.current = false;
+    const filtered = !!kpiFilter || !!monthFilter;
     setNotice({
       id: Date.now(),
-      icon: next ? "fa-solid fa-filter" : "fa-solid fa-people-group",
-      title: next ? `Showing: ${KPI_FILTER_LABELS[next]}` : "Showing all members",
-      detail: next === "rate" ? `All ${people}, sorted by attendance %` : people,
+      icon: monthFilter ? "fa-solid fa-calendar-check" : filtered ? "fa-solid fa-filter" : "fa-solid fa-people-group",
+      title: `Showing: ${filterSummary}`,
+      detail: `${filteredCount} member${filteredCount === 1 ? "" : "s"}${kpiFilter === "rate" ? ", sorted by attendance %" : ""}`,
     });
+    if (filtered) tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [kpiFilter, monthFilter, filterSummary, filteredCount]);
 
-    scrollToTable(!!next);
+  function selectKpi(filter: KpiFilter | null) {
+    // "Total Members" with no card selected changes nothing — no notice to show.
+    if (filter === null && kpiFilter === null) return;
+    pendingNotice.current = true;
+    onKpiFilterChange(filter);
   }
 
   function selectMonth(key: string) {
-    const next = key === monthFilter ? null : key;
+    pendingNotice.current = true;
     onMonthFilterChange(key);
-
-    const count = next ? countForMonth(next) : countForKpi(null);
-    setNotice({
-      id: Date.now(),
-      icon: next ? "fa-solid fa-calendar-check" : "fa-solid fa-people-group",
-      title: next ? `Showing: ${monthFilterLabel(next)}` : "Showing all members",
-      detail: `${count} member${count === 1 ? "" : "s"}`,
-    });
-    scrollToTable(!!next);
   }
 
-  function scrollToTable(shouldScroll: boolean) {
-    // The table sits below the chart — bring it into view so the click visibly does something.
-    if (shouldScroll) {
-      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }
+  const filterChips = [
+    ...(kpiFilter ? [{ key: "kpi", label: kpiLabel(kpiFilter, focusLabel), onClear: clearKpiFilter }] : []),
+    ...(focusLabel ? [{ key: "month", label: `Month: ${focusLabel}`, onClear: clearMonthFilter }] : []),
+  ];
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -107,7 +101,7 @@ export default function AttendanceReport() {
             totalSundaysInRange={totalSundaysInRange}
           />
 
-          <AttendanceReportKpiStrip {...kpis} activeFilter={kpiFilter} onFilterChange={selectKpi} />
+          <AttendanceReportKpiStrip {...kpis} activeFilter={kpiFilter} onFilterChange={selectKpi} focusLabel={focusLabel} />
 
           <AttendanceReportTrendChart
             data={monthlyTrend}
@@ -124,8 +118,7 @@ export default function AttendanceReport() {
             loading={loading}
             search={search}
             onSearchChange={onSearchChange}
-            filterLabel={filterLabel}
-            onClearFilter={clearFilters}
+            filterChips={filterChips}
             highlightMonthIndex={monthFilterIndex}
             filteredCount={filteredCount}
             currentPage={currentPage}

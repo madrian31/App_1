@@ -7,9 +7,8 @@ interface AttendanceReportTableProps {
   loading: boolean;
   search: string;
   onSearchChange: (value: string) => void;
-  /** Label of the active KPI/month filter, shown as a removable chip. */
-  filterLabel: string | null;
-  onClearFilter: () => void;
+  /** Active filters (KPI card, chart month), each shown as a removable chip. */
+  filterChips: { key: string; label: string; onClear: () => void }[];
   /** Month column to highlight (index into monthLabels), or -1. */
   highlightMonthIndex: number;
   filteredCount: number;
@@ -29,8 +28,7 @@ export default function AttendanceReportTable({
   loading,
   search,
   onSearchChange,
-  filterLabel,
-  onClearFilter,
+  filterChips,
   highlightMonthIndex,
   filteredCount,
   currentPage,
@@ -56,13 +54,17 @@ export default function AttendanceReportTable({
           />
         </div>
 
-        {filterLabel && (
-          <span className="report-filter-chip">
-            Showing: {filterLabel}
-            <button type="button" onClick={onClearFilter} aria-label="Clear filter" title="Clear filter">
-              <i className="fa-solid fa-xmark" aria-hidden="true" />
-            </button>
-          </span>
+        {filterChips.length > 0 && (
+          <div className="report-filter-chips">
+            {filterChips.map((chip) => (
+              <span key={chip.key} className="report-filter-chip">
+                {chip.label}
+                <button type="button" onClick={chip.onClear} aria-label={`Remove filter: ${chip.label}`} title="Remove filter">
+                  <i className="fa-solid fa-xmark" aria-hidden="true" />
+                </button>
+              </span>
+            ))}
+          </div>
         )}
       </div>
 
@@ -96,7 +98,7 @@ export default function AttendanceReportTable({
                   <div className="empty-state">
                     <i className="fa-regular fa-calendar-xmark" aria-hidden="true" />
                     <p>
-                      {search || filterLabel ? "No members match this filter." : "No members found."}
+                      {search || filterChips.length > 0 ? "No members match this filter." : "No members found."}
                     </p>
                   </div>
                 </td>

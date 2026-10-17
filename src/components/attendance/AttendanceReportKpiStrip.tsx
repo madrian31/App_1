@@ -1,4 +1,4 @@
-import { FOLLOW_UP_MISSED_SUNDAYS, type KpiFilter } from "../../hooks/useMembersAttendanceReport";
+import { kpiLabel, type KpiFilter } from "../../hooks/useMembersAttendanceReport";
 
 interface AttendanceReportKpiStripProps {
   totalMembers: number;
@@ -12,6 +12,8 @@ interface AttendanceReportKpiStripProps {
   activeFilter: KpiFilter | null;
   /** null = show everyone (the "Total Members" card). */
   onFilterChange: (filter: KpiFilter | null) => void;
+  /** "Oct 2026" while a month is selected on the chart — cards then describe that month. */
+  focusLabel: string | null;
 }
 
 interface KpiCard {
@@ -35,15 +37,16 @@ export default function AttendanceReportKpiStrip({
   needsFollowUp,
   activeFilter,
   onFilterChange,
+  focusLabel,
 }: AttendanceReportKpiStripProps) {
   const cards: KpiCard[] = [
     { key: "total", icon: "fa-solid fa-people-group", tone: "purple", value: totalMembers, label: "Total Members", filter: null },
-    { key: "rate", icon: "fa-solid fa-arrow-trend-up", tone: "blue", value: `${attendanceRate}%`, label: "Attendance Rate (Year)", filter: "rate" },
-    { key: "active", icon: "fa-solid fa-calendar-check", tone: "green", value: activeThisMonth, label: "Active This Month", filter: "active" },
-    { key: "inactive", icon: "fa-solid fa-calendar-xmark", tone: "gray", value: inactiveThisMonth, label: "Inactive This Month", filter: "inactive" },
+    { key: "rate", icon: "fa-solid fa-arrow-trend-up", tone: "blue", value: `${attendanceRate}%`, label: `Attendance Rate (${focusLabel ?? "Year"})`, filter: "rate" },
+    { key: "active", icon: "fa-solid fa-calendar-check", tone: "green", value: activeThisMonth, label: kpiLabel("active", focusLabel), filter: "active" },
+    { key: "inactive", icon: "fa-solid fa-calendar-xmark", tone: "gray", value: inactiveThisMonth, label: kpiLabel("inactive", focusLabel), filter: "inactive" },
     { key: "today", icon: "fa-solid fa-calendar-day", tone: "green", value: presentToday, label: "Present Today", filter: "today" },
-    { key: "perfect", icon: "fa-solid fa-star", tone: "orange", value: perfectAttendance, label: "Perfect Attendance", filter: "perfect" },
-    { key: "followup", icon: "fa-solid fa-arrow-trend-down", tone: "red", value: needsFollowUp, label: `Needs Follow-up (missed last ${FOLLOW_UP_MISSED_SUNDAYS} Sundays)`, alert: true, filter: "followup" },
+    { key: "perfect", icon: "fa-solid fa-star", tone: "orange", value: perfectAttendance, label: kpiLabel("perfect", focusLabel), filter: "perfect" },
+    { key: "followup", icon: "fa-solid fa-arrow-trend-down", tone: "red", value: needsFollowUp, label: kpiLabel("followup", focusLabel), alert: true, filter: "followup" },
   ];
 
   return (
