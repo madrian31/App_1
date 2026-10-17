@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useMembers from "../../hooks/useMembers";
+import useMembers, { ACTIVE_WINDOW_MONTHS, type ActivityFilter } from "../../hooks/useMembers";
 import PageHeader from "../../components/members/PageHeader";
-import MembersToolbar from "../../components/members/MembersToolbar";
+import MembersToolbar, { type FilterOption } from "../../components/members/MembersToolbar";
 import MembersTable from "../../components/members/MembersTable";
 import Pagination from "../../components/members/Pagination";
 import Toast from "../../components/members/Toast";
@@ -11,6 +11,12 @@ import "./members.css";
 
 // TODO: replace with the actual logged-in user once auth/session wiring is in place.
 const CURRENT_USER = "Unknown";
+
+const ACTIVITY_FILTER_OPTIONS: FilterOption<ActivityFilter>[] = [
+  { value: "all", label: "All Members" },
+  { value: "active", label: `Active (last ${ACTIVE_WINDOW_MONTHS} months)` },
+  { value: "inactive", label: "Inactive" },
+];
 
 export default function Members() {
   const navigate = useNavigate();
@@ -54,6 +60,7 @@ export default function Members() {
             onSearchChange={onSearchChange}
             filter={filter}
             onFilterChange={onFilterChange}
+            filterOptions={ACTIVITY_FILTER_OPTIONS}
           />
 
           <div className="members-card">

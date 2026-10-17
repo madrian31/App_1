@@ -5,6 +5,7 @@ import {
     archiveMember as archiveMemberService,
     updateMember,
 } from "../services/members/memberService/membersService";
+import { getRecentAttendeeIds } from "../services/attendance/memberActivityService";
 
 export function initials(
     m: Pick<Member, "firstName" | "lastName">
@@ -13,6 +14,11 @@ export function initials(
 }
 
 export type PledgerFilter = "all" | "yes" | "no";
+
+/** "active" = marked present at least once in the last ACTIVE_WINDOW_MONTHS months. */
+export type ActivityFilter = "all" | "active" | "inactive";
+
+export const ACTIVE_WINDOW_MONTHS = 3;
 
 export interface UseMembersOptions {
     pledgersOnly?: boolean;
@@ -24,7 +30,7 @@ export interface UseMembersResult {
     activeCount: number;
     filteredCount: number;
     search: string;
-    filter: PledgerFilter;
+    filter: ActivityFilter;
     pageSize: number;
     currentPage: number;
     totalPages: number;
@@ -32,7 +38,7 @@ export interface UseMembersResult {
     toast: string | null;
 
     onSearchChange: (value: string) => void;
-    onFilterChange: (value: PledgerFilter) => void;
+    onFilterChange: (value: ActivityFilter) => void;
     onPageSizeChange: (size: number) => void;
 
     goFirst: () => void;
@@ -56,9 +62,8 @@ export default function useMembers(
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
-    const [filter, setFilter] = useState<PledgerFilter>(
-        pledgersOnly ? "yes" : "all"
-    );
+    const [filter, setFilter] = useState<ActivityFilter>("all");
+    const [recentAttendeeIds, setRecentAttendeeIds] = useState<Set<string>>(new Set());
 
     const [pageSize, setPageSize] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
@@ -70,8 +75,16 @@ export default function useMembers(
         setLoading(true);
 
         try {
-            const data = await getAllMembers();
+            const [data, attendeeIds] = await Promise.all([
+                getAllMembers(),
+                // Non-fatal: if attendance can't load, the list still shows.
+                getRecentAttendeeIds(ACTIVE_WINDOW_MONTHS).catch((err) => {
+                    console.error("Failed to load recent attendance:", err);
+                    return new Set<string>();
+                }),
+            ]);
             setMembers(data);
+            setRecentAttendeeIds(attendeeIds);
         } catch (err) {
             console.error("Failed to fetch members:", err);
         } finally {
@@ -90,14 +103,11 @@ export default function useMembers(
             if (m.isArchived || m.isVisitor) return false;
 
             // Pledgers page restriction
-            if (pledgersOnly) {
-                if (!m.isPledger) return false;
-            } else {
+            if (pledgersOnly && !m.isPledger) return false;
 
-                // Normal Members page filter
-                if (filter === "yes" && !m.isPledger) return false;
-                if (filter === "no" && m.isPledger) return false;
-            }
+            // Activity filter
+            if (filter === "active" && !recentAttendeeIds.has(m.id)) return false;
+            if (filter === "inactive" && recentAttendeeIds.has(m.id)) return false;
 
             // Search
             const fullName =
@@ -112,7 +122,7 @@ export default function useMembers(
 
             return true;
         });
-    }, [members, search, filter, pledgersOnly]);
+    }, [members, search, filter, pledgersOnly, recentAttendeeIds]);
 
     const totalPages = Math.max(
         1,
@@ -233,7 +243,7 @@ export default function useMembers(
     }, []);
 
     const onFilterChange = useCallback(
-        (value: PledgerFilter) => {
+        (value: ActivityFilter) => {
             setFilter(value);
             setCurrentPage(1);
         },

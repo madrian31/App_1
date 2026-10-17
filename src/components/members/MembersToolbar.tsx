@@ -1,21 +1,33 @@
-import type { PledgerFilter } from "../../hooks/useMembers";
+export interface FilterOption<T extends string> {
+    value: T;
+    label: string;
+}
 
-interface MembersToolbarProps {
+const PLEDGER_FILTER_OPTIONS: FilterOption<string>[] = [
+    { value: "all", label: "All Members" },
+    { value: "yes", label: "Pledgers Only" },
+    { value: "no", label: "Non-Pledgers" },
+];
+
+interface MembersToolbarProps<T extends string> {
     search: string;
     onSearchChange: (value: string) => void;
-    filter?: PledgerFilter;
-    onFilterChange?: (value: PledgerFilter) => void;
-    /** Hide the pledger filter dropdown — used on the Pledges page, which is already filtered. */
+    filter?: T;
+    onFilterChange?: (value: T) => void;
+    /** Dropdown choices. Defaults to the pledger filter (All / Pledgers / Non-Pledgers). */
+    filterOptions?: FilterOption<T>[];
+    /** Hide the filter dropdown — used on pages that are already filtered (e.g. Archives). */
     hideFilter?: boolean;
 }
 
-export default function MembersToolbar({
+export default function MembersToolbar<T extends string>({
     search,
     onSearchChange,
-    filter = "all",
+    filter,
     onFilterChange,
+    filterOptions = PLEDGER_FILTER_OPTIONS as FilterOption<T>[],
     hideFilter = false,
-}: MembersToolbarProps) {
+}: MembersToolbarProps<T>) {
     return (
         <div className="toolbar">
             <div className="search-wrap">
@@ -40,16 +52,18 @@ export default function MembersToolbar({
                     />
 
                     <select
-                        value={filter}
+                        value={filter ?? filterOptions[0]?.value}
                         onChange={(e) =>
                             onFilterChange(
-                                e.target.value as PledgerFilter
+                                e.target.value as T
                             )
                         }
                     >
-                        <option value="all">All Members</option>
-                        <option value="yes">Pledgers Only</option>
-                        <option value="no">Non-Pledgers</option>
+                        {filterOptions.map((o) => (
+                            <option key={o.value} value={o.value}>
+                                {o.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             )}
