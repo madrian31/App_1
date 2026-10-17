@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { faBars, faRightFromBracket, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { SidebarItem } from "./SidebarItem";
 import { MenuService } from "../../services/menu/MenuService";
 import type {
@@ -37,9 +37,32 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
 
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
+  // Mobile only: whether the off-canvas drawer is showing. On desktop the
+  // sidebar is always visible and this flag has no effect.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Close the drawer whenever the route changes.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [currentActivePath]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.classList.add("sidebar-drawer-lock");
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("sidebar-drawer-lock");
+    };
+  }, [drawerOpen]);
+
   const go = (path: string) => {
     if (!path) return;
     navigate(path);
+    setDrawerOpen(false);
     onNavigate?.(path);
   };
 
@@ -80,8 +103,37 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
     matchesPath(item.path) || !!activeChildPath(item);
   
   return (
-    <div className="sidebar-shell">
+    <>
+    <div className="sidebar-topbar">
+      <button
+        type="button"
+        className="sidebar-topbar__toggle"
+        aria-label="Open menu"
+        aria-expanded={drawerOpen}
+        onClick={() => setDrawerOpen(true)}
+      >
+        <FontAwesomeIcon icon={faBars} />
+      </button>
+      <span className="sidebar-header__brand">LINK</span>
+      <span className="sidebar-header__app">Up</span>
+    </div>
+
+    <div
+      className={`sidebar-backdrop ${drawerOpen ? "sidebar-backdrop--open" : ""}`}
+      onClick={() => setDrawerOpen(false)}
+      aria-hidden="true"
+    />
+
+    <div className={`sidebar-shell ${drawerOpen ? "sidebar-shell--open" : ""}`}>
       <div className="sidebar-header">
+        <button
+          type="button"
+          className="sidebar-header__close"
+          aria-label="Close menu"
+          onClick={() => setDrawerOpen(false)}
+        >
+          <FontAwesomeIcon icon={faXmark} />
+        </button>
         <span className="sidebar-header__brand">LINK</span>
         <span className="sidebar-header__app">Up</span>
       </div>
@@ -144,5 +196,6 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
         </button>
       </div>
     </div>
+    </>
   );
 }
