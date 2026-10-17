@@ -61,8 +61,10 @@ export default function MembersTable({
                   <div className="member-cell">
                     <div className="avatar">{initials(m)}</div>
                     <span className="member-name">
+                      {m.lastName}
+                      {m.lastName && m.firstName ? ", " : ""}
                       {m.firstName}
-                      {m.middleInitial ? ` ${m.middleInitial}` : ""} {m.lastName}
+                      {m.middleInitial ? ` ${m.middleInitial}` : ""}
                     </span>
                   </div>
                 </td>

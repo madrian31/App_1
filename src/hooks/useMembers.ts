@@ -105,18 +105,29 @@ export default function useMembers(
             if (filter !== ALL_CATEGORIES && filter !== UNCATEGORIZED && category !== filter) return false;
 
             // Search
+            // Match "First MI Last" as well as the displayed "Last, First MI".
             const fullName =
                 `${m.firstName} ${m.middleInitial} ${m.lastName}`.toLowerCase();
+            const lastFirst =
+                `${m.lastName}, ${m.firstName} ${m.middleInitial}`.toLowerCase();
+            const q = search.toLowerCase().trim();
 
             if (
-                search &&
-                !fullName.includes(search.toLowerCase())
+                q &&
+                !fullName.includes(q) &&
+                !lastFirst.includes(q) &&
+                !lastFirst.replace(",", "").includes(q)
             ) {
                 return false;
             }
 
             return true;
-        });
+        })
+        // Alphabetical by last name, then first name.
+        .sort((a, b) =>
+            (a.lastName ?? "").localeCompare(b.lastName ?? "", undefined, { sensitivity: "base" }) ||
+            (a.firstName ?? "").localeCompare(b.firstName ?? "", undefined, { sensitivity: "base" })
+        );
     }, [members, search, filter, pledgersOnly]);
 
     // Dropdown options come from the data, so only categories someone actually
