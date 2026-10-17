@@ -25,6 +25,8 @@ export interface UseMembersOptions {
 export interface UseMembersResult {
     loading: boolean;
     members: Member[];
+    /** Every member matching the current search/filter (not just this page). */
+    filteredMembers: Member[];
     activeCount: number;
     filteredCount: number;
     search: string;
@@ -288,6 +290,7 @@ export default function useMembers(
     return {
         loading,
         members: paginated,
+        filteredMembers: filtered,
         activeCount,
         filteredCount: filtered.length,
         search,

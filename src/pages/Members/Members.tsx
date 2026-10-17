@@ -17,6 +17,7 @@ export default function Members() {
   const {
     loading,
     members,
+    filteredMembers,
     activeCount,
     filteredCount,
     search,
@@ -54,7 +55,7 @@ export default function Members() {
             title="Members"
             count={activeCount}
             onAddMember={() => navigate("/Profile/new")}
-            extraActions={<ImportExportBar currentUser={CURRENT_USER} onImported={refetch} />}
+            extraActions={<ImportExportBar currentUser={CURRENT_USER} onImported={refetch} pdfMembers={filteredMembers} />}
           />
 
           <MembersToolbar

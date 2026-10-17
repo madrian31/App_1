@@ -122,6 +122,83 @@
     font-size: 14px;
 }
 
+/* Export dropdown (Excel / PDF) */
+.export-menu-wrap {
+    position: relative;
+}
+
+.export-menu-caret {
+    font-size: 10px;
+    margin-left: 2px;
+}
+
+.export-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 50;
+    min-width: 260px;
+    padding: 6px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
+.export-menu-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.export-menu-item:hover:not(:disabled) {
+    background: #f3f4f6;
+}
+
+.export-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.export-menu-item > i {
+    margin-top: 2px;
+    font-size: 16px;
+    color: var(--primary);
+}
+
+.export-menu-item .fa-file-excel {
+    color: #16a34a;
+}
+
+.export-menu-item .fa-file-pdf {
+    color: #dc2626;
+}
+
+.export-menu-item span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.export-menu-item strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f1f1f;
+}
+
+.export-menu-item small {
+    font-size: 12px;
+    color: #6b7280;
+}
+
 .modal-overlay {
     position: fixed;
     inset: 0;
