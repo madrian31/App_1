@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllVisits, deleteVisit as deleteVisitDoc } from "../services/visitation/visitationService";
 import type { Visit } from "../types/visit";
+import { toLocalISODate } from "../utils/date";
 
 export type QuickRange = "today" | "week" | "month" | "custom";
 
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 function startOfWeek(d: Date): Date {

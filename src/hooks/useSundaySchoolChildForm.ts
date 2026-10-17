@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getChildById, addChild, updateChild } from "../services/sundaySchool/sundaySchoolChildrenService";
 import { hasValidName } from "../types/sundaySchoolChild";
+import { toLocalISODate } from "../utils/date";
 
 export interface ChildFormState {
   firstName: string;
@@ -81,7 +82,7 @@ export default function useSundaySchoolChildForm(rawId: string | undefined, curr
         await addChild({
           ...form,
           isActive: true,
-          dateEnrolled: new Date().toISOString().slice(0, 10),
+          dateEnrolled: toLocalISODate(new Date()),
           addedBy: currentUser,
         });
       }

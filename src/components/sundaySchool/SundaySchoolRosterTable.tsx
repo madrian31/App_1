@@ -79,7 +79,7 @@ export default function SundaySchoolRosterTable({ children, loading, onToggleAct
                       <button
                         className="btn-icon"
                         title="Edit"
-                        onClick={() => navigate(`/SundaySchool/SundaySchoolKidsMembers/${c.id}`)}
+                        onClick={() => navigate(`/SundaySchoolKidsMembers/${c.id}`)}
                       >
                         <i className="fa-regular fa-pen-to-square" />
                       </button>

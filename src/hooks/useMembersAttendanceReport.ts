@@ -43,10 +43,13 @@ export interface MonthlyTrendPoint {
   percent: number;
 }
 
-function getSundays(year: number, month: number): number[] {
+/** Sundays in the month that have already arrived (today included), so
+ *  future Sundays don't count as absences. */
+function getSundays(year: number, month: number, today: Date): number[] {
   const sundays: number[] = [];
   const date = new Date(year, month, 1);
-  while (date.getMonth() === month) {
+  const cutoff = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  while (date.getMonth() === month && date <= cutoff) {
     if (date.getDay() === 0) sundays.push(date.getDate());
     date.setDate(date.getDate() + 1);
   }
@@ -177,7 +180,7 @@ export default function useMembersAttendanceReport() {
         const list: ReportMember[] = [];
         snapshot.forEach((docSnap) => {
           const data = docSnap.data() as Partial<Member>;
-          if (data.isArchived) return;
+          if (data.isArchived || data.isVisitor) return; // members only — visitors aren't counted in member KPIs
           const fullName = [data.firstName, data.lastName]
             .filter((p): p is string => typeof p === "string" && p.trim().length > 0)
             .join(" ")
@@ -288,7 +291,10 @@ export default function useMembersAttendanceReport() {
     };
   }, [currentYear, currentMonth]);
 
-  const sundayCounts = useMemo(() => months.map((p) => getSundays(p.year, p.month).length), [months]);
+  const sundayCounts = useMemo(
+    () => months.map((p) => getSundays(p.year, p.month, new Date()).length),
+    [months]
+  );
   const totalSundaysInRange = useMemo(() => sundayCounts.reduce((a, b) => a + b, 0), [sundayCounts]);
   const monthLabels = useMemo(
     () => months.map((p) => formatMonthLabel(p, spansMultipleYears)),

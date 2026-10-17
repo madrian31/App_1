@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import type { LedgerDepartment, LedgerEntry, NewLedgerEntry } from "../../types/ledger";
+import { toLocalISODate } from "../../utils/date";
 
 const COLLECTION = "ledger";
 
@@ -23,7 +24,7 @@ const COLLECTION = "ledger";
  */
 
 function toISODate(value: unknown): string {
-  if (value instanceof Timestamp) return value.toDate().toISOString().slice(0, 10);
+  if (value instanceof Timestamp) return toLocalISODate(value.toDate());
   if (typeof value === "string") return value;
   return "";
 }

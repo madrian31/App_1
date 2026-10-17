@@ -1,4 +1,5 @@
 import type { Member } from "../../types/member";
+import { formatDisplayDate } from "../../utils/date";
 
 interface ArchivedMembersTableProps {
   members: Member[];
@@ -62,7 +63,7 @@ export default function ArchivedMembersTable({ members, loading, onUnarchive }: 
                   )}
                 </td>
                 <td className="col-hide-mobile">
-                  <span className="date-text">{m.dateAdded}</span>
+                  <span className="date-text">{formatDisplayDate(m.dateAdded)}</span>
                 </td>
                 <td>
                   <div className="actions-cell">

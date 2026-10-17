@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllPledges } from "../services/pledges/pledgesService";
 import type { Pledge } from "../types/pledge";
+import { toLocalISODate } from "../utils/date";
 
 export type QuickRange = "thisMonth" | "last3Months" | "thisYear" | "custom";
 
@@ -11,10 +12,10 @@ export const MONTHS = [
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function monthStartISO(year: number, month: number): string {
-  return new Date(year, month, 1).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month, 1));
 }
 function monthEndISO(year: number, month: number): string {
-  return new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month + 1, 0));
 }
 
 function resolveQuickRange(range: QuickRange, now: Date) {

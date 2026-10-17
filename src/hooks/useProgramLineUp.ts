@@ -15,6 +15,7 @@ import type { RotationRole } from "../types/rotationQueue";
 import type { ThemePreset } from "../types/themePreset";
 import { getMonthlyCelebrants, isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember } from "../types/member";
 import type { Member, MonthlyCelebrant } from "../types/member";
+import { toLocalISODate } from "../utils/date";
 
 // Same default set used to seed the "category" lookup list on the Settings
 // page (useLookupLists.ts) — only used here as a one-time fallback if that
@@ -36,7 +37,7 @@ function nextServiceDate(): string {
   const day = d.getDay();
   const daysToSunday = (7 - day) % 7;
   d.setDate(d.getDate() + daysToSunday);
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 export default function useProgramLineUp(currentUser: string, initialDate?: string) {

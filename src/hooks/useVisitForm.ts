@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getVisitById, addVisit, updateVisit } from "../services/visitation/visitationService";
 import type { Member } from "../types/member";
+import { toLocalISODate } from "../utils/date";
 
 export interface VisitFormState {
   memberId: string;
@@ -16,7 +17,7 @@ export interface VisitFormState {
 const EMPTY_FORM: VisitFormState = {
   memberId: "",
   memberName: "",
-  date: new Date().toISOString().slice(0, 10),
+  date: toLocalISODate(new Date()),
   department: "",
   leader: "",
   purpose: "",
@@ -109,7 +110,7 @@ export default function useVisitForm(rawId: string | undefined, currentUser: str
         await addVisit({
           ...form,
           addedBy: currentUser,
-          dateAdded: new Date().toISOString().slice(0, 10),
+          dateAdded: toLocalISODate(new Date()),
         });
       }
       return true;

@@ -5,9 +5,9 @@ const ADMIN_ROLE = 'admin';
 
 export class MenuService implements IMenuService {
     private menuItems: MenuItem[] = [
-        { sortOrder: 1, name: 'Home', iconClass: 'fa-solid fa-house', path: '/home' },
+        { sortOrder: 1, name: 'Home', iconClass: 'fa-solid fa-house', path: '/dashboard' },
 
-        { sortOrder: 2, name: 'Calendar', iconClass: 'fa-solid fa-calendar', path: '/calendar' },
+        { sortOrder: 2, name: 'Calendar', iconClass: 'fa-solid fa-calendar', path: '/Calendar' },
 
         {
             sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '',
@@ -22,7 +22,7 @@ export class MenuService implements IMenuService {
         { sortOrder: 20, name: 'Roles', iconClass: 'fa-solid fa-user-shield', path: '/Roles' },
 
         {
-            sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '/pledges',
+            sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '',
             subMenuItems: [
                 { sortOrder: 31, name: 'All Pledges', iconClass: 'fa-solid fa-list', path: '/PledgeTracker' },
                 { sortOrder: 32, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
@@ -55,14 +55,10 @@ export class MenuService implements IMenuService {
             subMenuItems: [
                 { sortOrder: 57, name: 'Tithes', iconClass: 'fa-solid fa-hand-holding-dollar', path: '/Finance/Tithes' },
                 { sortOrder: 58, name: 'Offerings', iconClass: 'fa-solid fa-gift', path: '/Finance/Offerings' },
-                {
-                    sortOrder: 59, name: 'Monthly Expenses', iconClass: 'fa-solid fa-file-invoice-dollar', path: '',
-                    subMenuItems: [
-                        { sortOrder: 591, name: 'Electricity', iconClass: 'fa-solid fa-bolt', path: '/Finance/Expenses/Electricity' },
-                        { sortOrder: 592, name: 'Internet', iconClass: 'fa-solid fa-wifi', path: '/Finance/Expenses/Internet' },
-                        { sortOrder: 593, name: 'Water', iconClass: 'fa-solid fa-droplet', path: '/Finance/Expenses/Water' },
-                    ]
-                },
+                // Monthly expenses — flattened because the sidebar only renders one submenu level.
+                { sortOrder: 591, name: 'Electricity', iconClass: 'fa-solid fa-bolt', path: '/Finance/Expenses/Electricity' },
+                { sortOrder: 592, name: 'Internet', iconClass: 'fa-solid fa-wifi', path: '/Finance/Expenses/Internet' },
+                { sortOrder: 593, name: 'Water', iconClass: 'fa-solid fa-droplet', path: '/Finance/Expenses/Water' },
                 { sortOrder: 594, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/Finance/Report' },
             ]
         },

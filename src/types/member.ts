@@ -23,6 +23,14 @@ export interface Member {
   isArchived: boolean;
   isPledger: boolean;
 
+  // ── Visitor ──
+  // true = attends but isn't a member yet (created by the Attendance import
+  // for names not found in the directory). Visitors live in the same
+  // `members` collection so attendance works the same; Members pages and
+  // the Attendance Report leave them out. Becomes false when the person
+  // shows up in a Members import (they're in the directory now).
+  isVisitor?: boolean;
+
   // ── Sunday School fields (used by Sunday School features, not part of the directory) ──
   isSundaySchoolTeacher: boolean;
   isSundaySchoolAssistantTeacher: boolean;

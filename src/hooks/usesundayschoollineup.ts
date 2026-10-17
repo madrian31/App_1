@@ -3,13 +3,14 @@ import { getAllMembers } from "../services/members/memberService/membersService"
 import { getLineUpForDate, saveLineUp } from "../services/sundaySchool/sundaySchoolLineUpService";
 import type { Member } from "../types/member";
 import type { AssistantTeacherRef } from "../types/sundaySchoolLineUp";
+import { toLocalISODate } from "../utils/date";
 
 /** Nearest upcoming Sunday (today if today is already Sunday). */
 function nextSunday(): string {
   const d = new Date();
   const day = d.getDay();
   if (day !== 0) d.setDate(d.getDate() + (7 - day));
-  return d.toISOString().slice(0, 10);
+  return toLocalISODate(d);
 }
 
 export default function useSundaySchoolLineUp(currentUser: string) {
@@ -79,13 +80,13 @@ export default function useSundaySchoolLineUp(currentUser: string) {
   function goPrevSunday() {
     const d = new Date(`${date}T00:00:00`);
     d.setDate(d.getDate() - 7);
-    setDate(d.toISOString().slice(0, 10));
+    setDate(toLocalISODate(d));
   }
 
   function goNextSunday() {
     const d = new Date(`${date}T00:00:00`);
     d.setDate(d.getDate() + 7);
-    setDate(d.toISOString().slice(0, 10));
+    setDate(toLocalISODate(d));
   }
 
   async function submit(): Promise<boolean> {

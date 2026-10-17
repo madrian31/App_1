@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import { writeBatch, collection, doc, getDocs } from "firebase/firestore";
 import { db } from "../../../firebase/firebase";
 import type { Member } from "../../../types/member";
+import { toLocalISODate, normalizeToISODate } from "../../../utils/date";
 import {
   parseMembersSheet,
   EXPORT_COLUMNS,
@@ -63,7 +64,7 @@ export async function bulkImportMembers(
   onProgress?: (written: number, total: number) => void
 ): Promise<BulkImportSummary> {
   const BATCH_SIZE = 450;
-  const dateAdded = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const dateAdded = toLocalISODate(new Date());
 
   const existingSnap = await getDocs(membersCol);
   const byName = new Map<string, { id: string; data: Record<string, unknown> }[]>();
@@ -131,8 +132,11 @@ export async function bulkImportMembers(
           // than resetting them every re-import.
           isPledger: (existingData?.isPledger as boolean) ?? false,
           isArchived: (existingData?.isArchived as boolean) ?? false,
+          // Anyone in the members directory file is a member — this also
+          // promotes a visitor created by the Attendance import.
+          isVisitor: false,
           addedBy: (existingData?.addedBy as string) ?? addedBy,
-          dateAdded: (existingData?.dateAdded as string) ?? dateAdded,
+          dateAdded: normalizeToISODate(existingData?.dateAdded) || dateAdded,
         },
         { merge: true }
       );

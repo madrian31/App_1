@@ -12,6 +12,7 @@ import type {
   LedgerTotals,
   NewLedgerEntry,
 } from "../types/ledger";
+import { toLocalISODate } from "../utils/date";
 
 export const LEDGER_MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -31,14 +32,14 @@ const EMPTY_FORM: LedgerEntryForm = {
   category: "",
   amount: "",
   description: "",
-  dateAdded: new Date().toISOString().slice(0, 10),
+  dateAdded: toLocalISODate(new Date()),
 };
 
 function monthStartISO(year: number, month: number): string {
-  return new Date(year, month, 1).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month, 1));
 }
 function monthEndISO(year: number, month: number): string {
-  return new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month + 1, 0));
 }
 
 /**
@@ -88,7 +89,7 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
   }, [refetch]);
 
   function openAddForm() {
-    setForm({ ...EMPTY_FORM, dateAdded: new Date().toISOString().slice(0, 10) });
+    setForm({ ...EMPTY_FORM, dateAdded: toLocalISODate(new Date()) });
     setEditingId(null);
     setShowForm(true);
   }

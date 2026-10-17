@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getLineUpsInRange } from "../services/programLineUp/programLineUpService";
 import type { ProgramLineUpEntry } from "../types/programLineUp";
+import { toLocalISODate } from "../utils/date";
 
 export type ScheduleQuickRange = "thisMonth" | "next3Months" | "custom";
 
@@ -10,10 +11,10 @@ export const MONTHS = [
 ];
 
 function monthStartISO(year: number, month: number): string {
-  return new Date(year, month, 1).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month, 1));
 }
 function monthEndISO(year: number, month: number): string {
-  return new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month + 1, 0));
 }
 
 function resolveQuickRange(range: ScheduleQuickRange, now: Date) {

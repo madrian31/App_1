@@ -25,6 +25,8 @@ const PAGE_SIZE = 10;
 export interface AttendanceTrackee {
   id: string;
   name: string;
+  /** Optional small tag shown next to the name, e.g. "Visitor". */
+  badge?: string;
 }
 
 export interface UseAttendanceTrackerConfig<T extends AttendanceTrackee> {
@@ -73,6 +75,8 @@ export default function useAttendanceTracker<T extends AttendanceTrackee>(
   const [search, setSearch] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
+  // Bumped by refetch() to reload trackees + attendance (e.g. after an import).
+  const [reloadToken, setReloadToken] = useState(0);
 
   const monthKey = `${viewYear}-${viewMonth}`;
   const sundays = useMemo(() => getSundays(viewYear, viewMonth), [viewYear, viewMonth]);
@@ -89,6 +93,7 @@ export default function useAttendanceTracker<T extends AttendanceTrackee>(
     let cancelled = false;
 
     async function loadTrackees() {
+      setLoadingTrackees(true);
       try {
         const q = query(collection(db, trackeeCollectionName), ...trackeeQueryConstraints);
         const snapshot = await getDocs(q);
@@ -111,7 +116,7 @@ export default function useAttendanceTracker<T extends AttendanceTrackee>(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trackeeCollectionName]);
+  }, [trackeeCollectionName, reloadToken]);
 
   // Fetch attendance for the currently viewed month, one doc per trackee per month.
   useEffect(() => {
@@ -150,7 +155,7 @@ export default function useAttendanceTracker<T extends AttendanceTrackee>(
     return () => {
       cancelled = true;
     };
-  }, [attendanceCollectionName, monthKey]);
+  }, [attendanceCollectionName, monthKey, reloadToken]);
 
   const toggleAttendance = async (trackeeId: string, day: number) => {
     const previousValue = attendance[monthKey]?.[trackeeId]?.[day] ?? false;
@@ -254,5 +259,7 @@ export default function useAttendanceTracker<T extends AttendanceTrackee>(
     goPrev: () => setCurrentPage((p) => Math.max(1, p - 1)),
     goNext: () => setCurrentPage((p) => Math.min(totalPages, p + 1)),
     goLast: () => setCurrentPage(totalPages),
+
+    refetch: () => setReloadToken((t) => t + 1),
   };
 }

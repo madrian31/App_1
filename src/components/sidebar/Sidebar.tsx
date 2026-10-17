@@ -59,9 +59,25 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
     }
   };
 
- const isParentActive = (item: MenuItem) =>
-  (!!item.path && currentActivePath === item.path) ||
-  !!item.subMenuItems?.some((child) => child.path === currentActivePath);
+  // Routes match case-insensitively, so compare paths the same way. A path
+  // also counts as a match for its sub-routes (e.g. /SundaySchoolAttendance
+  // for /SundaySchoolAttendance/attendance).
+  const current = currentActivePath.toLowerCase();
+  const matchesPath = (path: string) => {
+    if (!path) return false;
+    const p = path.toLowerCase();
+    return current === p || current.startsWith(p + "/");
+  };
+
+  // Of a group's children, only the most specific match is active, so
+  // /Visitation/Reports highlights "Visitation Report" but not "All Visitations".
+  const activeChildPath = (item: MenuItem) =>
+    item.subMenuItems
+      ?.filter((child) => matchesPath(child.path))
+      .sort((a, b) => b.path.length - a.path.length)[0]?.path;
+
+  const isParentActive = (item: MenuItem) =>
+    matchesPath(item.path) || !!activeChildPath(item);
   
   return (
     <div className="sidebar-shell">
@@ -86,18 +102,20 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
               submenu={
                 hasChildren ? (
                   <ul className="sidebar-submenu">
-                    {item.subMenuItems!.map((child) => (
+                    {item.subMenuItems!.map((child) => {
+                      const childActive = child.path === activeChildPath(item);
+                      return (
                       <li
                         key={child.sortOrder}
                         className={`sidebar-subitem ${
-                          currentActivePath === child.path
+                          childActive
                             ? "sidebar-subitem--active"
                             : ""
                         }`}
                         role="button"
                         tabIndex={0}
                         aria-current={
-                          currentActivePath === child.path ? "page" : undefined
+                          childActive ? "page" : undefined
                         }
                         onClick={() => go(child.path)}
                         onKeyDown={(e) => handleChildKeyDown(e, child.path)}
@@ -109,7 +127,8 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
                           {child.name}
                         </span>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 ) : null
               }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toLocalISODate } from "../../utils/date";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -6,10 +7,10 @@ const MONTHS = [
 ];
 
 function monthStartISO(year: number, month: number): string {
-  return new Date(year, month, 1).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month, 1));
 }
 function monthEndISO(year: number, month: number): string {
-  return new Date(year, month + 1, 0).toISOString().slice(0, 10);
+  return toLocalISODate(new Date(year, month + 1, 0));
 }
 
 interface AutoGenerateModalProps {

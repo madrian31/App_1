@@ -20,6 +20,7 @@ import ProgramLineUpSchedule from "../pages/ProgramLineUp/ProgramLineUpSchedule"
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
+import ComingSoon from "../pages/ComingSoon/ComingSoon";
 
 export default function AppRoutes() {
   return (
@@ -45,12 +46,24 @@ export default function AppRoutes() {
       <Route path="/PledgeTracker" element={<PledgeTracker />} />
       <Route path="/PledgesReport" element={<PledgesReport />} />
 
-      <Route path="/visitation" element={<Visitation />} />
+      <Route path="/Visitation" element={<Visitation />} />
       <Route path="/Visitation/Reports" element={<VisitationReports />} />
       <Route path="/Visitation/new" element={<VisitForm />} />
       <Route path="/Visitation/:id" element={<VisitForm />} />
 
       <Route path="/Settings/ManageLists" element={<ManageLists />} />
+
+      {/* Menu items without a page yet */}
+      <Route path="/Roles" element={<ComingSoon title="Roles" />} />
+      <Route path="/settings" element={<ComingSoon title="General Settings" />} />
+      <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
+      <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
+      <Route path="/Finance/Tithes" element={<ComingSoon title="Tithes" />} />
+      <Route path="/Finance/Offerings" element={<ComingSoon title="Offerings" />} />
+      <Route path="/Finance/Expenses/Electricity" element={<ComingSoon title="Electricity" />} />
+      <Route path="/Finance/Expenses/Internet" element={<ComingSoon title="Internet" />} />
+      <Route path="/Finance/Expenses/Water" element={<ComingSoon title="Water" />} />
+      <Route path="/Finance/Report" element={<ComingSoon title="Finance Report" />} />
 
       <Route path="/ledger/:department" element={<Ledger />} />
 

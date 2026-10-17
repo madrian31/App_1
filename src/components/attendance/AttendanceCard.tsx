@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { AttendanceTrackee } from "../../hooks/useAttendanceTracker";
 import { MONTHS_SHORT } from "../../hooks/useAttendanceTracker";
 import PageHeader from "../members/PageHeader";
@@ -8,6 +9,8 @@ interface AttendanceCardProps<T extends AttendanceTrackee> {
   countLabel: string;
   addButtonLabel?: string;
   onAdd?: () => void;
+  /** Extra buttons shown at the end of the toolbar (e.g. Import). */
+  toolbarActions?: ReactNode;
 
   loading: boolean;
   viewMonth: number;
@@ -41,6 +44,7 @@ export default function AttendanceCard<T extends AttendanceTrackee>({
   countLabel,
   addButtonLabel,
   onAdd,
+  toolbarActions,
   loading,
   viewMonth,
   monthLabel,
@@ -95,6 +99,8 @@ export default function AttendanceCard<T extends AttendanceTrackee>({
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
+
+        {toolbarActions && <div className="attendance-toolbar-actions">{toolbarActions}</div>}
       </div>
 
       <div className="members-card">
@@ -127,6 +133,7 @@ export default function AttendanceCard<T extends AttendanceTrackee>({
                   <tr key={trackee.id}>
                     <td className="member-col">
                       <span className="member-name">{trackee.name}</span>
+                      {trackee.badge && <span className="trackee-badge">{trackee.badge}</span>}
                     </td>
                     {sundays.map((day) => {
                       const checked = !!attendance[monthKey]?.[trackee.id]?.[day];

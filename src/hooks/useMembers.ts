@@ -3,6 +3,7 @@ import type { Member } from "../types/member";
 import {
     getAllMembers,
     archiveMember as archiveMemberService,
+    updateMember,
 } from "../services/members/memberService/membersService";
 
 export function initials(
@@ -85,8 +86,8 @@ export default function useMembers(
     const filtered = useMemo(() => {
         return members.filter((m) => {
 
-            // Exclude archived members
-            if (m.isArchived) return false;
+            // Exclude archived members and visitors (visitors only appear in Attendance)
+            if (m.isArchived || m.isVisitor) return false;
 
             // Pledgers page restriction
             if (pledgersOnly) {
@@ -140,6 +141,7 @@ export default function useMembers(
             members.filter(
                 (m) =>
                     !m.isArchived &&
+                    !m.isVisitor &&
                     (!pledgersOnly || m.isPledger)
             ).length,
         [members, pledgersOnly]
@@ -194,26 +196,33 @@ export default function useMembers(
     );
 
     const togglePledger = useCallback(
-        (id: string) => {
+        async (id: string) => {
             const member = members.find((x) => x.id === id);
 
             if (!member) return;
 
             const next = !member.isPledger;
 
-            setMembers((prev) =>
-                prev.map((x) =>
-                    x.id === id
-                        ? { ...x, isPledger: next }
-                        : x
-                )
-            );
+            try {
+                await updateMember(id, { isPledger: next });
 
-            showToast(
-                next
-                    ? `${member.firstName} ${member.lastName} marked as pledger.`
-                    : `${member.firstName} ${member.lastName} removed as pledger.`
-            );
+                setMembers((prev) =>
+                    prev.map((x) =>
+                        x.id === id
+                            ? { ...x, isPledger: next }
+                            : x
+                    )
+                );
+
+                showToast(
+                    next
+                        ? `${member.firstName} ${member.lastName} marked as pledger.`
+                        : `${member.firstName} ${member.lastName} removed as pledger.`
+                );
+            } catch (err) {
+                console.error(err);
+                showToast("Failed to update pledger status.");
+            }
         },
         [members, showToast]
     );

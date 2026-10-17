@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../../components/sidebar/Sidebar';
 import type { Member } from '../../types/member';
+import { toLocalISODate } from '../../utils/date';
 import { getMemberById, addMember, updateMember } from '../../services/members/memberService/membersService';
 import useLookupLists from '../../hooks/useLookupLists';
 import './profile.css';
@@ -24,12 +25,6 @@ function computeAge(birthday?: string) {
   const m = today.getMonth() - dob.getMonth();
   if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
   return age >= 0 ? age : '';
-}
-
-function formatDate() {
-  return new Date().toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-  });
 }
 
 /** Ensures the member's currently saved value still shows in a <select> even if it
@@ -182,7 +177,7 @@ export default function Profile() {
           ...changes,
           isPledger: false,
           addedBy: currentUser,
-          dateAdded: formatDate(),
+          dateAdded: toLocalISODate(new Date()),
           isArchived: false,
         });
       } else {
