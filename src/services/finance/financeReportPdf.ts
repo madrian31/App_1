@@ -1,4 +1,4 @@
-import type { FinanceMonthRow, FinanceSundayRow } from "../../hooks/useFinanceReport";
+import type { FinanceCategoryRow, FinanceMonthRow, FinanceSundayRow } from "../../hooks/useFinanceReport";
 import { formatDisplayDate, toLocalISODate } from "../../utils/date";
 
 // A4 portrait, in millimetres — same layout constants as memberPdfExport.ts.
@@ -29,6 +29,7 @@ export interface FinanceReportPdfData {
   yearTithes: number;
   months: FinanceMonthRow[];
   sundays: FinanceSundayRow[];
+  expenseCategories: FinanceCategoryRow[];
 }
 
 /** Downloads the Finance Report as a one-to-two page PDF. jsPDF is loaded on demand. */
@@ -159,6 +160,33 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       ],
       data.sundays.map((s) => [formatDisplayDate(s.date), String(s.givers), peso(s.total)]),
       ["Total", "", peso(data.monthTithes)]
+    );
+  }
+
+  if (y > PAGE_H - 50) {
+    doc.addPage();
+    y = MARGIN + 6;
+  }
+  sectionTitle(`Expenses by Category — ${data.monthLabel}`);
+  if (data.expenseCategories.length === 0) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(...MUTED);
+    doc.text("No expenses recorded for this month.", MARGIN, y);
+  } else {
+    const cw = CONTENT_W / 3;
+    table(
+      [
+        { label: "Category", width: cw },
+        { label: "Amount", width: cw, right: true },
+        { label: "% of Tithes", width: cw, right: true },
+      ],
+      data.expenseCategories.map((c) => [
+        c.category,
+        peso(c.total),
+        c.pctOfTithes === null ? "—" : `${c.pctOfTithes.toFixed(1)}%`,
+      ]),
+      ["Total", peso(data.monthExpenses), ""]
     );
   }
 

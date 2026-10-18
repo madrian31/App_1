@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { formatDisplayDate } from "../../utils/date";
 import { fmtPeso } from "./financeFormat";
 
@@ -11,7 +12,6 @@ interface FinanceKpiStripProps {
   monthChangePct: number | null;
   ytdTithes: number;
   monthExpenses: number;
-  expensesAvailable: boolean;
   onEditOpening: () => void;
 }
 
@@ -37,7 +37,6 @@ export default function FinanceKpiStrip({
   monthChangePct,
   ytdTithes,
   monthExpenses,
-  expensesAvailable,
   onEditOpening,
 }: FinanceKpiStripProps) {
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
@@ -74,7 +73,9 @@ export default function FinanceKpiStrip({
           {v(monthExpenses)}
         </span>
         <span className="summary-card-label">Expenses — {monthLabel}</span>
-        {!expensesAvailable && <span className="finance-kpi-sub">Expense pages not set up yet</span>}
+        <Link to="/Finance/Expenses" className="finance-kpi-sub finance-kpi-link">
+          View / add expenses →
+        </Link>
       </div>
     </div>
   );

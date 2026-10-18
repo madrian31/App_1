@@ -1,0 +1,35 @@
+/* =========================================================
+   Expenses — reuses the Ledger form/modal styles (ledger.css)
+   ========================================================= */
+
+.expense-cat-card {
+    /* <button> reset so the summary cards keep their card look */
+    font: inherit;
+    text-align: left;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+}
+
+.expense-cat-card:hover {
+    border-color: var(--border);
+}
+
+.expense-cat-card.is-active {
+    border-color: var(--primary);
+}
+
+.expense-cat-pill {
+    white-space: nowrap;
+}
+
+.expense-cat-pill i,
+.ledger-type-btn i {
+    margin-right: 4px;
+}
+
+.expense-manage-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+}

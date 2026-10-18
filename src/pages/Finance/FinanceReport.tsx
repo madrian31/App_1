@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useFinanceReport, { EXPENSES_AVAILABLE, FINANCE_MONTHS } from "../../hooks/useFinanceReport";
+import useFinanceReport, { FINANCE_MONTHS } from "../../hooks/useFinanceReport";
+import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
 import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
@@ -38,6 +39,7 @@ export default function FinanceReport() {
     yearTithes,
     months,
     sundays,
+    expenseCategories,
   } = useFinanceReport(CURRENT_USER);
 
   const [exporting, setExporting] = useState(false);
@@ -58,6 +60,7 @@ export default function FinanceReport() {
         yearTithes,
         months,
         sundays,
+        expenseCategories,
       });
     } catch (err) {
       console.error("Failed to export finance report:", err);
@@ -113,14 +116,6 @@ export default function FinanceReport() {
             </div>
           )}
 
-          {!EXPENSES_AVAILABLE && (
-            <div className="finance-notice">
-              <i className="fa-solid fa-circle-info" aria-hidden="true" />
-              Expenses (Electricity, Internet, Water) aren't recorded yet, so they show ₱0.00 and the balance is
-              opening balance + tithes only.
-            </div>
-          )}
-
           <FinanceKpiStrip
             loading={loading}
             fundBalance={fundBalance}
@@ -131,7 +126,6 @@ export default function FinanceReport() {
             monthChangePct={monthChangePct}
             ytdTithes={ytdTithes}
             monthExpenses={monthExpenses}
-            expensesAvailable={EXPENSES_AVAILABLE}
             onEditOpening={() => setShowOpeningForm(true)}
           />
 
@@ -154,6 +148,16 @@ export default function FinanceReport() {
             <section className="report-section">
               <h2 className="report-section-title">Tithes per Sunday — {monthLabel}</h2>
               <FinanceSundayTable sundays={sundays} loading={loading} monthLabel={monthLabel} monthTotal={monthTithes} />
+            </section>
+
+            <section className="report-section">
+              <h2 className="report-section-title">Expenses by Category — {monthLabel}</h2>
+              <FinanceCategoryTable
+                categories={expenseCategories}
+                loading={loading}
+                monthLabel={monthLabel}
+                monthExpenses={monthExpenses}
+              />
             </section>
           </div>
 

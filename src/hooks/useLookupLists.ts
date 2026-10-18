@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { LOOKUP_LISTS, type LookupListKey } from "../types/lookupList";
 import { getLookupList, saveLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
+import { EXPENSE_CATEGORY_SEED } from "../types/expense";
 
 /** Seeded once per list, only if Firestore doesn't have that list yet — based on the
  *  values already in use across existing member records. Safe to edit anytime after. */
@@ -27,11 +28,12 @@ const SEED_VALUES: Record<LookupListKey, string[]> = {
     "Youth Officer",
     "Tambourine Dancer",
   ],
+  expenseCategory: EXPENSE_CATEGORY_SEED,
 };
 
 type ListsState = Record<LookupListKey, string[]>;
 
-const EMPTY_STATE: ListsState = { status: [], category: [], us2cgLevel: [], ministry: [] };
+const EMPTY_STATE: ListsState = { status: [], category: [], us2cgLevel: [], ministry: [], expenseCategory: [] };
 
 export default function useLookupLists() {
   const [lists, setLists] = useState<ListsState>(EMPTY_STATE);
