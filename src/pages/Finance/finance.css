@@ -1,0 +1,123 @@
+/* =========================================================
+   Finance Report — builds on the report styles in
+   pledgesMembers.css and the trend chart in attendanceReport.css
+   ========================================================= */
+
+.finance-kpi-hero {
+    background: var(--primary);
+    color: #fff;
+}
+
+.finance-kpi-hero .summary-card-value,
+.finance-kpi-hero .summary-card-label,
+.finance-kpi-hero .finance-kpi-sub {
+    color: #fff;
+}
+
+.finance-kpi-hero .finance-kpi-sub {
+    opacity: 0.85;
+}
+
+.finance-kpi-sub {
+    display: block;
+    margin-top: 4px;
+
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.finance-up {
+    color: var(--success);
+}
+
+.finance-down {
+    color: var(--danger);
+}
+
+.finance-link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+
+    margin-left: 8px;
+    padding: 2px 8px;
+
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 999px;
+
+    background: transparent;
+    color: inherit;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.finance-link-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.finance-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 16px;
+    padding: 10px 14px;
+
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+
+    background: #fffbeb;
+    color: #92400e;
+
+    font-size: 13px;
+}
+
+.finance-bar-value {
+    min-height: 14px;
+
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+
+    white-space: nowrap;
+}
+
+.finance-table .finance-num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.finance-row-click {
+    cursor: pointer;
+}
+
+.finance-row-click:hover td {
+    background: #f7f8ff;
+}
+
+.finance-row-selected td {
+    background: #eef2ff;
+}
+
+.finance-modal-help {
+    margin: -4px 0 14px;
+
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.finance-report-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 16px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .finance-report-grid {
+        grid-template-columns: 1fr;
+    }
+}
