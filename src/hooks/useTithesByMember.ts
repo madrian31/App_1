@@ -12,7 +12,7 @@ const SAVED_BADGE_MS = 1500;
 
 interface EntryState {
   amount: string;
-  notes: string;
+  notes: string; // not editable in the grid — kept so a save doesn't wipe notes set from the Entries tab
   exists: boolean; // a doc is stored for this member+date (so clearing the amount deletes it)
 }
 
@@ -31,7 +31,7 @@ function addWeeks(iso: string, weeks: number): string {
 
 /**
  * Drives the Tithes "Members" view: one date, every active member listed with
- * an amount + notes input that auto-saves (debounced, flushed on blur).
+ * an amount input that auto-saves (debounced, flushed on blur).
  * Clearing a member's amount removes their tithe for that date.
  */
 export default function useTithesByMember(currentUser: string) {
@@ -191,10 +191,6 @@ export default function useTithesByMember(currentUser: string) {
     scheduleSave(member);
   }
 
-  function handleNotesChange(member: Member, value: string) {
-    updateEntry(member.id, { notes: value });
-    scheduleSave(member);
-  }
 
   const amountOf = (memberId: string) => parseFloat(entries[memberId]?.amount || "0") || 0;
 
@@ -229,7 +225,6 @@ export default function useTithesByMember(currentUser: string) {
     rowStatus,
 
     handleAmountChange,
-    handleNotesChange,
     flushSave,
 
     total,

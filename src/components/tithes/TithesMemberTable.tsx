@@ -3,7 +3,6 @@ import type { Member } from "../../types/member";
 
 interface Entry {
   amount?: string;
-  notes?: string;
 }
 
 interface TithesMemberTableProps {
@@ -13,7 +12,6 @@ interface TithesMemberTableProps {
   loading: boolean;
   canManage: boolean;
   onAmountChange: (member: Member, value: string) => void;
-  onNotesChange: (member: Member, value: string) => void;
   onBlur: (member: Member) => void;
 }
 
@@ -35,7 +33,6 @@ export default function TithesMemberTable({
   loading,
   canManage,
   onAmountChange,
-  onNotesChange,
   onBlur,
 }: TithesMemberTableProps) {
   return (
@@ -46,14 +43,13 @@ export default function TithesMemberTable({
             <th>#</th>
             <th>Name</th>
             <th>Amount</th>
-            <th className="col-hide-mobile">Notes</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan={5} className="empty-cell">
+              <td colSpan={4} className="empty-cell">
                 <div className="empty-state">
                   <p>Loading members…</p>
                 </div>
@@ -61,7 +57,7 @@ export default function TithesMemberTable({
             </tr>
           ) : members.length === 0 ? (
             <tr>
-              <td colSpan={5} className="empty-cell">
+              <td colSpan={4} className="empty-cell">
                 <div className="empty-state">
                   <i className="fa-regular fa-folder-open" />
                   <p>No members match.</p>
@@ -94,17 +90,6 @@ export default function TithesMemberTable({
                         className="tithe-inline-input tithe-inline-input--amount"
                       />
                     </div>
-                  </td>
-                  <td className="col-hide-mobile">
-                    <input
-                      type="text"
-                      placeholder="Add note…"
-                      value={entry.notes || ""}
-                      disabled={!canManage || !given}
-                      onChange={(e) => onNotesChange(m, e.target.value)}
-                      onBlur={() => onBlur(m)}
-                      className="tithe-inline-input tithe-inline-input--notes"
-                    />
                   </td>
                   <td>
                     <SaveBadge status={rowStatus[m.id]} />

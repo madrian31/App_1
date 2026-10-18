@@ -34,7 +34,6 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
     entries,
     rowStatus,
     handleAmountChange,
-    handleNotesChange,
     flushSave,
     total,
     giverCount,
@@ -100,7 +99,6 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
           loading={loading}
           canManage={canManage}
           onAmountChange={handleAmountChange}
-          onNotesChange={handleNotesChange}
           onBlur={flushSave}
         />
       </div>
