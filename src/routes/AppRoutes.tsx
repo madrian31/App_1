@@ -20,6 +20,7 @@ import ProgramLineUpSchedule from "../pages/ProgramLineUp/ProgramLineUpSchedule"
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
+import Tithes from "../pages/Tithes/Tithes";
 import ComingSoon from "../pages/ComingSoon/ComingSoon";
 
 export default function AppRoutes() {
@@ -58,7 +59,7 @@ export default function AppRoutes() {
       <Route path="/settings" element={<ComingSoon title="General Settings" />} />
       <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
       <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
-      <Route path="/Finance/Tithes" element={<ComingSoon title="Tithes" />} />
+      <Route path="/Finance/Tithes" element={<Tithes />} />
       <Route path="/Finance/Offerings" element={<ComingSoon title="Offerings" />} />
       <Route path="/Finance/Expenses/Electricity" element={<ComingSoon title="Electricity" />} />
       <Route path="/Finance/Expenses/Internet" element={<ComingSoon title="Internet" />} />

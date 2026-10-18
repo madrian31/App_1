@@ -1,0 +1,118 @@
+/* =========================================================
+   Tithes — reuses the Ledger form/modal styles (ledger.css)
+   ========================================================= */
+
+.tithe-anon-pill {
+    margin-left: 8px;
+
+    background: #fffbeb;
+    color: #b45309;
+    border: 1px solid #fde68a;
+
+    white-space: nowrap;
+}
+
+.ledger-type-btn i {
+    margin-right: 4px;
+}
+
+/* =========================================================
+   View tabs (Entries / Members)
+   ========================================================= */
+
+.tithe-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.tithe-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 7px 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 999px;
+
+    background: var(--card);
+    color: var(--text-muted);
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.tithe-tab.is-active {
+    border-color: var(--primary);
+    background: var(--primary);
+    color: #fff;
+}
+
+/* =========================================================
+   Members view — date nav + inline inputs
+   ========================================================= */
+
+.tithe-date-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tithe-date-nav input[type="date"] {
+    padding: 8px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    font-size: 14px;
+    color: var(--text);
+    background: var(--card);
+}
+
+.tithe-member-table td {
+    vertical-align: middle;
+}
+
+.tithe-row-given td {
+    background: #f3fbf7;
+}
+
+.tithe-amount-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.tithe-inline-input {
+    padding: 6px 8px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    font-size: 14px;
+    color: var(--text);
+    background: var(--card);
+}
+
+.tithe-inline-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+.tithe-inline-input:disabled {
+    background: #f6f6f6;
+}
+
+.tithe-inline-input--amount {
+    width: 120px;
+    text-align: right;
+}
+
+.tithe-inline-input--notes {
+    width: 100%;
+    min-width: 160px;
+}
