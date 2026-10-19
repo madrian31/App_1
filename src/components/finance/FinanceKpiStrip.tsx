@@ -7,8 +7,10 @@ interface FinanceKpiStripProps {
   startingBalanceSet: boolean; // shows a "set it in Settings" prompt until it has been saved
   periodLabel: string; // "October 2026", "Aug – Oct 2026"…
   periodTithes: number;
-  changePct: number | null; // vs the period of the same length right before
-  ytdTithes: number;
+  periodOfferings: number;
+  periodIncome: number; // tithes + offerings
+  changePct: number | null; // income vs the period of the same length right before
+  ytdIncome: number;
   ytdYear: number;
   periodExpenses: number;
 }
@@ -31,8 +33,10 @@ export default function FinanceKpiStrip({
   startingBalanceSet,
   periodLabel,
   periodTithes,
+  periodOfferings,
+  periodIncome,
   changePct,
-  ytdTithes,
+  ytdIncome,
   ytdYear,
   periodExpenses,
 }: FinanceKpiStripProps) {
@@ -53,15 +57,20 @@ export default function FinanceKpiStrip({
 
       <div className="summary-card">
         <span className="summary-card-value" style={{ color: "var(--success)" }}>
-          {v(periodTithes)}
+          {v(periodIncome)}
         </span>
-        <span className="summary-card-label">Tithes — {periodLabel}</span>
+        <span className="summary-card-label">Tithes &amp; Offerings — {periodLabel}</span>
+        {!loading && (
+          <span className="finance-kpi-sub">
+            Tithes {fmtPeso(periodTithes)} · Offerings {fmtPeso(periodOfferings)}
+          </span>
+        )}
         {!loading && <ChangeBadge pct={changePct} />}
       </div>
 
       <div className="summary-card">
-        <span className="summary-card-value">{v(ytdTithes)}</span>
-        <span className="summary-card-label">Tithes — {ytdYear} year to date</span>
+        <span className="summary-card-value">{v(ytdIncome)}</span>
+        <span className="summary-card-label">Tithes &amp; Offerings — {ytdYear} year to date</span>
       </div>
 
       <div className="summary-card">

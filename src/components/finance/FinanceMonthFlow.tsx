@@ -6,6 +6,7 @@ interface FinanceMonthFlowProps {
   periodLabel: string;
   startBalance: number; // carried over from before the period
   periodTithes: number;
+  periodOfferings: number;
   periodExpenses: number;
   endBalance: number;
 }
@@ -13,7 +14,7 @@ interface FinanceMonthFlowProps {
 /**
  * The period's financial status, designed answer-first for every reader (including
  * older church members): a plain verdict with the money left on the left, and on the
- * right a tithes-vs-expenses comparison plus a short receipt showing how we got there.
+ * right an income-vs-expenses comparison plus a short receipt showing how we got there.
  * The verdict wording lives in financeStatus.ts, shared with the PDF.
  */
 export default function FinanceMonthFlow({
@@ -21,19 +22,21 @@ export default function FinanceMonthFlow({
   periodLabel,
   startBalance,
   periodTithes,
+  periodOfferings,
   periodExpenses,
   endBalance,
 }: FinanceMonthFlowProps) {
-  const hasActivity = periodTithes > 0 || periodExpenses > 0;
+  const periodIncome = periodTithes + periodOfferings;
+  const hasActivity = periodIncome > 0 || periodExpenses > 0;
 
   // Every line names its period, so "tithes received" is never ambiguous.
   const inPeriod = periodLabel.includes("–") ? `(${periodLabel})` : `in ${periodLabel}`;
 
-  const m = getFinanceStatus(periodTithes, periodExpenses, endBalance, inPeriod, fmtPeso);
+  const m = getFinanceStatus(periodIncome, periodExpenses, endBalance, inPeriod, fmtPeso);
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
   // Both bars share one scale so their lengths can be compared directly.
-  const scale = Math.max(periodTithes, periodExpenses, 1);
+  const scale = Math.max(periodIncome, periodExpenses, 1);
   const barPct = (n: number) => (n > 0 ? Math.max((n / scale) * 100, 2) : 0);
 
   return (
@@ -73,14 +76,14 @@ export default function FinanceMonthFlow({
           <div
             className="finance-compare"
             role="img"
-            aria-label={`Tithes ${v(periodTithes)}, expenses ${v(periodExpenses)} ${inPeriod}`}
+            aria-label={`Tithes and offerings ${v(periodIncome)}, expenses ${v(periodExpenses)} ${inPeriod}`}
           >
             <div className="finance-compare-row">
-              <span className="finance-compare-label">Tithes</span>
+              <span className="finance-compare-label">Tithes &amp; Offerings</span>
               <div className="finance-compare-track">
-                <div className="finance-compare-bar is-in" style={{ width: `${barPct(periodTithes)}%` }} />
+                <div className="finance-compare-bar is-in" style={{ width: `${barPct(periodIncome)}%` }} />
               </div>
-              <span className="finance-compare-value">{v(periodTithes)}</span>
+              <span className="finance-compare-value">{v(periodIncome)}</span>
             </div>
             <div className="finance-compare-row">
               <span className="finance-compare-label">Expenses</span>
@@ -92,8 +95,8 @@ export default function FinanceMonthFlow({
           </div>
         ) : (
           <p className="finance-compare-empty">
-            <i className="fa-regular fa-folder-open" aria-hidden="true" /> Nothing to compare — no tithes or expenses{" "}
-            {inPeriod}.
+            <i className="fa-regular fa-folder-open" aria-hidden="true" /> Nothing to compare — no tithes, offerings or
+            expenses {inPeriod}.
           </p>
         )}
 
@@ -105,6 +108,10 @@ export default function FinanceMonthFlow({
           <div>
             <dt>Plus tithes received {inPeriod}</dt>
             <dd className="finance-up">+ {v(periodTithes)}</dd>
+          </div>
+          <div>
+            <dt>Plus offerings received {inPeriod}</dt>
+            <dd className="finance-up">+ {v(periodOfferings)}</dd>
           </div>
           <div>
             <dt>Minus expenses {inPeriod}</dt>

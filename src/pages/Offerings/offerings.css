@@ -95,3 +95,18 @@
     font-style: italic;
     color: var(--text-muted);
 }
+
+/* All / Sunday / Wednesday — pushed to the right of the month stepper. */
+.offering-filter {
+    margin-left: auto;
+}
+
+.offering-filter button i {
+    margin-right: 2px;
+}
+
+@media (max-width: 640px) {
+    .offering-filter {
+        margin-left: 0;
+    }
+}

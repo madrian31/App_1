@@ -6,7 +6,7 @@ import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
 import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
-import FinanceSundayTable from "../../components/finance/FinanceSundayTable";
+import FinanceServiceTable from "../../components/finance/FinanceServiceTable";
 import { exportFinanceReportPdf } from "../../services/finance/financeReportPdf";
 import "../Ledger/ledger.css";
 import "../Pledges/pledgesMembers.css";
@@ -32,15 +32,17 @@ export default function FinanceReport() {
     startingBalanceSet,
     periodLabel,
     periodTithes,
+    periodOfferings,
+    periodIncome,
     periodExpenses,
     changePct,
-    ytdTithes,
+    ytdIncome,
     ytdYear,
     startBalance,
     endBalance,
     months,
     selectedMonthKey,
-    sundays,
+    services,
     expenseCategories,
   } = useFinanceReport();
 
@@ -56,13 +58,15 @@ export default function FinanceReport() {
         chartTitle,
         fundBalance,
         periodTithes,
+        periodOfferings,
+        periodIncome,
         periodExpenses,
-        ytdTithes,
+        ytdIncome,
         ytdYear,
         startBalance,
         endBalance,
         months,
-        sundays,
+        services,
         expenseCategories,
       });
     } catch (err) {
@@ -163,8 +167,10 @@ export default function FinanceReport() {
             startingBalanceSet={startingBalanceSet}
             periodLabel={periodLabel}
             periodTithes={periodTithes}
+            periodOfferings={periodOfferings}
+            periodIncome={periodIncome}
             changePct={changePct}
-            ytdTithes={ytdTithes}
+            ytdIncome={ytdIncome}
             ytdYear={ytdYear}
             periodExpenses={periodExpenses}
           />
@@ -175,6 +181,7 @@ export default function FinanceReport() {
               periodLabel={periodLabel}
               startBalance={startBalance}
               periodTithes={periodTithes}
+              periodOfferings={periodOfferings}
               periodExpenses={periodExpenses}
               endBalance={endBalance}
             />
@@ -201,13 +208,8 @@ export default function FinanceReport() {
             </section>
 
             <section className="report-section">
-              <h2 className="report-section-title">Tithes per Sunday — {periodLabel}</h2>
-              <FinanceSundayTable
-                sundays={sundays}
-                loading={loading}
-                monthLabel={periodLabel}
-                monthTotal={periodTithes}
-              />
+              <h2 className="report-section-title">Collections per Service — {periodLabel}</h2>
+              <FinanceServiceTable services={services} loading={loading} periodLabel={periodLabel} />
             </section>
 
             <section className="report-section">

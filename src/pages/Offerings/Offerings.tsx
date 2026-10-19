@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import OfferingsTable from "../../components/offerings/OfferingsTable";
 import { fmtPeso } from "../../components/finance/financeFormat";
 import useOfferings from "../../hooks/useOfferings";
+import type { OfferingService } from "../../types/offering";
 import "../Finance/finance.css";
 import "./offerings.css";
 
@@ -9,6 +11,14 @@ import "./offerings.css";
 // wiring is in place — mirrors the TODO already in Tithes.tsx.
 const CURRENT_USER = "Unknown";
 const CAN_MANAGE = true; // TODO: derive from role (Admin/Moderator) once available
+
+type ServiceFilter = "all" | OfferingService;
+
+const SERVICE_FILTERS: { value: ServiceFilter; label: string; icon?: string }[] = [
+  { value: "all", label: "All" },
+  { value: "Sunday", label: "Sunday", icon: "fa-church" },
+  { value: "Wednesday", label: "Wednesday", icon: "fa-book-bible" },
+];
 
 export default function Offerings() {
   const {
@@ -31,6 +41,11 @@ export default function Offerings() {
     pastServiceCount,
     averagePerService,
   } = useOfferings(CURRENT_USER);
+
+  const [serviceFilter, setServiceFilter] = useState<ServiceFilter>("all");
+  const visibleDays = serviceFilter === "all" ? days : days.filter((d) => d.service === serviceFilter);
+  const visibleTotal =
+    serviceFilter === "all" ? total : serviceFilter === "Sunday" ? sundayTotal : wednesdayTotal;
 
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
@@ -69,6 +84,20 @@ export default function Offerings() {
                 Back to this month
               </button>
             )}
+
+            <div className="finance-period-modes offering-filter" role="group" aria-label="Show services">
+              {SERVICE_FILTERS.map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={serviceFilter === f.value ? "is-active" : undefined}
+                  aria-pressed={serviceFilter === f.value}
+                  onClick={() => setServiceFilter(f.value)}
+                >
+                  {f.icon && <i className={`fa-solid ${f.icon}`} aria-hidden="true" />} {f.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="summary-cards offering-kpis">
@@ -107,13 +136,13 @@ export default function Offerings() {
 
           <div className="members-card">
             <OfferingsTable
-              days={days}
+              days={visibleDays}
               entries={entries}
               rowStatus={rowStatus}
               loading={loading}
               canManage={CAN_MANAGE}
-              monthLabel={monthLabel}
-              total={total}
+              monthLabel={serviceFilter === "all" ? monthLabel : `${serviceFilter}s, ${monthLabel}`}
+              total={visibleTotal}
               onAmountChange={handleAmountChange}
               onBlur={flushSave}
             />

@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { getGeneralFundSettings } from "../services/finance/financeSettingsService";
 import { getTithes } from "../services/tithes/tithesService";
 import { getExpenses } from "../services/expenses/expensesService";
+import { getOfferings } from "../services/offerings/offeringsService";
 import type { Expense } from "../types/expense";
 import type { GeneralFundSettings } from "../types/finance";
+import type { Offering } from "../types/offering";
 import type { Tithe } from "../types/tithe";
 import { formatDisplayDate, toLocalISODate } from "../utils/date";
 
@@ -28,23 +30,27 @@ export interface FinanceMonthRow {
   month: number; // 0–11
   label: string; // "Oct", or "Oct 2026" when the rows span more than one year
   tithes: number;
+  offerings: number;
   expenses: number;
-  net: number;
+  net: number; // tithes + offerings − expenses
   /** General Fund balance at the end of this month; null for months still in the future. */
   balance: number | null;
 }
 
-export interface FinanceSundayRow {
+/** One service date (Sunday or Wednesday) and what came in that day. */
+export interface FinanceServiceRow {
   date: string; // ISO
-  givers: number;
+  givers: number; // members who gave tithes that day
+  tithes: number;
+  offerings: number;
   total: number;
 }
 
 export interface FinanceCategoryRow {
   category: string;
   total: number;
-  /** Share of the period's tithes this category used up; null when there were no tithes. */
-  pctOfTithes: number | null;
+  /** Share of the period's income (tithes + offerings) this category used up; null when there was none. */
+  pctOfIncome: number | null;
 }
 
 function monthStartISO(year: number, month: number): string {
@@ -93,9 +99,9 @@ function describePeriod(from: string, to: string): string {
 
 /**
  * Drives the Finance Report for any period (a month, a year, or custom From/To): the General Fund
- * balance (starting balance + tithes − expenses), period KPIs, a month-by-month breakdown,
- * per-Sunday totals and expenses by category. Totals only — no per-member amounts,
- * since individual giving is private.
+ * balance (starting balance + tithes + offerings − expenses), period KPIs, a month-by-month
+ * breakdown, per-service totals and expenses by category. Totals only — no per-member
+ * amounts, since individual giving is private.
  */
 export default function useFinanceReport() {
   const now = new Date();
@@ -106,23 +112,26 @@ export default function useFinanceReport() {
   const [dateTo, setDateTo] = useState(() => periodAround("month", new Date()).to);
 
   const [tithes, setTithes] = useState<Tithe[]>([]);
+  const [offerings, setOfferings] = useState<Offering[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settings, setSettings] = useState<GeneralFundSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Everything is computed client-side from one fetch: a church's records are small,
-  // and the running balance needs every tithe and expense ever recorded anyway.
+  // and the running balance needs every tithe, offering and expense ever recorded anyway.
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       getTithes("0000-01-01", "9999-12-31"),
+      getOfferings("0000-01-01", "9999-12-31"),
       getExpenses("0000-01-01", "9999-12-31"),
       getGeneralFundSettings(),
     ])
-      .then(([tithesList, expensesList, s]) => {
+      .then(([tithesList, offeringsList, expensesList, s]) => {
         if (cancelled) return;
         setTithes(tithesList);
+        setOfferings(offeringsList);
         setExpenses(expensesList);
         setSettings(s);
       })
@@ -198,32 +207,38 @@ export default function useFinanceReport() {
   // Saved at least once (even as ₱0) — dateModified is only written by saveGeneralFundSettings.
   const startingBalanceSet = Boolean(settings?.dateModified);
 
-  /** General Fund balance as of the end of `asOf` (inclusive):
-   *  starting balance + every tithe so far − every expense so far. */
+  /** General Fund balance as of the end of `asOf` (inclusive): starting balance
+   *  + every tithe and offering so far − every expense so far. */
   const balanceAsOf = useMemo(
     () => (asOf: string) =>
       startingBalance +
-      sumAmounts(tithes.filter((t) => t.date <= asOf)) -
+      sumAmounts(tithes.filter((t) => t.date <= asOf)) +
+      sumAmounts(offerings.filter((o) => o.date <= asOf)) -
       sumAmounts(expenses.filter((e) => e.date <= asOf)),
-    [tithes, expenses, startingBalance]
+    [tithes, offerings, expenses, startingBalance]
   );
 
   const report = useMemo(() => {
-    const tithesIn = (from: string, to: string) => tithes.filter((t) => t.date >= from && t.date <= to);
-    const expensesIn = (from: string, to: string) => expenses.filter((e) => e.date >= from && e.date <= to);
+    const inRange = (from: string, to: string) => (r: { date: string }) => r.date >= from && r.date <= to;
+    const tithesIn = (from: string, to: string) => tithes.filter(inRange(from, to));
+    const offeringsIn = (from: string, to: string) => offerings.filter(inRange(from, to));
+    const expensesIn = (from: string, to: string) => expenses.filter(inRange(from, to));
+    const incomeIn = (from: string, to: string) => sumAmounts(tithesIn(from, to)) + sumAmounts(offeringsIn(from, to));
 
     const periodTithes = sumAmounts(tithesIn(dateFrom, dateTo));
+    const periodOfferings = sumAmounts(offeringsIn(dateFrom, dateTo));
+    const periodIncome = periodTithes + periodOfferings;
     const periodExpenses = sumAmounts(expensesIn(dateFrom, dateTo));
 
     // Compare with the period of the same length right before this one.
     const lengthDays = Math.round((parseISO(dateTo).getTime() - parseISO(dateFrom).getTime()) / 86_400_000);
     const prevTo = addDays(dateFrom, -1);
     const prevFrom = addDays(prevTo, -lengthDays);
-    const prevTithes = sumAmounts(tithesIn(prevFrom, prevTo));
-    const changePct = prevTithes > 0 ? ((periodTithes - prevTithes) / prevTithes) * 100 : null;
+    const prevIncome = incomeIn(prevFrom, prevTo);
+    const changePct = prevIncome > 0 ? ((periodIncome - prevIncome) / prevIncome) * 100 : null;
 
     const toDate = parseISO(dateTo);
-    const ytdTithes = sumAmounts(tithesIn(monthStartISO(toDate.getFullYear(), 0), dateTo));
+    const ytdIncome = incomeIn(monthStartISO(toDate.getFullYear(), 0), dateTo);
 
     // Month rows: every month the period touches. A period inside one month shows that
     // month's whole year instead, so the chart still has context around it.
@@ -242,6 +257,7 @@ export default function useFinanceReport() {
       const from = singleMonth ? monthStartISO(year, month) : [monthStartISO(year, month), dateFrom].sort()[1];
       const to = singleMonth ? monthEndISO(year, month) : [monthEndISO(year, month), dateTo].sort()[0];
       const monthTithes = sumAmounts(tithesIn(from, to));
+      const monthOfferings = sumAmounts(offeringsIn(from, to));
       const monthExpenses = sumAmounts(expensesIn(from, to));
       const inFuture = from > todayISO;
       months.push({
@@ -250,21 +266,32 @@ export default function useFinanceReport() {
         month,
         label: multiYear ? `${FINANCE_MONTHS_SHORT[month]} ${year}` : FINANCE_MONTHS_SHORT[month],
         tithes: monthTithes,
+        offerings: monthOfferings,
         expenses: monthExpenses,
-        net: monthTithes - monthExpenses,
+        net: monthTithes + monthOfferings - monthExpenses,
         balance: inFuture ? null : balanceAsOf(to < todayISO ? to : todayISO),
       });
     }
 
-    const byDate = new Map<string, Tithe[]>();
-    tithesIn(dateFrom, dateTo).forEach((t) => byDate.set(t.date, [...(byDate.get(t.date) ?? []), t]));
-    const sundays: FinanceSundayRow[] = [...byDate.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, list]) => ({
-        date,
-        givers: new Set(list.map((t) => t.memberId || `anon:${t.id}`)).size,
-        total: sumAmounts(list),
-      }));
+    // Per-service collections: every date with tithes and/or an offering.
+    const tithesByDate = new Map<string, Tithe[]>();
+    tithesIn(dateFrom, dateTo).forEach((t) => tithesByDate.set(t.date, [...(tithesByDate.get(t.date) ?? []), t]));
+    const offeringByDate = new Map<string, number>();
+    offeringsIn(dateFrom, dateTo).forEach((o) => offeringByDate.set(o.date, (offeringByDate.get(o.date) ?? 0) + (o.amount || 0)));
+    const services: FinanceServiceRow[] = [...new Set([...tithesByDate.keys(), ...offeringByDate.keys()])]
+      .sort()
+      .map((date) => {
+        const list = tithesByDate.get(date) ?? [];
+        const dayTithes = sumAmounts(list);
+        const dayOfferings = offeringByDate.get(date) ?? 0;
+        return {
+          date,
+          givers: new Set(list.map((t) => t.memberId || `anon:${t.id}`)).size,
+          tithes: dayTithes,
+          offerings: dayOfferings,
+          total: dayTithes + dayOfferings,
+        };
+      });
 
     const byCategory = new Map<string, number>();
     expensesIn(dateFrom, dateTo).forEach((e) =>
@@ -274,7 +301,7 @@ export default function useFinanceReport() {
       .map(([category, total]) => ({
         category,
         total,
-        pctOfTithes: periodTithes > 0 ? (total / periodTithes) * 100 : null,
+        pctOfIncome: periodIncome > 0 ? (total / periodIncome) * 100 : null,
       }))
       .sort((a, b) => b.total - a.total);
 
@@ -282,19 +309,21 @@ export default function useFinanceReport() {
       periodLabel: describePeriod(dateFrom, dateTo),
       ytdYear: toDate.getFullYear(),
       periodTithes,
+      periodOfferings,
+      periodIncome,
       periodExpenses,
       changePct,
-      ytdTithes,
+      ytdIncome,
       // Fund on hand going into the period (what earlier months left over), and what's
-      // left once all of the period's tithes are in and its bills are paid.
+      // left once all of the period's tithes and offerings are in and its bills are paid.
       startBalance: balanceAsOf(addDays(dateFrom, -1)),
       endBalance: balanceAsOf(dateTo),
       months,
       selectedMonthKey: singleMonth ? `${fromDate.getFullYear()}-${fromDate.getMonth()}` : null,
-      sundays,
+      services,
       expenseCategories,
     };
-  }, [tithes, expenses, dateFrom, dateTo, todayISO, balanceAsOf]);
+  }, [tithes, offerings, expenses, dateFrom, dateTo, todayISO, balanceAsOf]);
 
 
   return {

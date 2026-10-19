@@ -277,7 +277,7 @@
 
 .finance-compare-row {
     display: grid;
-    grid-template-columns: 130px minmax(0, 1fr) auto;
+    grid-template-columns: 170px minmax(0, 1fr) auto;
     align-items: center;
     gap: 12px;
 

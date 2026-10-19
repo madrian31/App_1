@@ -15,6 +15,7 @@ export default function FinanceMonthlyTable({
   onSelectMonth,
 }: FinanceMonthlyTableProps) {
   const totalTithes = months.reduce((s, m) => s + m.tithes, 0);
+  const totalOfferings = months.reduce((s, m) => s + m.offerings, 0);
   const totalExpenses = months.reduce((s, m) => s + m.expenses, 0);
 
   return (
@@ -25,6 +26,7 @@ export default function FinanceMonthlyTable({
             <tr>
               <th>Month</th>
               <th className="finance-num">Tithes</th>
+              <th className="finance-num">Offerings</th>
               <th className="finance-num">Expenses</th>
               <th className="finance-num">Net</th>
               <th className="finance-num">Fund Balance</th>
@@ -33,7 +35,7 @@ export default function FinanceMonthlyTable({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} className="empty-cell">
+                <td colSpan={6} className="empty-cell">
                   <div className="empty-state">
                     <p>Loading…</p>
                   </div>
@@ -48,6 +50,7 @@ export default function FinanceMonthlyTable({
                 >
                   <td>{m.label}</td>
                   <td className="finance-num">{fmtPeso(m.tithes)}</td>
+                  <td className="finance-num">{fmtPeso(m.offerings)}</td>
                   <td className="finance-num">{fmtPeso(m.expenses)}</td>
                   <td className={`finance-num ${m.net < 0 ? "finance-down" : ""}`}>
                     {m.net < 0 ? "−" : ""}
@@ -55,7 +58,7 @@ export default function FinanceMonthlyTable({
                     {m.net < 0 && (
                       <i
                         className="fa-solid fa-triangle-exclamation"
-                        title="Deficit — expenses exceed tithes"
+                        title="Expenses were more than tithes and offerings"
                         aria-label="Deficit"
                         style={{ marginLeft: 6 }}
                       />
@@ -75,11 +78,14 @@ export default function FinanceMonthlyTable({
                 <td className="finance-num" style={{ fontWeight: 700, color: "var(--success)" }}>
                   {fmtPeso(totalTithes)}
                 </td>
+                <td className="finance-num" style={{ fontWeight: 700, color: "var(--success)" }}>
+                  {fmtPeso(totalOfferings)}
+                </td>
                 <td className="finance-num" style={{ fontWeight: 700 }}>
                   {fmtPeso(totalExpenses)}
                 </td>
                 <td className="finance-num" style={{ fontWeight: 700 }}>
-                  {fmtPeso(totalTithes - totalExpenses)}
+                  {fmtPeso(totalTithes + totalOfferings - totalExpenses)}
                 </td>
                 <td></td>
               </tr>

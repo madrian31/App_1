@@ -1,4 +1,4 @@
-import type { FinanceCategoryRow, FinanceMonthRow, FinanceSundayRow } from "../../hooks/useFinanceReport";
+import type { FinanceCategoryRow, FinanceMonthRow, FinanceServiceRow } from "../../hooks/useFinanceReport";
 import { formatDisplayDate, toLocalISODate } from "../../utils/date";
 import { getFinanceStatus } from "../../components/finance/financeStatus";
 
@@ -23,13 +23,15 @@ export interface FinanceReportPdfData {
   chartTitle: string; // what the month rows cover — the year for a single-month period
   fundBalance: number;
   periodTithes: number;
+  periodOfferings: number;
+  periodIncome: number; // tithes + offerings
   periodExpenses: number;
-  ytdTithes: number;
+  ytdIncome: number;
   ytdYear: number;
   startBalance: number;
   endBalance: number;
   months: FinanceMonthRow[];
-  sundays: FinanceSundayRow[];
+  services: FinanceServiceRow[];
   expenseCategories: FinanceCategoryRow[];
 }
 
@@ -55,8 +57,8 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   // ── KPI boxes ──
   const kpis: [string, string][] = [
     ["General Fund Balance (today)", peso(data.fundBalance)],
-    [`Tithes — ${data.periodLabel}`, peso(data.periodTithes)],
-    [`Tithes — YTD ${data.ytdYear}`, peso(data.ytdTithes)],
+    [`Tithes & Offerings — ${data.periodLabel}`, peso(data.periodIncome)],
+    [`Tithes & Offerings — YTD ${data.ytdYear}`, peso(data.ytdIncome)],
     [`Expenses — ${data.periodLabel}`, peso(data.periodExpenses)],
   ];
   const boxW = (CONTENT_W - 6) / 2;
@@ -80,13 +82,13 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
-  doc.text("General Fund Balance = starting balance + all tithes - all expenses.", MARGIN, y);
+  doc.text("General Fund Balance = starting balance + all tithes + all offerings - all expenses.", MARGIN, y);
   y += 10;
 
   // ── Financial status for the period ──
   // Same headline and wording as the on-screen Financial Status card.
   const inPeriod = data.periodLabel.includes("–") ? `(${data.periodLabel})` : `in ${data.periodLabel}`;
-  const s = getFinanceStatus(data.periodTithes, data.periodExpenses, data.endBalance, inPeriod, peso);
+  const s = getFinanceStatus(data.periodIncome, data.periodExpenses, data.endBalance, inPeriod, peso);
   doc.setFontSize(8.5);
   const figureText = s.figure ? ` ${s.figure.label}: ${s.figure.value}.` : "";
   const statusLines = doc.splitTextToSize(
@@ -100,9 +102,9 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.setFontSize(9.5);
   doc.setTextColor(...TEXT);
   doc.text(
-    `Previous Balance ${peso(data.startBalance)}  +  Tithes ${peso(data.periodTithes)}  -  Expenses ${peso(
-      data.periodExpenses
-    )}`,
+    `Previous Balance ${peso(data.startBalance)}  +  Tithes ${peso(data.periodTithes)}  +  Offerings ${peso(
+      data.periodOfferings
+    )}  -  Expenses ${peso(data.periodExpenses)}`,
     MARGIN + 4,
     y + 1.5
   );
@@ -153,13 +155,17 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   }
 
   sectionTitle(`Monthly Breakdown — ${data.chartTitle}`);
-  const w = CONTENT_W / 5;
-  const rowsTithes = data.months.reduce((s, m) => s + m.tithes, 0);
-  const rowsExpenses = data.months.reduce((s, m) => s + m.expenses, 0);
+  const monthW = 24;
+  const w = (CONTENT_W - monthW) / 5;
+  const sum = (key: "tithes" | "offerings" | "expenses") => data.months.reduce((s, m) => s + m[key], 0);
+  const rowsTithes = sum("tithes");
+  const rowsOfferings = sum("offerings");
+  const rowsExpenses = sum("expenses");
   table(
     [
-      { label: "Month", width: w },
+      { label: "Month", width: monthW },
       { label: "Tithes", width: w, right: true },
+      { label: "Offerings", width: w, right: true },
       { label: "Expenses", width: w, right: true },
       { label: "Net", width: w, right: true },
       { label: "Fund Balance", width: w, right: true },
@@ -167,29 +173,39 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     data.months.map((m) => [
       m.label,
       peso(m.tithes),
+      peso(m.offerings),
       peso(m.expenses),
       peso(m.net),
       m.balance === null ? "—" : peso(m.balance),
     ]),
-    ["Total", peso(rowsTithes), peso(rowsExpenses), peso(rowsTithes - rowsExpenses), ""]
+    [
+      "Total",
+      peso(rowsTithes),
+      peso(rowsOfferings),
+      peso(rowsExpenses),
+      peso(rowsTithes + rowsOfferings - rowsExpenses),
+      "",
+    ]
   );
 
-  sectionTitle(`Tithes per Sunday — ${data.periodLabel}`);
-  if (data.sundays.length === 0) {
+  sectionTitle(`Collections per Service — ${data.periodLabel}`);
+  if (data.services.length === 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
-    doc.text("No tithes recorded for this period.", MARGIN, y);
+    doc.text("No tithes or offerings recorded for this period.", MARGIN, y);
   } else {
-    const sw = CONTENT_W / 3;
+    const sw = CONTENT_W / 4;
+    const dash = (n: number) => (n > 0 ? peso(n) : "—");
     table(
       [
         { label: "Date", width: sw },
-        { label: "Givers", width: sw, right: true },
-        { label: "Total Tithes", width: sw, right: true },
+        { label: "Tithes", width: sw, right: true },
+        { label: "Offering", width: sw, right: true },
+        { label: "Total", width: sw, right: true },
       ],
-      data.sundays.map((s) => [formatDisplayDate(s.date), String(s.givers), peso(s.total)]),
-      ["Total", "", peso(data.periodTithes)]
+      data.services.map((s) => [formatDisplayDate(s.date), dash(s.tithes), dash(s.offerings), peso(s.total)]),
+      ["Total", peso(data.periodTithes), peso(data.periodOfferings), peso(data.periodIncome)]
     );
   }
 
@@ -209,12 +225,12 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       [
         { label: "Category", width: cw },
         { label: "Amount", width: cw, right: true },
-        { label: "% of Tithes", width: cw, right: true },
+        { label: "% of Income", width: cw, right: true },
       ],
       data.expenseCategories.map((c) => [
         c.category,
         peso(c.total),
-        c.pctOfTithes === null ? "—" : `${c.pctOfTithes.toFixed(1)}%`,
+        c.pctOfIncome === null ? "—" : `${c.pctOfIncome.toFixed(1)}%`,
       ]),
       ["Total", peso(data.periodExpenses), ""]
     );

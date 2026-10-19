@@ -19,7 +19,7 @@ export default function FinanceCategoryTable({ categories, loading, monthLabel, 
             <tr>
               <th>Category</th>
               <th className="finance-num">Amount</th>
-              <th className="finance-num">% of Tithes</th>
+              <th className="finance-num">% of Income</th>
             </tr>
           </thead>
           <tbody>
@@ -50,7 +50,7 @@ export default function FinanceCategoryTable({ categories, loading, monthLabel, 
                   <td className="finance-num" style={{ fontWeight: 600 }}>
                     {fmtPeso(c.total)}
                   </td>
-                  <td className="finance-num">{c.pctOfTithes === null ? "—" : `${c.pctOfTithes.toFixed(1)}%`}</td>
+                  <td className="finance-num">{c.pctOfIncome === null ? "—" : `${c.pctOfIncome.toFixed(1)}%`}</td>
                 </tr>
               ))
             )}
