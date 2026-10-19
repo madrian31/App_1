@@ -1,9 +1,20 @@
 import useTithesByMember, { type MemberTitheFilter } from "../../hooks/useTithesByMember";
-import { formatDisplayDate } from "../../utils/date";
+import { formatDisplayDate, toLocalISODate } from "../../utils/date";
+import { lastSundayISO } from "../../hooks/useTithes";
 import TithesMemberTable from "./TithesMemberTable";
 
 function fmt(n: number): string {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** "2026-10-18" → "Sunday, October 18, 2026" — easier to read than the browser's 10/18/2026. */
+function longDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 const FILTER_OPTIONS: { value: MemberTitheFilter; label: string }[] = [
@@ -39,6 +50,13 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
     giverCount,
   } = useTithesByMember(currentUser);
 
+  const todayISO = toLocalISODate(new Date());
+  const thisSunday = lastSundayISO();
+  const nextWeek = new Date(`${date}T00:00:00`);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  // No tithes to record for services that haven't happened yet.
+  const canGoNext = toLocalISODate(nextWeek) <= todayISO;
+
   return (
     <>
       <div className="summary-cards">
@@ -59,15 +77,39 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
       </div>
 
       <div className="toolbar">
-        <div className="tithe-date-nav">
-          <button className="btn-icon" title="Previous week" onClick={prevSunday}>
-            <i className="fa-solid fa-chevron-left" />
+        <div className="finance-period-stepper tithe-date-stepper">
+          <button type="button" onClick={prevSunday} aria-label="Previous week" title="Previous week">
+            <i className="fa-solid fa-chevron-left" aria-hidden="true" />
           </button>
-          <input type="date" value={date} onChange={(e) => e.target.value && setDate(e.target.value)} />
-          <button className="btn-icon" title="Next week" onClick={nextSunday}>
-            <i className="fa-solid fa-chevron-right" />
+          {/* Readable date ("Sunday, October 18, 2026"); clicking it opens the browser's date picker. */}
+          <label className="tithe-date-label" title="Pick a date">
+            <span aria-live="polite">{longDate(date)}</span>
+            <i className="fa-regular fa-calendar" aria-hidden="true" />
+            <input
+              type="date"
+              className="tithe-date-input"
+              value={date}
+              max={todayISO}
+              aria-label="Pick a date"
+              onClick={(e) => e.currentTarget.showPicker?.()}
+              onChange={(e) => e.target.value && setDate(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={nextSunday}
+            disabled={!canGoNext}
+            aria-label="Next week"
+            title="Next week"
+          >
+            <i className="fa-solid fa-chevron-right" aria-hidden="true" />
           </button>
         </div>
+        {date !== thisSunday && (
+          <button type="button" className="finance-period-today" onClick={() => setDate(thisSunday)}>
+            Back to this Sunday
+          </button>
+        )}
 
         <div className="search-wrap">
           <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />

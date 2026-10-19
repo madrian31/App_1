@@ -7,6 +7,7 @@ import TithesTable from "../../components/tithes/TithesTable";
 import TitheFormModal from "../../components/tithes/TitheFormModal";
 import TithesMemberView from "../../components/tithes/TithesMemberView";
 import "../Ledger/ledger.css";
+import "../Finance/finance.css";
 import "./tithes.css";
 
 // TODO: replace with the actual logged-in user's name/role once auth/session

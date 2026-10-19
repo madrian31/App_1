@@ -55,22 +55,7 @@
    Members view — date nav + inline inputs
    ========================================================= */
 
-.tithe-date-nav {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
 
-.tithe-date-nav input[type="date"] {
-    padding: 8px 10px;
-
-    border: 1px solid var(--border);
-    border-radius: 8px;
-
-    font-size: 14px;
-    color: var(--text);
-    background: var(--card);
-}
 
 .tithe-member-table td {
     vertical-align: middle;
@@ -112,3 +97,57 @@
     text-align: right;
 }
 
+
+/* =========================================================
+   Members view — readable date stepper:
+   ‹ Sunday, October 18, 2026 📅 ›  (reuses .finance-period-stepper)
+   ========================================================= */
+
+.tithe-date-label {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    min-width: 250px;
+    padding: 0 12px;
+
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+
+    cursor: pointer;
+}
+
+.tithe-date-label span {
+    flex: 1;
+    text-align: center;
+}
+
+.tithe-date-label i {
+    color: var(--text-muted);
+}
+
+.tithe-date-label:hover i {
+    color: var(--primary);
+}
+
+/* Invisible native date input stretched over the label — keeps the browser's picker
+   (and keyboard support) while showing the readable date instead of 10/18/2026. */
+.tithe-date-input {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+
+    cursor: pointer;
+}
+
+.tithe-date-label:focus-within {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    border-radius: 6px;
+}
