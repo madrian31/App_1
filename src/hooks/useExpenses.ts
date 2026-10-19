@@ -193,7 +193,7 @@ export default function useExpenses(currentUser: string) {
   }, [entries, filteredEntries]);
 
   function exportCSV() {
-    let csv = "Date,Category,Description,Amount,Added By\n";
+    let csv = "Due Date,Category,Description,Amount,Added By\n";
     filteredEntries.forEach((e) => {
       const q = (s: string) => `"${(s || "").replace(/"/g, '""')}"`;
       csv += `${q(formatDisplayDate(e.date))},${q(e.category)},${q(e.description)},${e.amount},${q(e.addedBy)}\n`;

@@ -50,7 +50,7 @@ export default function ExpenseFormModal({
           </div>
 
           <div className="ledger-field">
-            <label>Date Paid</label>
+            <label>Due Date</label>
             <input type="date" value={form.date} onChange={(e) => onChange("date", e.target.value)} />
           </div>
 
@@ -70,7 +70,7 @@ export default function ExpenseFormModal({
             <label>Description</label>
             <input
               type="text"
-              placeholder="e.g. Meralco — Sept bill"
+              placeholder="e.g. Meralco — Oct bill"
               value={form.description}
               onChange={(e) => onChange("description", e.target.value)}
             />

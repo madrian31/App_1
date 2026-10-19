@@ -57,7 +57,7 @@ export default function Expenses() {
           <div className="page-header">
             <div className="page-header-left">
               <h1>Expenses</h1>
-              <p>General Fund expenses — electricity, internet, water, and others — for {monthLabel}.</p>
+              <p>Bills and expenses to pay for {monthLabel} — electricity, internet, water, and others.</p>
             </div>
           </div>
 

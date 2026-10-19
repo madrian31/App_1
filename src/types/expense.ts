@@ -1,4 +1,4 @@
-/** A General Fund expense (utility bill, supplies, repairs…). Stored in the `expenses` collection. */
+/** A bill or expense the General Fund has to cover (utilities, supplies, repairs…). Stored in the `expenses` collection. */
 export interface Expense {
   id: string;
 
@@ -6,7 +6,7 @@ export interface Expense {
   category: string;
   description: string;
   amount: number;
-  date: string; // ISO date string, e.g. "2026-10-18" — the date paid
+  date: string; // ISO due date, e.g. "2026-10-25" — decides which month the bill belongs to
 
   // ── System / meta fields ──
   addedBy: string;

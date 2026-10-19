@@ -24,7 +24,7 @@ export default function OpeningBalanceModal({
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h2 className="modal-title">General Fund Opening Balance</h2>
+        <h2 className="modal-title">Set General Fund Balance</h2>
         <p className="finance-modal-help">
           The money the church already had before tithes were recorded in the app. Tithes dated on or after the
           "as of" date are added to it.

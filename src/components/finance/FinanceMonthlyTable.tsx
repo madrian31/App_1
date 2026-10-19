@@ -50,7 +50,18 @@ export default function FinanceMonthlyTable({
                   <td>{m.label}</td>
                   <td className="finance-num">{fmtPeso(m.tithes)}</td>
                   <td className="finance-num">{fmtPeso(m.expenses)}</td>
-                  <td className={`finance-num ${m.net < 0 ? "finance-down" : ""}`}>{fmtPeso(m.net)}</td>
+                  <td className={`finance-num ${m.net < 0 ? "finance-down" : ""}`}>
+                    {m.net < 0 ? "−" : ""}
+                    {fmtPeso(Math.abs(m.net))}
+                    {m.net < 0 && (
+                      <i
+                        className="fa-solid fa-triangle-exclamation"
+                        title="Deficit — expenses exceed tithes"
+                        aria-label="Deficit"
+                        style={{ marginLeft: 6 }}
+                      />
+                    )}
+                  </td>
                   <td className="finance-num" style={{ fontWeight: 600 }}>
                     {m.balance === null ? <span className="date-text">—</span> : fmtPeso(m.balance)}
                   </td>

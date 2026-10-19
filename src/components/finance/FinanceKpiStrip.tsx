@@ -7,6 +7,7 @@ interface FinanceKpiStripProps {
   fundBalance: number;
   openingBalance: number;
   openingDate: string;
+  openingSet: boolean; // hides the "Set Balance" button once a balance has been saved
   monthLabel: string; // "October 2026"
   monthTithes: number;
   monthChangePct: number | null;
@@ -32,6 +33,7 @@ export default function FinanceKpiStrip({
   fundBalance,
   openingBalance,
   openingDate,
+  openingSet,
   monthLabel,
   monthTithes,
   monthChangePct,
@@ -49,9 +51,11 @@ export default function FinanceKpiStrip({
         <span className="finance-kpi-sub">
           Opening {fmtPeso(openingBalance)}
           {openingDate ? ` as of ${formatDisplayDate(openingDate)}` : ""} + tithes − expenses
-          <button type="button" className="finance-link-btn" onClick={onEditOpening}>
-            <i className="fa-regular fa-pen-to-square" aria-hidden="true" /> Opening balance
-          </button>
+          {!loading && !openingSet && (
+            <button type="button" className="finance-link-btn" onClick={onEditOpening}>
+              <i className="fa-regular fa-pen-to-square" aria-hidden="true" /> Set Balance
+            </button>
+          )}
         </span>
       </div>
 

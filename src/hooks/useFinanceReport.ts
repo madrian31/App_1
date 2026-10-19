@@ -100,6 +100,8 @@ export default function useFinanceReport(currentUser: string) {
 
   const openingBalance = settings?.openingBalance ?? 0;
   const openingDate = settings?.openingDate ?? "";
+  // Saved at least once (even as ₱0) — dateModified is only written by saveGeneralFundSettings.
+  const openingSet = Boolean(settings?.dateModified);
 
   /** General Fund balance as of the end of `dateTo` (inclusive). Only tithes and
    *  expenses dated on/after the opening date move it. */
@@ -174,6 +176,10 @@ export default function useFinanceReport(currentUser: string) {
       prevMonthTithes,
       monthChangePct,
       monthExpenses: expensesBetween(monthFrom, monthTo),
+      // Fund on hand going into the month (what previous months left over), and what's
+      // left once all of this month's tithes are in and its bills are paid.
+      monthStartBalance: balanceAsOf(toLocalISODate(new Date(curYear, curMonth, 0))),
+      monthEndBalance: balanceAsOf(monthTo),
       ytdTithes,
       ytdExpenses: expensesBetween(monthStartISO(curYear, 0), monthTo),
       yearTithes: sumAmounts(between(monthStartISO(curYear, 0), monthEndISO(curYear, 11))),
@@ -209,6 +215,7 @@ export default function useFinanceReport(currentUser: string) {
     fundBalance: balanceAsOf(todayISO),
     openingBalance,
     openingDate,
+    openingSet,
 
     showOpeningForm,
     setShowOpeningForm,

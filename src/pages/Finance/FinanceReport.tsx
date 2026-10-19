@@ -3,6 +3,7 @@ import { Sidebar } from "../../components/sidebar/Sidebar";
 import useFinanceReport, { FINANCE_MONTHS } from "../../hooks/useFinanceReport";
 import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
 import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
+import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
 import FinanceSundayTable from "../../components/finance/FinanceSundayTable";
@@ -28,6 +29,7 @@ export default function FinanceReport() {
     fundBalance,
     openingBalance,
     openingDate,
+    openingSet,
     showOpeningForm,
     setShowOpeningForm,
     savingOpening,
@@ -35,6 +37,8 @@ export default function FinanceReport() {
     monthTithes,
     monthChangePct,
     monthExpenses,
+    monthStartBalance,
+    monthEndBalance,
     ytdTithes,
     yearTithes,
     months,
@@ -121,6 +125,7 @@ export default function FinanceReport() {
             fundBalance={fundBalance}
             openingBalance={openingBalance}
             openingDate={openingDate}
+            openingSet={openingSet}
             monthLabel={monthLabel}
             monthTithes={monthTithes}
             monthChangePct={monthChangePct}
@@ -128,6 +133,17 @@ export default function FinanceReport() {
             monthExpenses={monthExpenses}
             onEditOpening={() => setShowOpeningForm(true)}
           />
+
+          <section className="report-section">
+            <FinanceMonthFlow
+              loading={loading}
+              monthLabel={monthLabel}
+              startBalance={monthStartBalance}
+              monthTithes={monthTithes}
+              monthExpenses={monthExpenses}
+              endBalance={monthEndBalance}
+            />
+          </section>
 
           <section className="report-section">
             <FinanceTrendChart months={months} year={curYear} selectedMonth={curMonth} onSelectMonth={setCurMonth} />

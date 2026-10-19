@@ -35,7 +35,7 @@ export default function ExpensesTable({
       <table className="members-table">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>Due Date</th>
             <th>Category</th>
             <th>Description</th>
             <th className="col-hide-mobile">Added By</th>
