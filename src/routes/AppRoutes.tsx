@@ -24,6 +24,7 @@ import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance
 import Tithes from "../pages/Tithes/Tithes";
 import FinanceReport from "../pages/Finance/FinanceReport";
 import Expenses from "../pages/Expenses/Expenses";
+import Offerings from "../pages/Offerings/Offerings";
 import ComingSoon from "../pages/ComingSoon/ComingSoon";
 
 export default function AppRoutes() {
@@ -63,7 +64,7 @@ export default function AppRoutes() {
       <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
       <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
       <Route path="/Finance/Tithes" element={<Tithes />} />
-      <Route path="/Finance/Offerings" element={<ComingSoon title="Offerings" />} />
+      <Route path="/Finance/Offerings" element={<Offerings />} />
       <Route path="/Finance/Expenses" element={<Expenses />} />
       {/* Old per-utility pages were merged into Expenses — keep bookmarks working. */}
       <Route path="/Finance/Expenses/*" element={<Navigate to="/Finance/Expenses" replace />} />

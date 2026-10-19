@@ -1,0 +1,97 @@
+/* =========================================================
+   Offerings — reuses the period stepper from finance.css
+   ========================================================= */
+
+/* KPI row fills the full width, like the Finance Report. */
+.summary-cards.offering-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.offering-kpis .summary-card-label i {
+    margin-right: 4px;
+}
+
+@media (max-width: 1000px) {
+    .summary-cards.offering-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .summary-cards.offering-kpis {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Table ── */
+
+.offering-table td {
+    vertical-align: middle;
+}
+
+.offering-date {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.offering-row-recorded td {
+    background: #f3fbf7;
+}
+
+.offering-row-future td {
+    color: var(--text-muted);
+    background: #fafafa;
+}
+
+.offering-service {
+    white-space: nowrap;
+}
+
+.offering-service--sunday {
+    background: #eef2ff;
+    color: #3730a3;
+    border: 1px solid #c7d2fe;
+}
+
+.offering-service--wednesday {
+    background: #fdf4ff;
+    color: #86198f;
+    border: 1px solid #f5d0fe;
+}
+
+.offering-amount-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.offering-input {
+    width: 140px;
+    padding: 8px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    font-size: 15px;
+    text-align: right;
+    color: var(--text);
+    background: var(--card);
+}
+
+.offering-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+.offering-input:disabled {
+    background: #f6f6f6;
+}
+
+.offering-upcoming {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text-muted);
+}
