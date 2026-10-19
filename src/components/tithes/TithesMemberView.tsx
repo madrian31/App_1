@@ -1,4 +1,4 @@
-import useTithesByMember, { type MemberTitheFilter } from "../../hooks/useTithesByMember";
+import useTithesByMember from "../../hooks/useTithesByMember";
 import { formatDisplayDate, toLocalISODate } from "../../utils/date";
 import { lastSundayISO } from "../../hooks/useTithes";
 import TithesMemberTable from "./TithesMemberTable";
@@ -7,21 +7,18 @@ function fmt(n: number): string {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** "2026-10-18" → "Sunday, October 18, 2026" — easier to read than the browser's 10/18/2026. */
+/** "2026-10-18" → "Oct 18" — easier to read than the browser's 10/18/2026. Only the
+ *  unexpected parts show: the weekday when it isn't a Sunday ("Fri, Dec 25"), and the
+ *  year when it isn't this year ("Dec 28, 2025"), so Dec/Jan stays unambiguous. */
 function longDate(iso: string): string {
-  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
+  const d = new Date(`${iso}T00:00:00`);
+  return d.toLocaleDateString("en-US", {
+    weekday: d.getDay() === 0 ? undefined : "short",
+    month: "short",
     day: "numeric",
-    year: "numeric",
+    year: d.getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   });
 }
-
-const FILTER_OPTIONS: { value: MemberTitheFilter; label: string }[] = [
-  { value: "all", label: "All members" },
-  { value: "given", label: "With tithe" },
-  { value: "notGiven", label: "No tithe yet" },
-];
 
 interface TithesMemberViewProps {
   currentUser: string;
@@ -37,8 +34,6 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
     nextSunday,
     search,
     setSearch,
-    filter,
-    setFilter,
     members,
     memberCount,
     loading,
@@ -81,7 +76,7 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
           <button type="button" onClick={prevSunday} aria-label="Previous week" title="Previous week">
             <i className="fa-solid fa-chevron-left" aria-hidden="true" />
           </button>
-          {/* Readable date ("Sunday, October 18, 2026"); clicking it opens the browser's date picker. */}
+          {/* Readable date ("Oct 18"); clicking it opens the browser's date picker. */}
           <label className="tithe-date-label" title="Pick a date">
             <span aria-live="polite">{longDate(date)}</span>
             <i className="fa-regular fa-calendar" aria-hidden="true" />
@@ -107,7 +102,7 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
         </div>
         {date !== thisSunday && (
           <button type="button" className="finance-period-today" onClick={() => setDate(thisSunday)}>
-            Back to this Sunday
+            Back to current Sunday
           </button>
         )}
 
@@ -119,17 +114,6 @@ export default function TithesMemberView({ currentUser, canManage }: TithesMembe
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-
-        <div className="filter-select-wrap">
-          <i className="fa-solid fa-filter" aria-hidden="true" />
-          <select value={filter} onChange={(e) => setFilter(e.target.value as MemberTitheFilter)}>
-            {FILTER_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 

@@ -100,7 +100,7 @@
 
 /* =========================================================
    Members view — readable date stepper:
-   ‹ Sunday, October 18, 2026 📅 ›  (reuses .finance-period-stepper)
+   ‹ Oct 18 📅 ›  (reuses .finance-period-stepper)
    ========================================================= */
 
 .tithe-date-label {
@@ -110,8 +110,9 @@
     align-items: center;
     gap: 8px;
 
-    min-width: 250px;
-    padding: 0 12px;
+    min-width: 0;
+    padding: 0 10px;
+    white-space: nowrap;
 
     font-size: 15px;
     font-weight: 700;

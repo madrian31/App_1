@@ -5,7 +5,6 @@ import type { Member } from "../types/member";
 import { lastSundayISO } from "./useTithes";
 
 export type RowSaveStatus = "saving" | "saved" | "error";
-export type MemberTitheFilter = "all" | "given" | "notGiven";
 
 const SAVE_DEBOUNCE_MS = 800;
 const SAVED_BADGE_MS = 1500;
@@ -40,7 +39,6 @@ export default function useTithesByMember(currentUser: string) {
 
   const [date, setDate] = useState(lastSundayISO);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<MemberTitheFilter>("all");
 
   const [entries, setEntries] = useState<Record<string, EntryState>>({}); // keyed by memberId
   const [loadedDate, setLoadedDate] = useState("");
@@ -196,14 +194,8 @@ export default function useTithesByMember(currentUser: string) {
 
   const visibleMembers = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return members.filter((m) => {
-      if (q && !memberFullName(m).toLowerCase().includes(q)) return false;
-      const given = (parseFloat(entries[m.id]?.amount || "0") || 0) > 0;
-      if (filter === "given") return given;
-      if (filter === "notGiven") return !given;
-      return true;
-    });
-  }, [members, entries, search, filter]);
+    return q ? members.filter((m) => memberFullName(m).toLowerCase().includes(q)) : members;
+  }, [members, search]);
 
   const total = members.reduce((s, m) => s + amountOf(m.id), 0);
   const giverCount = members.filter((m) => amountOf(m.id) > 0).length;
@@ -215,8 +207,6 @@ export default function useTithesByMember(currentUser: string) {
     nextSunday: () => setDate((d) => addWeeks(d, 1)),
     search,
     setSearch,
-    filter,
-    setFilter,
 
     members: visibleMembers,
     memberCount: members.length,
