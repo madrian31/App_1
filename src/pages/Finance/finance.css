@@ -86,12 +86,6 @@
     background: #eef2ff;
 }
 
-.finance-modal-help {
-    margin: -4px 0 14px;
-
-    font-size: 13px;
-    color: var(--text-muted);
-}
 
 .finance-report-grid {
     display: grid;
@@ -366,4 +360,33 @@
         grid-column: 1 / -1;
         order: 3;
     }
+}
+
+/* No tithes or expenses in the period — neutral, not "good" or "bad". */
+.is-empty .finance-status-verdict {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.finance-compare-empty {
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #f9fafb;
+
+    font-size: 15px;
+    color: var(--text-muted);
+}
+
+.finance-status-subtitle {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 14px;
+}
+
+/* "Set starting balance in Settings" prompt on the hero card — only until it's set. */
+.finance-kpi-setup {
+    align-self: flex-start;
+    margin: 8px 0 0;
+    text-decoration: none;
 }

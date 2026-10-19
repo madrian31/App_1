@@ -4,22 +4,23 @@ import type { GeneralFundSettings } from "../../types/finance";
 
 const generalFundRef = doc(db, "financeSettings", "generalFund");
 
-const DEFAULT_SETTINGS: GeneralFundSettings = { openingBalance: 0, openingDate: "", modifiedBy: "", dateModified: "" };
+const DEFAULT_SETTINGS: GeneralFundSettings = { openingBalance: 0, modifiedBy: "", dateModified: "" };
 
 export async function getGeneralFundSettings(): Promise<GeneralFundSettings> {
   const snap = await getDoc(generalFundRef);
   if (!snap.exists()) return DEFAULT_SETTINGS;
-  return { ...DEFAULT_SETTINGS, ...(snap.data() as Partial<GeneralFundSettings>) };
+  const data = snap.data() as Partial<GeneralFundSettings>;
+  return {
+    openingBalance: data.openingBalance ?? 0,
+    modifiedBy: data.modifiedBy ?? "",
+    dateModified: data.dateModified ?? "",
+  };
 }
 
-export async function saveGeneralFundSettings(
-  openingBalance: number,
-  openingDate: string,
-  currentUser: string
-): Promise<GeneralFundSettings> {
+/** Overwrites the whole doc, so a legacy `openingDate` field from older versions is dropped. */
+export async function saveGeneralFundSettings(openingBalance: number, currentUser: string): Promise<GeneralFundSettings> {
   const settings: GeneralFundSettings = {
     openingBalance,
-    openingDate,
     modifiedBy: currentUser,
     dateModified: new Date().toISOString(),
   };

@@ -1,20 +1,16 @@
 import { Link } from "react-router-dom";
-import { formatDisplayDate } from "../../utils/date";
 import { fmtPeso } from "./financeFormat";
 
 interface FinanceKpiStripProps {
   loading: boolean;
   fundBalance: number;
-  openingBalance: number;
-  openingDate: string;
-  openingSet: boolean; // hides the "Set Balance" button once a balance has been saved
+  startingBalanceSet: boolean; // shows a "set it in Settings" prompt until it has been saved
   periodLabel: string; // "October 2026", "Aug – Oct 2026"…
   periodTithes: number;
   changePct: number | null; // vs the period of the same length right before
   ytdTithes: number;
   ytdYear: number;
   periodExpenses: number;
-  onEditOpening: () => void;
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {
@@ -32,16 +28,13 @@ function ChangeBadge({ pct }: { pct: number | null }) {
 export default function FinanceKpiStrip({
   loading,
   fundBalance,
-  openingBalance,
-  openingDate,
-  openingSet,
+  startingBalanceSet,
   periodLabel,
   periodTithes,
   changePct,
   ytdTithes,
   ytdYear,
   periodExpenses,
-  onEditOpening,
 }: FinanceKpiStripProps) {
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
@@ -50,15 +43,12 @@ export default function FinanceKpiStrip({
       <div className="summary-card finance-kpi-hero">
         <span className="summary-card-label">General Fund Balance</span>
         <span className="summary-card-value">{v(fundBalance)}</span>
-        <span className="finance-kpi-sub">
-          Opening {fmtPeso(openingBalance)}
-          {openingDate ? ` as of ${formatDisplayDate(openingDate)}` : ""} + tithes − expenses
-          {!loading && !openingSet && (
-            <button type="button" className="finance-link-btn" onClick={onEditOpening}>
-              <i className="fa-regular fa-pen-to-square" aria-hidden="true" /> Set Balance
-            </button>
-          )}
-        </span>
+        <span className="finance-kpi-sub">All the money the church has today</span>
+        {!loading && !startingBalanceSet && (
+          <Link to="/settings" className="finance-link-btn finance-kpi-setup">
+            <i className="fa-solid fa-gear" aria-hidden="true" /> Set starting balance in Settings
+          </Link>
+        )}
       </div>
 
       <div className="summary-card">

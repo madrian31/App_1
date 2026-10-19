@@ -7,15 +7,11 @@ import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
 import FinanceSundayTable from "../../components/finance/FinanceSundayTable";
-import OpeningBalanceModal from "../../components/finance/OpeningBalanceModal";
 import { exportFinanceReportPdf } from "../../services/finance/financeReportPdf";
 import "../Ledger/ledger.css";
 import "../Pledges/pledgesMembers.css";
 import "../Attendance/attendanceReport.css";
 import "./finance.css";
-
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
 
 export default function FinanceReport() {
   const {
@@ -29,13 +25,7 @@ export default function FinanceReport() {
     loading,
     error,
     fundBalance,
-    openingBalance,
-    openingDate,
-    openingSet,
-    showOpeningForm,
-    setShowOpeningForm,
-    savingOpening,
-    saveOpening,
+    startingBalanceSet,
     periodLabel,
     periodTithes,
     periodExpenses,
@@ -48,7 +38,7 @@ export default function FinanceReport() {
     selectedMonthKey,
     sundays,
     expenseCategories,
-  } = useFinanceReport(CURRENT_USER);
+  } = useFinanceReport();
 
   const [exporting, setExporting] = useState(false);
   // A period inside one month charts that month's whole year for context.
@@ -61,8 +51,6 @@ export default function FinanceReport() {
         periodLabel,
         chartTitle,
         fundBalance,
-        openingBalance,
-        openingDate,
         periodTithes,
         periodExpenses,
         ytdTithes,
@@ -136,22 +124,21 @@ export default function FinanceReport() {
           <FinanceKpiStrip
             loading={loading}
             fundBalance={fundBalance}
-            openingBalance={openingBalance}
-            openingDate={openingDate}
-            openingSet={openingSet}
+            startingBalanceSet={startingBalanceSet}
             periodLabel={periodLabel}
             periodTithes={periodTithes}
             changePct={changePct}
             ytdTithes={ytdTithes}
             ytdYear={ytdYear}
             periodExpenses={periodExpenses}
-            onEditOpening={() => setShowOpeningForm(true)}
           />
 
           <section className="report-section">
             <FinanceMonthFlow
               loading={loading}
               periodLabel={periodLabel}
+              dateFrom={dateFrom}
+              dateTo={dateTo}
               startBalance={startBalance}
               periodTithes={periodTithes}
               periodExpenses={periodExpenses}
@@ -200,15 +187,6 @@ export default function FinanceReport() {
             </section>
           </div>
 
-          {showOpeningForm && (
-            <OpeningBalanceModal
-              openingBalance={openingBalance}
-              openingDate={openingDate}
-              saving={savingOpening}
-              onSave={saveOpening}
-              onClose={() => setShowOpeningForm(false)}
-            />
-          )}
         </div>
       </main>
     </div>

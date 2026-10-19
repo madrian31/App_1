@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getGeneralFundSettings, saveGeneralFundSettings } from "../services/finance/financeSettingsService";
+import { getGeneralFundSettings } from "../services/finance/financeSettingsService";
 import { getTithes } from "../services/tithes/tithesService";
 import { getExpenses } from "../services/expenses/expensesService";
 import type { Expense } from "../types/expense";
@@ -32,7 +32,7 @@ export interface FinanceMonthRow {
   tithes: number;
   expenses: number;
   net: number;
-  /** General Fund balance at the end of this month; null before the opening date or in the future. */
+  /** General Fund balance at the end of this month; null for months still in the future. */
   balance: number | null;
 }
 
@@ -103,11 +103,11 @@ function describePeriod(from: string, to: string): string {
 
 /**
  * Drives the Finance Report for any period (preset or custom From/To): the General Fund
- * balance (opening balance + tithes − expenses), period KPIs, a month-by-month breakdown,
+ * balance (starting balance + tithes − expenses), period KPIs, a month-by-month breakdown,
  * per-Sunday totals and expenses by category. Totals only — no per-member amounts,
  * since individual giving is private.
  */
-export default function useFinanceReport(currentUser: string) {
+export default function useFinanceReport() {
   const now = new Date();
   const todayISO = toLocalISODate(now);
 
@@ -121,11 +121,9 @@ export default function useFinanceReport(currentUser: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [showOpeningForm, setShowOpeningForm] = useState(false);
-  const [savingOpening, setSavingOpening] = useState(false);
 
   // Everything is computed client-side from one fetch: a church's records are small,
-  // and the running balance needs every tithe and expense since the opening date anyway.
+  // and the running balance needs every tithe and expense ever recorded anyway.
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -182,22 +180,20 @@ export default function useFinanceReport(currentUser: string) {
     setDateTo(monthEndISO(year, month));
   }
 
-  const openingBalance = settings?.openingBalance ?? 0;
-  const openingDate = settings?.openingDate ?? "";
+  // The money on hand before anything was recorded in the app (Settings → General).
+  const startingBalance = settings?.openingBalance ?? 0;
   // Saved at least once (even as ₱0) — dateModified is only written by saveGeneralFundSettings.
-  const openingSet = Boolean(settings?.dateModified);
+  const startingBalanceSet = Boolean(settings?.dateModified);
 
-  /** General Fund balance as of the end of `asOf` (inclusive). Only tithes and
-   *  expenses dated on/after the opening date move it. */
-  const balanceAsOf = useMemo(() => {
-    const counts = (r: { date: string }) => !openingDate || r.date >= openingDate;
-    const countedTithes = tithes.filter(counts);
-    const countedExpenses = expenses.filter(counts);
-    return (asOf: string) =>
-      openingBalance +
-      sumAmounts(countedTithes.filter((t) => t.date <= asOf)) -
-      sumAmounts(countedExpenses.filter((e) => e.date <= asOf));
-  }, [tithes, expenses, openingBalance, openingDate]);
+  /** General Fund balance as of the end of `asOf` (inclusive):
+   *  starting balance + every tithe so far − every expense so far. */
+  const balanceAsOf = useMemo(
+    () => (asOf: string) =>
+      startingBalance +
+      sumAmounts(tithes.filter((t) => t.date <= asOf)) -
+      sumAmounts(expenses.filter((e) => e.date <= asOf)),
+    [tithes, expenses, startingBalance]
+  );
 
   const report = useMemo(() => {
     const tithesIn = (from: string, to: string) => tithes.filter((t) => t.date >= from && t.date <= to);
@@ -234,7 +230,6 @@ export default function useFinanceReport(currentUser: string) {
       const to = singleMonth ? monthEndISO(year, month) : [monthEndISO(year, month), dateTo].sort()[0];
       const monthTithes = sumAmounts(tithesIn(from, to));
       const monthExpenses = sumAmounts(expensesIn(from, to));
-      const beforeOpening = Boolean(openingDate) && to < openingDate;
       const inFuture = from > todayISO;
       months.push({
         key: `${year}-${month}`,
@@ -244,7 +239,7 @@ export default function useFinanceReport(currentUser: string) {
         tithes: monthTithes,
         expenses: monthExpenses,
         net: monthTithes - monthExpenses,
-        balance: beforeOpening || inFuture ? null : balanceAsOf(to < todayISO ? to : todayISO),
+        balance: inFuture ? null : balanceAsOf(to < todayISO ? to : todayISO),
       });
     }
 
@@ -286,21 +281,8 @@ export default function useFinanceReport(currentUser: string) {
       sundays,
       expenseCategories,
     };
-  }, [tithes, expenses, dateFrom, dateTo, openingDate, todayISO, balanceAsOf]);
+  }, [tithes, expenses, dateFrom, dateTo, todayISO, balanceAsOf]);
 
-  async function saveOpening(amount: number, date: string) {
-    setSavingOpening(true);
-    setError(null);
-    try {
-      setSettings(await saveGeneralFundSettings(amount, date, currentUser));
-      setShowOpeningForm(false);
-    } catch (err) {
-      console.error("Failed to save opening balance:", err);
-      setError("Failed to save opening balance.");
-    } finally {
-      setSavingOpening(false);
-    }
-  }
 
   return {
     preset,
@@ -314,14 +296,7 @@ export default function useFinanceReport(currentUser: string) {
     error,
 
     fundBalance: balanceAsOf(todayISO),
-    openingBalance,
-    openingDate,
-    openingSet,
-
-    showOpeningForm,
-    setShowOpeningForm,
-    savingOpening,
-    saveOpening,
+    startingBalanceSet,
 
     ...report,
   };

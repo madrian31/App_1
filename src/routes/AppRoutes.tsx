@@ -13,6 +13,7 @@ import Visitation from "../pages/Visitation/Visitation";
 import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
+import GeneralSettings from "../pages/Settings/GeneralSettings";
 import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
 import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
@@ -58,7 +59,7 @@ export default function AppRoutes() {
 
       {/* Menu items without a page yet */}
       <Route path="/Roles" element={<ComingSoon title="Roles" />} />
-      <Route path="/settings" element={<ComingSoon title="General Settings" />} />
+      <Route path="/settings" element={<GeneralSettings />} />
       <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
       <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
       <Route path="/Finance/Tithes" element={<Tithes />} />

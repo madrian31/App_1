@@ -1,15 +1,18 @@
+import { formatDisplayDate } from "../../utils/date";
 import { fmtPeso } from "./financeFormat";
 
 interface FinanceMonthFlowProps {
   loading: boolean;
   periodLabel: string;
+  dateFrom: string; // ISO — first day of the period
+  dateTo: string; // ISO — last day of the period
   startBalance: number; // carried over from before the period
   periodTithes: number;
   periodExpenses: number;
   endBalance: number;
 }
 
-type FlowStatus = "surplus" | "covered" | "deficit";
+type FlowStatus = "empty" | "surplus" | "covered" | "deficit";
 
 /**
  * The period's financial status, designed answer-first for every reader (including
@@ -20,19 +23,41 @@ type FlowStatus = "surplus" | "covered" | "deficit";
 export default function FinanceMonthFlow({
   loading,
   periodLabel,
+  dateFrom,
+  dateTo,
   startBalance,
   periodTithes,
   periodExpenses,
   endBalance,
 }: FinanceMonthFlowProps) {
   const periodNet = periodTithes - periodExpenses;
-  const status: FlowStatus = endBalance < 0 ? "deficit" : periodNet < 0 ? "covered" : "surplus";
+  const hasActivity = periodTithes > 0 || periodExpenses > 0;
+  const status: FlowStatus = !hasActivity
+    ? "empty"
+    : endBalance < 0
+      ? "deficit"
+      : periodNet < 0
+        ? "covered"
+        : "surplus";
+
+  // Every line names its period, so "tithes received" is never ambiguous.
+  const inPeriod = periodLabel.includes("–") ? `(${periodLabel})` : `in ${periodLabel}`;
+  const startLabel = formatDisplayDate(dateFrom);
+  const endLabel = formatDisplayDate(dateTo);
 
   const verdict: Record<FlowStatus, { icon: string; headline: string; detail: string }> = {
+    empty: {
+      icon: "fa-circle-minus",
+      headline: "No records yet",
+      detail: `No tithes or expenses were recorded ${inPeriod}.`,
+    },
     surplus: {
       icon: "fa-face-smile",
       headline: "We're doing well",
-      detail: `Tithes covered all the expenses, with ${fmtPeso(periodNet)} left over to save.`,
+      detail:
+        periodNet > 0
+          ? `Tithes covered all the expenses, with ${fmtPeso(periodNet)} left over to save.`
+          : "Tithes exactly covered the expenses — nothing was taken from our savings.",
     },
     covered: {
       icon: "fa-circle-check",
@@ -70,47 +95,58 @@ export default function FinanceMonthFlow({
         )}
 
         <div className="finance-status-left">
-          <span className="finance-status-left-label">Money left</span>
+          <span className="finance-status-left-label">Money left as of {endLabel}</span>
           <span className="finance-status-left-value">{v(endBalance)}</span>
         </div>
       </div>
 
       {/* ── How we got there ── */}
       <div className="finance-status-breakdown">
-        <h4 className="finance-status-subtitle">How we got here</h4>
+        <h4 className="finance-status-subtitle">How we got here — {periodLabel}</h4>
 
-        <div className="finance-compare" role="img" aria-label={`Tithes ${v(periodTithes)}, expenses ${v(periodExpenses)}`}>
-          <div className="finance-compare-row">
-            <span className="finance-compare-label">Tithes received</span>
-            <div className="finance-compare-track">
-              <div className="finance-compare-bar is-in" style={{ width: `${barPct(periodTithes)}%` }} />
+        {hasActivity || loading ? (
+          <div
+            className="finance-compare"
+            role="img"
+            aria-label={`Tithes ${v(periodTithes)}, expenses ${v(periodExpenses)} ${inPeriod}`}
+          >
+            <div className="finance-compare-row">
+              <span className="finance-compare-label">Tithes</span>
+              <div className="finance-compare-track">
+                <div className="finance-compare-bar is-in" style={{ width: `${barPct(periodTithes)}%` }} />
+              </div>
+              <span className="finance-compare-value">{v(periodTithes)}</span>
             </div>
-            <span className="finance-compare-value">{v(periodTithes)}</span>
-          </div>
-          <div className="finance-compare-row">
-            <span className="finance-compare-label">Expenses</span>
-            <div className="finance-compare-track">
-              <div className="finance-compare-bar is-out" style={{ width: `${barPct(periodExpenses)}%` }} />
+            <div className="finance-compare-row">
+              <span className="finance-compare-label">Expenses</span>
+              <div className="finance-compare-track">
+                <div className="finance-compare-bar is-out" style={{ width: `${barPct(periodExpenses)}%` }} />
+              </div>
+              <span className="finance-compare-value">{v(periodExpenses)}</span>
             </div>
-            <span className="finance-compare-value">{v(periodExpenses)}</span>
           </div>
-        </div>
+        ) : (
+          <p className="finance-compare-empty">
+            <i className="fa-regular fa-folder-open" aria-hidden="true" /> Nothing to compare — no tithes or expenses{" "}
+            {inPeriod}.
+          </p>
+        )}
 
         <dl className="finance-receipt">
           <div>
-            <dt>Money we had before</dt>
+            <dt>Money we had before {startLabel}</dt>
             <dd>{v(startBalance)}</dd>
           </div>
           <div>
-            <dt>Plus tithes received</dt>
+            <dt>Plus tithes received {inPeriod}</dt>
             <dd className="finance-up">+ {v(periodTithes)}</dd>
           </div>
           <div>
-            <dt>Minus expenses</dt>
+            <dt>Minus expenses {inPeriod}</dt>
             <dd className="finance-down">− {v(periodExpenses)}</dd>
           </div>
           <div className="finance-receipt-total">
-            <dt>Money left</dt>
+            <dt>Money left as of {endLabel}</dt>
             <dd>{v(endBalance)}</dd>
           </div>
         </dl>

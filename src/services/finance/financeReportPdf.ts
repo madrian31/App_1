@@ -21,8 +21,6 @@ export interface FinanceReportPdfData {
   periodLabel: string; // "October 2026", "Aug – Oct 2026"…
   chartTitle: string; // what the month rows cover — the year for a single-month period
   fundBalance: number;
-  openingBalance: number;
-  openingDate: string;
   periodTithes: number;
   periodExpenses: number;
   ytdTithes: number;
@@ -81,16 +79,15 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
-  const openingNote = data.openingDate
-    ? `Opening balance ${peso(data.openingBalance)} as of ${formatDisplayDate(data.openingDate)}.`
-    : `Opening balance ${peso(data.openingBalance)}.`;
-  doc.text(`${openingNote} Balance = opening balance + tithes - expenses.`, MARGIN, y);
+  doc.text("General Fund Balance = starting balance + all tithes - all expenses.", MARGIN, y);
   y += 10;
 
   // ── Financial status for the period ──
   const net = data.periodTithes - data.periodExpenses;
   const status =
-    data.endBalance < 0
+    data.periodTithes === 0 && data.periodExpenses === 0
+      ? "NO RECORDS: no tithes or expenses were recorded for this period."
+      : data.endBalance < 0
       ? `DEFICIT: even with earlier savings, the fund is short by ${peso(-data.endBalance)}.`
       : net < 0
         ? `COVERED BY SAVINGS: tithes were ${peso(-net)} short, covered by what earlier months left over.`
