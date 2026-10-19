@@ -15,6 +15,7 @@ export class MenuService implements IMenuService {
                 { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/members' },
                 { sortOrder: 12, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/MembersAttendance' },
                 { sortOrder: 13, name: 'Attendance Report', iconClass: 'fa-solid fa-chart-bar', path: '/MembersAttendanceReport' },
+                { sortOrder: 18, name: 'Visitors', iconClass: 'fa-solid fa-user-plus', path: '/MembersVisitors' },
                 { sortOrder: 19, name: 'Archives', iconClass: 'fa-solid fa-box', path: '/ArchivesMembers' }
             ] 
         },

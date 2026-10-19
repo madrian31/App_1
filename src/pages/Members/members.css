@@ -953,3 +953,64 @@
         justify-content: space-between;
     }
 }
+
+/* =========================================================
+   Visitors
+   ========================================================= */
+
+.visitors-help {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    border-radius: 8px;
+
+    background: #eff6ff;
+    color: #1e3a8a;
+
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.visitors-help i {
+    margin-top: 3px;
+}
+
+.visitor-times {
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.visitor-make-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 6px 12px;
+
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.visitor-confirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    font-size: 13px;
+    color: var(--text);
+}
+
+.visitor-confirm .btn-secondary {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.visitor-confirm .visitor-danger {
+    color: var(--danger);
+    border-color: #f5c2c4;
+}
