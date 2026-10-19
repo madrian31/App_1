@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useFinanceReport, { FINANCE_PRESETS } from "../../hooks/useFinanceReport";
+import useFinanceReport, { FINANCE_PERIOD_MODES } from "../../hooks/useFinanceReport";
 import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
 import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
 import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
@@ -15,8 +15,12 @@ import "./finance.css";
 
 export default function FinanceReport() {
   const {
-    preset,
-    choosePreset,
+    mode,
+    chooseMode,
+    stepPeriod,
+    goToCurrent,
+    currentPeriod,
+    canStepForward,
     dateFrom,
     dateTo,
     changeDateFrom,
@@ -86,32 +90,64 @@ export default function FinanceReport() {
             </div>
           </div>
 
-          <div className="toolbar-row report-range-row">
-            <div className="quick-range-group" role="group" aria-label="Report period">
-              {FINANCE_PRESETS.map((p) => (
+          <div className="finance-period">
+            <div className="finance-period-modes" role="group" aria-label="Report period type">
+              {FINANCE_PERIOD_MODES.map((p) => (
                 <button
                   key={p.value}
                   type="button"
-                  className={`quick-range-btn${preset === p.value ? " active" : ""}`}
-                  aria-pressed={preset === p.value}
-                  onClick={() => choosePreset(p.value)}
+                  className={mode === p.value ? "is-active" : undefined}
+                  aria-pressed={mode === p.value}
+                  onClick={() => chooseMode(p.value)}
                 >
                   {p.label}
                 </button>
               ))}
             </div>
 
-            <div className="finance-date-range">
-              <label>
-                <span>From</span>
-                <input type="date" value={dateFrom} onChange={(e) => changeDateFrom(e.target.value)} />
-              </label>
-              <span className="month-range-arrow" aria-hidden="true">→</span>
-              <label>
-                <span>To</span>
-                <input type="date" value={dateTo} onChange={(e) => changeDateTo(e.target.value)} />
-              </label>
-            </div>
+            {mode === "custom" ? (
+              <div className="finance-date-range">
+                <label>
+                  <span>From</span>
+                  <input type="date" value={dateFrom} onChange={(e) => changeDateFrom(e.target.value)} />
+                </label>
+                <span className="month-range-arrow" aria-hidden="true">→</span>
+                <label>
+                  <span>To</span>
+                  <input type="date" value={dateTo} onChange={(e) => changeDateTo(e.target.value)} />
+                </label>
+              </div>
+            ) : (
+              <>
+                <div className="finance-period-stepper">
+                  <button
+                    type="button"
+                    onClick={() => stepPeriod(-1)}
+                    aria-label={mode === "month" ? "Previous month" : "Previous year"}
+                    title={mode === "month" ? "Previous month" : "Previous year"}
+                  >
+                    <i className="fa-solid fa-chevron-left" aria-hidden="true" />
+                  </button>
+                  <span className="finance-period-label" aria-live="polite">
+                    {periodLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => stepPeriod(1)}
+                    disabled={!canStepForward}
+                    aria-label={mode === "month" ? "Next month" : "Next year"}
+                    title={mode === "month" ? "Next month" : "Next year"}
+                  >
+                    <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+                  </button>
+                </div>
+                {!currentPeriod && (
+                  <button type="button" className="finance-period-today" onClick={goToCurrent}>
+                    {mode === "month" ? "Back to this month" : "Back to this year"}
+                  </button>
+                )}
+              </>
+            )}
           </div>
 
           {error && (

@@ -13,14 +13,12 @@ export const FINANCE_MONTHS = [
 ];
 export const FINANCE_MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export type FinancePreset = "thisMonth" | "lastMonth" | "last3Months" | "thisYear" | "lastYear" | "custom";
+/** Month / Year are stepped with ‹ › arrows; Custom shows From / To dates. */
+export type FinancePeriodMode = "month" | "year" | "custom";
 
-export const FINANCE_PRESETS: { value: FinancePreset; label: string }[] = [
-  { value: "thisMonth", label: "This Month" },
-  { value: "lastMonth", label: "Last Month" },
-  { value: "last3Months", label: "Last 3 Months" },
-  { value: "thisYear", label: "This Year" },
-  { value: "lastYear", label: "Last Year" },
+export const FINANCE_PERIOD_MODES: { value: FinancePeriodMode; label: string }[] = [
+  { value: "month", label: "Month" },
+  { value: "year", label: "Year" },
   { value: "custom", label: "Custom" },
 ];
 
@@ -68,21 +66,13 @@ function sumAmounts(list: { amount: number }[]): number {
   return list.reduce((s, t) => s + (t.amount || 0), 0);
 }
 
-function resolvePreset(preset: Exclude<FinancePreset, "custom">, now: Date): { from: string; to: string } {
-  const y = now.getFullYear();
-  const m = now.getMonth();
-  switch (preset) {
-    case "thisMonth":
-      return { from: monthStartISO(y, m), to: monthEndISO(y, m) };
-    case "lastMonth":
-      return { from: monthStartISO(y, m - 1), to: monthEndISO(y, m - 1) };
-    case "last3Months":
-      return { from: monthStartISO(y, m - 2), to: monthEndISO(y, m) };
-    case "thisYear":
-      return { from: monthStartISO(y, 0), to: monthEndISO(y, 11) };
-    case "lastYear":
-      return { from: monthStartISO(y - 1, 0), to: monthEndISO(y - 1, 11) };
-  }
+/** The whole month or year containing `anchor`. */
+function periodAround(mode: Exclude<FinancePeriodMode, "custom">, anchor: Date): { from: string; to: string } {
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth();
+  return mode === "month"
+    ? { from: monthStartISO(y, m), to: monthEndISO(y, m) }
+    : { from: monthStartISO(y, 0), to: monthEndISO(y, 11) };
 }
 
 /** "October 2026", "2026", "Aug – Oct 2026", or "Aug 3, 2026 – Oct 19, 2026". */
@@ -102,7 +92,7 @@ function describePeriod(from: string, to: string): string {
 }
 
 /**
- * Drives the Finance Report for any period (preset or custom From/To): the General Fund
+ * Drives the Finance Report for any period (a month, a year, or custom From/To): the General Fund
  * balance (starting balance + tithes − expenses), period KPIs, a month-by-month breakdown,
  * per-Sunday totals and expenses by category. Totals only — no per-member amounts,
  * since individual giving is private.
@@ -111,16 +101,15 @@ export default function useFinanceReport() {
   const now = new Date();
   const todayISO = toLocalISODate(now);
 
-  const [preset, setPreset] = useState<FinancePreset>("thisMonth");
-  const [dateFrom, setDateFrom] = useState(() => resolvePreset("thisMonth", new Date()).from);
-  const [dateTo, setDateTo] = useState(() => resolvePreset("thisMonth", new Date()).to);
+  const [mode, setMode] = useState<FinancePeriodMode>("month");
+  const [dateFrom, setDateFrom] = useState(() => periodAround("month", new Date()).from);
+  const [dateTo, setDateTo] = useState(() => periodAround("month", new Date()).to);
 
   const [tithes, setTithes] = useState<Tithe[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [settings, setSettings] = useState<GeneralFundSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
 
   // Everything is computed client-side from one fetch: a church's records are small,
   // and the running balance needs every tithe and expense ever recorded anyway.
@@ -150,34 +139,58 @@ export default function useFinanceReport() {
     };
   }, []);
 
-  function choosePreset(next: FinancePreset) {
-    setPreset(next);
-    if (next === "custom") return; // keep the current dates as the starting point
-    const r = resolvePreset(next, new Date());
+  function applyPeriod(next: Exclude<FinancePeriodMode, "custom">, anchor: Date) {
+    const r = periodAround(next, anchor);
+    setMode(next);
     setDateFrom(r.from);
     setDateTo(r.to);
   }
 
-  /** Manual From/To edits switch to "custom"; the range is kept valid (From ≤ To). */
+  /** Switching to Month/Year keeps you near what you were looking at: the period's last
+   *  day (or today, if the period runs past it). Custom keeps the current dates. */
+  function chooseMode(next: FinancePeriodMode) {
+    if (next === "custom") {
+      setMode("custom");
+      return;
+    }
+    applyPeriod(next, parseISO(dateTo < todayISO ? dateTo : todayISO));
+  }
+
+  /** ‹ › — previous / next month or year. */
+  function stepPeriod(direction: -1 | 1) {
+    if (mode === "custom") return;
+    const from = parseISO(dateFrom);
+    const anchor =
+      mode === "month"
+        ? new Date(from.getFullYear(), from.getMonth() + direction, 1)
+        : new Date(from.getFullYear() + direction, 0, 1);
+    applyPeriod(mode, anchor);
+  }
+
+  /** Jump back to the current month or year. */
+  function goToCurrent() {
+    applyPeriod(mode === "year" ? "year" : "month", new Date());
+  }
+
+  const currentPeriod = mode !== "custom" && dateFrom <= todayISO && todayISO <= dateTo;
+  // Nothing has happened after the current month/year yet, so don't step into the future.
+  const canStepForward = mode !== "custom" && dateTo < todayISO;
+
+  /** From/To edits keep the range valid (From ≤ To). */
   function changeDateFrom(value: string) {
     if (!value) return;
-    setPreset("custom");
     setDateFrom(value);
     if (value > dateTo) setDateTo(value);
   }
   function changeDateTo(value: string) {
     if (!value) return;
-    setPreset("custom");
     setDateTo(value);
     if (value < dateFrom) setDateFrom(value);
   }
 
   /** Narrows the report to one month — used when a month is clicked in the chart or table. */
   function selectMonth(year: number, month: number) {
-    const isThisMonth = year === now.getFullYear() && month === now.getMonth();
-    setPreset(isThisMonth ? "thisMonth" : "custom");
-    setDateFrom(monthStartISO(year, month));
-    setDateTo(monthEndISO(year, month));
+    applyPeriod("month", new Date(year, month, 1));
   }
 
   // The money on hand before anything was recorded in the app (Settings → General).
@@ -285,8 +298,12 @@ export default function useFinanceReport() {
 
 
   return {
-    preset,
-    choosePreset,
+    mode,
+    chooseMode,
+    stepPeriod,
+    goToCurrent,
+    currentPeriod,
+    canStepForward,
     dateFrom,
     dateTo,
     changeDateFrom,
