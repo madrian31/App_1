@@ -41,26 +41,30 @@ export default function FinanceMonthFlow({
   const verdict: Record<FlowStatus, { icon: string; headline: string; detail: string }> = {
     empty: {
       icon: "fa-circle-minus",
-      headline: "No records yet",
+      headline: "No Activity",
       detail: `No tithes or expenses were recorded ${inPeriod}.`,
     },
-    surplus: {
-      icon: "fa-face-smile",
-      headline: "We're doing well",
-      detail:
-        periodNet > 0
-          ? `Tithes covered all the expenses, with ${fmtPeso(periodNet)} left over to save.`
-          : "Tithes exactly covered the expenses — nothing was taken from our savings.",
-    },
+    surplus:
+      periodNet > 0
+        ? {
+            icon: "fa-arrow-trend-up",
+            headline: "Surplus",
+            detail: `Tithes exceeded expenses by ${fmtPeso(periodNet)}. The surplus has been added to the General Fund.`,
+          }
+        : {
+            icon: "fa-scale-balanced",
+            headline: "Balanced",
+            detail: "Tithes were equal to expenses. The General Fund balance is unchanged.",
+          },
     covered: {
-      icon: "fa-circle-check",
-      headline: "We're okay",
-      detail: `Expenses were ${fmtPeso(-periodNet)} more than the tithes, so we used some of our savings. We still have enough.`,
+      icon: "fa-circle-info",
+      headline: "Covered by Reserves",
+      detail: `Expenses exceeded tithes by ${fmtPeso(-periodNet)}. The difference was covered by the General Fund's existing balance.`,
     },
     deficit: {
       icon: "fa-triangle-exclamation",
-      headline: "We need more funds",
-      detail: `Even after using our savings, we are short by ${fmtPeso(-endBalance)}.`,
+      headline: "Deficit",
+      detail: `Expenses exceeded the available funds. The General Fund is short by ${fmtPeso(-endBalance)}.`,
     },
   };
   const m = verdict[status];

@@ -84,14 +84,17 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
 
   // ── Financial status for the period ──
   const net = data.periodTithes - data.periodExpenses;
+  // Same statuses and wording as the on-screen Financial Status (FinanceMonthFlow).
   const status =
     data.periodTithes === 0 && data.periodExpenses === 0
-      ? "NO RECORDS: no tithes or expenses were recorded for this period."
+      ? "NO ACTIVITY: No tithes or expenses were recorded for this period."
       : data.endBalance < 0
-      ? `DEFICIT: even with earlier savings, the fund is short by ${peso(-data.endBalance)}.`
-      : net < 0
-        ? `COVERED BY SAVINGS: tithes were ${peso(-net)} short, covered by what earlier months left over.`
-        : `SURPLUS: tithes covered the expenses, ${peso(net)} added to the fund.`;
+        ? `DEFICIT: Expenses exceeded the available funds. The General Fund is short by ${peso(-data.endBalance)}.`
+        : net < 0
+          ? `COVERED BY RESERVES: Expenses exceeded tithes by ${peso(-net)}. The difference was covered by the General Fund's existing balance.`
+          : net > 0
+            ? `SURPLUS: Tithes exceeded expenses by ${peso(net)}. The surplus has been added to the General Fund.`
+            : "BALANCED: Tithes were equal to expenses. The General Fund balance is unchanged.";
   doc.setDrawColor(...RULE);
   doc.roundedRect(MARGIN, y - 5, CONTENT_W, 25, 2, 2, "S");
   doc.setFont("helvetica", "normal");
@@ -109,7 +112,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...MUTED);
-  doc.text(status, MARGIN + 4, y + 14);
+  doc.text(doc.splitTextToSize(status, CONTENT_W - 8) as string[], MARGIN + 4, y + 13); // wraps to 2 lines inside the box
   y += 31;
 
   // ── Tables ──
