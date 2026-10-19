@@ -50,6 +50,12 @@ export default function FinanceMonthFlow({
               {m.headline}
             </p>
             <p className="finance-status-detail">{m.detail}</p>
+            {m.figure && (
+              <div className="finance-status-figure">
+                <span className="finance-status-figure-value">{m.figure.value}</span>
+                <span className="finance-status-figure-label">{m.figure.label}</span>
+              </div>
+            )}
           </>
         )}
 

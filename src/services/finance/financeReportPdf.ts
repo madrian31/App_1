@@ -88,7 +88,11 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   const inPeriod = data.periodLabel.includes("–") ? `(${data.periodLabel})` : `in ${data.periodLabel}`;
   const s = getFinanceStatus(data.periodTithes, data.periodExpenses, data.endBalance, inPeriod, peso);
   doc.setFontSize(8.5);
-  const statusLines = doc.splitTextToSize(`${s.headline.toUpperCase()}: ${s.detail}`, CONTENT_W - 8) as string[];
+  const figureText = s.figure ? ` ${s.figure.label}: ${s.figure.value}.` : "";
+  const statusLines = doc.splitTextToSize(
+    `${s.headline.toUpperCase()}: ${s.detail}${figureText}`,
+    CONTENT_W - 8
+  ) as string[];
   const boxH = 18 + statusLines.length * 4;
   doc.setDrawColor(...RULE);
   doc.roundedRect(MARGIN, y - 5, CONTENT_W, boxH, 2, 2, "S");

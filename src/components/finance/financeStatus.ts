@@ -5,12 +5,15 @@ export interface FinanceStatus {
   icon: string; // Font Awesome solid icon name
   headline: string;
   detail: string;
+  /** The one amount that matters for this status — shown large under the headline. */
+  figure: { value: string; label: string } | null;
 }
 
 /**
  * The period's financial status, shared by the on-screen card and the PDF so both say
- * the same thing. It answers one question — did the fund go up or down? — in one short
- * sentence; the full numbers are already in the breakdown beside it.
+ * the same thing. It answers "did the fund go up or down?" and names the amount that
+ * matters: how much was added, or how much more tithes were needed to cover expenses.
+ * The full numbers are already in the breakdown beside it.
  *
  * `money` formats amounts — "₱" on screen, "PHP" in the PDF (its fonts can't draw "₱").
  */
@@ -29,6 +32,7 @@ export function getFinanceStatus(
       icon: "fa-circle-minus",
       headline: "No Records",
       detail: `No tithes or expenses ${inPeriod}.`,
+      figure: null,
     };
   }
   if (remainingBalance < 0) {
@@ -36,7 +40,8 @@ export function getFinanceStatus(
       kind: "deficit",
       icon: "fa-triangle-exclamation",
       headline: "Not Enough Funds",
-      detail: `Expenses were more than the money available. The fund is short by ${money(-remainingBalance)}.`,
+      detail: `The fund does not have enough money to pay the expenses ${inPeriod}.`,
+      figure: { value: money(-remainingBalance), label: "Still needed to pay all expenses" },
     };
   }
   if (expenses > tithes) {
@@ -44,7 +49,8 @@ export function getFinanceStatus(
       kind: "covered",
       icon: "fa-arrow-down",
       headline: "Fund Decreased",
-      detail: `Expenses were more than tithes. The fund went down by ${money(diff)}.`,
+      detail: `Tithes were not enough for the expenses ${inPeriod}, so the difference was taken from the fund.`,
+      figure: { value: money(diff), label: "More tithes needed to cover the expenses" },
     };
   }
   if (tithes > expenses) {
@@ -52,13 +58,15 @@ export function getFinanceStatus(
       kind: "surplus",
       icon: "fa-arrow-up",
       headline: "Fund Increased",
-      detail: `Tithes were more than expenses. The fund went up by ${money(diff)}.`,
+      detail: `Tithes covered all the expenses ${inPeriod}, with money left over.`,
+      figure: { value: `+${money(diff)}`, label: "Added to the fund" },
     };
   }
   return {
     kind: "balanced",
     icon: "fa-equals",
     headline: "No Change",
-    detail: "Tithes and expenses were the same.",
+    detail: `Tithes and expenses were the same ${inPeriod}.`,
+    figure: null,
   };
 }

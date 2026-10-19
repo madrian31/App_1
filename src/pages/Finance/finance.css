@@ -395,3 +395,37 @@
     background: #ecfdf5;
     color: #065f46;
 }
+
+/* The one amount that matters: added to the fund / more tithes needed. */
+.finance-status-figure {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    margin-top: 6px;
+    padding: 12px 14px;
+    border-radius: 10px;
+
+    background: rgba(255, 255, 255, 0.7);
+}
+
+.finance-status-figure-value {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-status-figure-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.is-surplus .finance-status-figure-value {
+    color: var(--success);
+}
+
+.is-covered .finance-status-figure-value,
+.is-deficit .finance-status-figure-value {
+    color: var(--danger);
+}
