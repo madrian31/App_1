@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import useFinanceReport, { FINANCE_MONTHS } from "../../hooks/useFinanceReport";
+import useFinanceReport, { FINANCE_PRESETS } from "../../hooks/useFinanceReport";
 import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
 import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
 import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
@@ -19,11 +19,13 @@ const CURRENT_USER = "Unknown";
 
 export default function FinanceReport() {
   const {
-    curYear,
-    setCurYear,
-    curMonth,
-    setCurMonth,
-    years,
+    preset,
+    choosePreset,
+    dateFrom,
+    dateTo,
+    changeDateFrom,
+    changeDateTo,
+    selectMonth,
     loading,
     error,
     fundBalance,
@@ -34,34 +36,39 @@ export default function FinanceReport() {
     setShowOpeningForm,
     savingOpening,
     saveOpening,
-    monthTithes,
-    monthChangePct,
-    monthExpenses,
-    monthStartBalance,
-    monthEndBalance,
+    periodLabel,
+    periodTithes,
+    periodExpenses,
+    changePct,
     ytdTithes,
-    yearTithes,
+    ytdYear,
+    startBalance,
+    endBalance,
     months,
+    selectedMonthKey,
     sundays,
     expenseCategories,
   } = useFinanceReport(CURRENT_USER);
 
   const [exporting, setExporting] = useState(false);
-  const monthLabel = `${FINANCE_MONTHS[curMonth]} ${curYear}`;
+  // A period inside one month charts that month's whole year for context.
+  const chartTitle = selectedMonthKey ? String(months[0]?.year ?? "") : periodLabel;
 
   async function handleExportPdf() {
     setExporting(true);
     try {
       await exportFinanceReportPdf({
-        year: curYear,
-        monthLabel,
+        periodLabel,
+        chartTitle,
         fundBalance,
         openingBalance,
         openingDate,
-        monthTithes,
+        periodTithes,
+        periodExpenses,
         ytdTithes,
-        monthExpenses,
-        yearTithes,
+        ytdYear,
+        startBalance,
+        endBalance,
         months,
         sundays,
         expenseCategories,
@@ -81,7 +88,7 @@ export default function FinanceReport() {
           <div className="page-header">
             <div className="page-header-left">
               <h1>Finance Report</h1>
-              <p>General Fund — {monthLabel}</p>
+              <p>General Fund — {periodLabel}</p>
             </div>
             <div className="page-header-actions">
               <button className="btn-secondary" onClick={handleExportPdf} disabled={loading || exporting}>
@@ -91,25 +98,31 @@ export default function FinanceReport() {
             </div>
           </div>
 
-          <div className="toolbar">
-            <div className="filter-select-wrap">
-              <i className="fa-regular fa-calendar" aria-hidden="true" />
-              <select value={curMonth} onChange={(e) => setCurMonth(Number(e.target.value))}>
-                {FINANCE_MONTHS.map((m, i) => (
-                  <option key={i} value={i}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+          <div className="toolbar-row report-range-row">
+            <div className="quick-range-group" role="group" aria-label="Report period">
+              {FINANCE_PRESETS.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  className={`quick-range-btn${preset === p.value ? " active" : ""}`}
+                  aria-pressed={preset === p.value}
+                  onClick={() => choosePreset(p.value)}
+                >
+                  {p.label}
+                </button>
+              ))}
             </div>
-            <div className="filter-select-wrap">
-              <select value={curYear} onChange={(e) => setCurYear(Number(e.target.value))}>
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
+
+            <div className="finance-date-range">
+              <label>
+                <span>From</span>
+                <input type="date" value={dateFrom} onChange={(e) => changeDateFrom(e.target.value)} />
+              </label>
+              <span className="month-range-arrow" aria-hidden="true">→</span>
+              <label>
+                <span>To</span>
+                <input type="date" value={dateTo} onChange={(e) => changeDateTo(e.target.value)} />
+              </label>
             </div>
           </div>
 
@@ -126,53 +139,63 @@ export default function FinanceReport() {
             openingBalance={openingBalance}
             openingDate={openingDate}
             openingSet={openingSet}
-            monthLabel={monthLabel}
-            monthTithes={monthTithes}
-            monthChangePct={monthChangePct}
+            periodLabel={periodLabel}
+            periodTithes={periodTithes}
+            changePct={changePct}
             ytdTithes={ytdTithes}
-            monthExpenses={monthExpenses}
+            ytdYear={ytdYear}
+            periodExpenses={periodExpenses}
             onEditOpening={() => setShowOpeningForm(true)}
           />
 
           <section className="report-section">
             <FinanceMonthFlow
               loading={loading}
-              monthLabel={monthLabel}
-              startBalance={monthStartBalance}
-              monthTithes={monthTithes}
-              monthExpenses={monthExpenses}
-              endBalance={monthEndBalance}
+              periodLabel={periodLabel}
+              startBalance={startBalance}
+              periodTithes={periodTithes}
+              periodExpenses={periodExpenses}
+              endBalance={endBalance}
             />
           </section>
 
           <section className="report-section">
-            <FinanceTrendChart months={months} year={curYear} selectedMonth={curMonth} onSelectMonth={setCurMonth} />
+            <FinanceTrendChart
+              months={months}
+              title={chartTitle}
+              selectedKey={selectedMonthKey}
+              onSelectMonth={selectMonth}
+            />
           </section>
 
           <div className="finance-report-grid">
             <section className="report-section">
-              <h2 className="report-section-title">Monthly Breakdown — {curYear}</h2>
+              <h2 className="report-section-title">Monthly Breakdown — {chartTitle}</h2>
               <FinanceMonthlyTable
                 months={months}
                 loading={loading}
-                yearTithes={yearTithes}
-                selectedMonth={curMonth}
-                onSelectMonth={setCurMonth}
+                selectedKey={selectedMonthKey}
+                onSelectMonth={selectMonth}
               />
             </section>
 
             <section className="report-section">
-              <h2 className="report-section-title">Tithes per Sunday — {monthLabel}</h2>
-              <FinanceSundayTable sundays={sundays} loading={loading} monthLabel={monthLabel} monthTotal={monthTithes} />
+              <h2 className="report-section-title">Tithes per Sunday — {periodLabel}</h2>
+              <FinanceSundayTable
+                sundays={sundays}
+                loading={loading}
+                monthLabel={periodLabel}
+                monthTotal={periodTithes}
+              />
             </section>
 
             <section className="report-section">
-              <h2 className="report-section-title">Expenses by Category — {monthLabel}</h2>
+              <h2 className="report-section-title">Expenses by Category — {periodLabel}</h2>
               <FinanceCategoryTable
                 categories={expenseCategories}
                 loading={loading}
-                monthLabel={monthLabel}
-                monthExpenses={monthExpenses}
+                monthLabel={periodLabel}
+                monthExpenses={periodExpenses}
               />
             </section>
           </div>

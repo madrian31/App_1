@@ -4,19 +4,18 @@ import { fmtPeso } from "./financeFormat";
 interface FinanceMonthlyTableProps {
   months: FinanceMonthRow[];
   loading: boolean;
-  yearTithes: number;
-  selectedMonth: number;
-  onSelectMonth: (month: number) => void;
+  selectedKey: string | null; // month currently shown on its own, if any
+  onSelectMonth: (year: number, month: number) => void;
 }
 
 export default function FinanceMonthlyTable({
   months,
   loading,
-  yearTithes,
-  selectedMonth,
+  selectedKey,
   onSelectMonth,
 }: FinanceMonthlyTableProps) {
-  const yearExpenses = months.reduce((s, m) => s + m.expenses, 0);
+  const totalTithes = months.reduce((s, m) => s + m.tithes, 0);
+  const totalExpenses = months.reduce((s, m) => s + m.expenses, 0);
 
   return (
     <div className="members-card">
@@ -43,9 +42,9 @@ export default function FinanceMonthlyTable({
             ) : (
               months.map((m) => (
                 <tr
-                  key={m.month}
-                  className={`finance-row-click${m.month === selectedMonth ? " finance-row-selected" : ""}`}
-                  onClick={() => onSelectMonth(m.month)}
+                  key={m.key}
+                  className={`finance-row-click${m.key === selectedKey ? " finance-row-selected" : ""}`}
+                  onClick={() => onSelectMonth(m.year, m.month)}
                 >
                   <td>{m.label}</td>
                   <td className="finance-num">{fmtPeso(m.tithes)}</td>
@@ -74,13 +73,13 @@ export default function FinanceMonthlyTable({
               <tr>
                 <td style={{ fontWeight: 600, color: "var(--text-muted)" }}>Total</td>
                 <td className="finance-num" style={{ fontWeight: 700, color: "var(--success)" }}>
-                  {fmtPeso(yearTithes)}
+                  {fmtPeso(totalTithes)}
                 </td>
                 <td className="finance-num" style={{ fontWeight: 700 }}>
-                  {fmtPeso(yearExpenses)}
+                  {fmtPeso(totalExpenses)}
                 </td>
                 <td className="finance-num" style={{ fontWeight: 700 }}>
-                  {fmtPeso(yearTithes - yearExpenses)}
+                  {fmtPeso(totalTithes - totalExpenses)}
                 </td>
                 <td></td>
               </tr>

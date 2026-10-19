@@ -117,116 +117,253 @@
 }
 
 /* =========================================================
-   Financial status — carried over + tithes − expenses = left.
-   Icon + label carry the meaning; color only reinforces it.
+   Period picker — From / To dates beside the quick ranges
    ========================================================= */
 
-.finance-flow {
-    padding: 1.25rem 1.5rem;
-    border-left: 4px solid var(--border);
-}
-
-.finance-flow.is-surplus {
-    border-left-color: var(--success);
-}
-
-.finance-flow.is-covered {
-    border-left-color: #d97706;
-}
-
-.finance-flow.is-deficit {
-    border-left-color: var(--danger);
-    background: var(--danger-bg);
-}
-
-.finance-flow-header {
+.finance-date-range {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 14px;
+    gap: 8px;
 }
 
-.finance-flow-header h3 {
-    margin: 0;
-    font-size: 0.95rem;
+.finance-date-range label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    font-size: 11px;
     font-weight: 600;
+    color: var(--text-muted);
+}
+
+.finance-date-range input[type="date"] {
+    padding: 7px 10px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    font-size: 13px;
     color: var(--text);
+    background: var(--card);
 }
 
-.finance-flow-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-
-    padding: 3px 10px;
-    border-radius: 999px;
-
-    font-size: 12px;
-    font-weight: 700;
+.finance-date-range input[type="date"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
 }
 
-.is-surplus .finance-flow-badge {
+.finance-date-range .month-range-arrow {
+    padding-bottom: 8px;
+}
+
+/* =========================================================
+   Financial status — answer first (verdict + money left),
+   then "how we got here" (comparison bars + short receipt).
+   Sized for older readers: 16px+ body, high contrast.
+   ========================================================= */
+
+.members-card.finance-status {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+
+    border: none;
+}
+
+@media (max-width: 900px) {
+    .members-card.finance-status {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Verdict panel ── */
+
+.finance-status-verdict {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    padding: 1.75rem;
+}
+
+.is-surplus .finance-status-verdict {
     background: #ecfdf5;
-    color: var(--success);
-    border: 1px solid #a7f3d0;
+    color: #065f46;
 }
 
-.is-covered .finance-flow-badge {
-    background: #fffbeb;
-    color: #b45309;
-    border: 1px solid #fde68a;
+.is-covered .finance-status-verdict {
+    background: #eff6ff;
+    color: #1e3a8a;
 }
 
-.is-deficit .finance-flow-badge {
-    background: #fff;
-    color: var(--danger);
-    border: 1px solid #f5c2c4;
+.is-deficit .finance-status-verdict {
+    background: var(--danger-bg);
+    color: #991b1b;
 }
 
-.finance-flow-steps {
+.finance-status-eyebrow {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    opacity: 0.8;
+}
+
+.finance-status-headline {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 12px 16px;
+    gap: 10px;
+
+    margin: 0;
+
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
 }
 
-.finance-flow-step {
+.finance-status-headline i {
+    font-size: 26px;
+}
+
+.finance-status-detail {
+    margin: 0;
+
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+.finance-status-left {
     display: flex;
     flex-direction: column;
     gap: 2px;
+
+    margin-top: auto;
+    padding-top: 14px;
+    border-top: 1px solid currentColor;
+    border-top-color: rgba(0, 0, 0, 0.12);
 }
 
-.finance-flow-label {
-    font-size: 12px;
-    color: var(--text-muted);
-}
-
-.finance-flow-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-}
-
-.finance-flow-op {
-    font-size: 20px;
+.finance-status-left-label {
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-muted);
 }
 
-.finance-flow-result {
-    padding: 6px 12px;
-    border-radius: 8px;
-    background: #f3f4f6;
+.finance-status-left-value {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
 }
 
-.is-deficit .finance-flow-result .finance-flow-value {
-    color: var(--danger);
+/* ── Breakdown panel ── */
+
+.finance-status-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+
+    padding: 1.75rem;
 }
 
-.finance-flow-detail {
-    margin: 12px 0 0;
+.finance-status-subtitle {
+    margin: 0;
+
     font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--text-muted);
+}
+
+.finance-compare {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.finance-compare-row {
+    display: grid;
+    grid-template-columns: 130px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+
+    font-size: 16px;
+    color: var(--text);
+}
+
+.finance-compare-track {
+    height: 14px;
+    border-radius: 999px;
+    background: #f1f2f4;
+    overflow: hidden;
+}
+
+.finance-compare-bar {
+    height: 100%;
+    border-radius: 999px;
+}
+
+.finance-compare-bar.is-in {
+    background: var(--success);
+}
+
+.finance-compare-bar.is-out {
+    background: var(--danger);
+}
+
+.finance-compare-value {
+    min-width: 110px;
+
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-receipt {
+    margin: 0;
+    padding: 4px 16px;
+    border-radius: 10px;
+    background: #fafbfc;
+}
+
+.finance-receipt > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+
+    font-size: 16px;
+}
+
+.finance-receipt dt {
+    color: var(--text);
+}
+
+.finance-receipt dd {
+    margin: 0;
+    font-weight: 700;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.finance-receipt > .finance-receipt-total {
+    border-bottom: none;
+    font-weight: 800;
+}
+
+.finance-receipt-total dd {
+    font-size: 18px;
+}
+
+@media (max-width: 520px) {
+    .finance-compare-row {
+        grid-template-columns: 1fr auto;
+    }
+
+    .finance-compare-track {
+        grid-column: 1 / -1;
+        order: 3;
+    }
 }

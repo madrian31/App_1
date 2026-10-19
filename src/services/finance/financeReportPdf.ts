@@ -18,15 +18,17 @@ function peso(n: number): string {
 }
 
 export interface FinanceReportPdfData {
-  year: number;
-  monthLabel: string;
+  periodLabel: string; // "October 2026", "Aug – Oct 2026"…
+  chartTitle: string; // what the month rows cover — the year for a single-month period
   fundBalance: number;
   openingBalance: number;
   openingDate: string;
-  monthTithes: number;
+  periodTithes: number;
+  periodExpenses: number;
   ytdTithes: number;
-  monthExpenses: number;
-  yearTithes: number;
+  ytdYear: number;
+  startBalance: number;
+  endBalance: number;
   months: FinanceMonthRow[];
   sundays: FinanceSundayRow[];
   expenseCategories: FinanceCategoryRow[];
@@ -47,16 +49,16 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.text("LINK Up", MARGIN, 15);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(`Finance Report — General Fund · ${data.monthLabel}`, MARGIN, 22);
+  doc.text(`Finance Report — General Fund · ${data.periodLabel}`, MARGIN, 22);
 
   let y = 48;
 
   // ── KPI boxes ──
   const kpis: [string, string][] = [
-    ["General Fund Balance", peso(data.fundBalance)],
-    [`Tithes — ${data.monthLabel}`, peso(data.monthTithes)],
-    [`Tithes — YTD ${data.year}`, peso(data.ytdTithes)],
-    [`Expenses — ${data.monthLabel}`, peso(data.monthExpenses)],
+    ["General Fund Balance (today)", peso(data.fundBalance)],
+    [`Tithes — ${data.periodLabel}`, peso(data.periodTithes)],
+    [`Tithes — YTD ${data.ytdYear}`, peso(data.ytdTithes)],
+    [`Expenses — ${data.periodLabel}`, peso(data.periodExpenses)],
   ];
   const boxW = (CONTENT_W - 6) / 2;
   kpis.forEach(([label, value], i) => {
@@ -84,6 +86,32 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     : `Opening balance ${peso(data.openingBalance)}.`;
   doc.text(`${openingNote} Balance = opening balance + tithes - expenses.`, MARGIN, y);
   y += 10;
+
+  // ── Financial status for the period ──
+  const net = data.periodTithes - data.periodExpenses;
+  const status =
+    data.endBalance < 0
+      ? `DEFICIT: even with earlier savings, the fund is short by ${peso(-data.endBalance)}.`
+      : net < 0
+        ? `COVERED BY SAVINGS: tithes were ${peso(-net)} short, covered by what earlier months left over.`
+        : `SURPLUS: tithes covered the expenses, ${peso(net)} added to the fund.`;
+  doc.setDrawColor(...RULE);
+  doc.roundedRect(MARGIN, y - 5, CONTENT_W, 20, 2, 2, "S");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...TEXT);
+  doc.text(
+    `Carried over ${peso(data.startBalance)}  +  Tithes ${peso(data.periodTithes)}  -  Expenses ${peso(
+      data.periodExpenses
+    )}  =  Left ${peso(data.endBalance)}`,
+    MARGIN + 4,
+    y + 1.5
+  );
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...MUTED);
+  doc.text(status, MARGIN + 4, y + 8.5);
+  y += 26;
 
   // ── Tables ──
   function sectionTitle(title: string) {
@@ -123,9 +151,10 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     y += 6;
   }
 
-  sectionTitle(`Monthly Breakdown — ${data.year}`);
+  sectionTitle(`Monthly Breakdown — ${data.chartTitle}`);
   const w = CONTENT_W / 5;
-  const yearExpenses = data.months.reduce((s, m) => s + m.expenses, 0);
+  const rowsTithes = data.months.reduce((s, m) => s + m.tithes, 0);
+  const rowsExpenses = data.months.reduce((s, m) => s + m.expenses, 0);
   table(
     [
       { label: "Month", width: w },
@@ -141,15 +170,15 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       peso(m.net),
       m.balance === null ? "—" : peso(m.balance),
     ]),
-    ["Total", peso(data.yearTithes), peso(yearExpenses), peso(data.yearTithes - yearExpenses), ""]
+    ["Total", peso(rowsTithes), peso(rowsExpenses), peso(rowsTithes - rowsExpenses), ""]
   );
 
-  sectionTitle(`Tithes per Sunday — ${data.monthLabel}`);
+  sectionTitle(`Tithes per Sunday — ${data.periodLabel}`);
   if (data.sundays.length === 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
-    doc.text("No tithes recorded for this month.", MARGIN, y);
+    doc.text("No tithes recorded for this period.", MARGIN, y);
   } else {
     const sw = CONTENT_W / 3;
     table(
@@ -159,7 +188,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
         { label: "Total Tithes", width: sw, right: true },
       ],
       data.sundays.map((s) => [formatDisplayDate(s.date), String(s.givers), peso(s.total)]),
-      ["Total", "", peso(data.monthTithes)]
+      ["Total", "", peso(data.periodTithes)]
     );
   }
 
@@ -167,12 +196,12 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     doc.addPage();
     y = MARGIN + 6;
   }
-  sectionTitle(`Expenses by Category — ${data.monthLabel}`);
+  sectionTitle(`Expenses by Category — ${data.periodLabel}`);
   if (data.expenseCategories.length === 0) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
-    doc.text("No expenses recorded for this month.", MARGIN, y);
+    doc.text("No expenses recorded for this period.", MARGIN, y);
   } else {
     const cw = CONTENT_W / 3;
     table(
@@ -186,7 +215,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
         peso(c.total),
         c.pctOfTithes === null ? "—" : `${c.pctOfTithes.toFixed(1)}%`,
       ]),
-      ["Total", peso(data.monthExpenses), ""]
+      ["Total", peso(data.periodExpenses), ""]
     );
   }
 
@@ -203,5 +232,5 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     doc.text(`Page ${p} of ${pages}`, PAGE_W - MARGIN, PAGE_H - 10, { align: "right" });
   }
 
-  doc.save(`finance-report-${data.year}-${data.monthLabel.split(" ")[0].toLowerCase()}.pdf`);
+  doc.save(`finance-report-${data.periodLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.pdf`);
 }

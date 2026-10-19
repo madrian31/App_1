@@ -8,22 +8,23 @@ interface FinanceKpiStripProps {
   openingBalance: number;
   openingDate: string;
   openingSet: boolean; // hides the "Set Balance" button once a balance has been saved
-  monthLabel: string; // "October 2026"
-  monthTithes: number;
-  monthChangePct: number | null;
+  periodLabel: string; // "October 2026", "Aug – Oct 2026"…
+  periodTithes: number;
+  changePct: number | null; // vs the period of the same length right before
   ytdTithes: number;
-  monthExpenses: number;
+  ytdYear: number;
+  periodExpenses: number;
   onEditOpening: () => void;
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {
-  if (pct === null) return <span className="finance-kpi-sub">No data last month</span>;
+  if (pct === null) return <span className="finance-kpi-sub">No data in the previous period</span>;
   const up = pct >= 0;
   return (
     <span className={`finance-kpi-sub ${up ? "finance-up" : "finance-down"}`}>
       <i className={`fa-solid ${up ? "fa-arrow-trend-up" : "fa-arrow-trend-down"}`} aria-hidden="true" />{" "}
       {up ? "+" : ""}
-      {pct.toFixed(1)}% vs last month
+      {pct.toFixed(1)}% vs previous period
     </span>
   );
 }
@@ -34,11 +35,12 @@ export default function FinanceKpiStrip({
   openingBalance,
   openingDate,
   openingSet,
-  monthLabel,
-  monthTithes,
-  monthChangePct,
+  periodLabel,
+  periodTithes,
+  changePct,
   ytdTithes,
-  monthExpenses,
+  ytdYear,
+  periodExpenses,
   onEditOpening,
 }: FinanceKpiStripProps) {
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
@@ -61,22 +63,22 @@ export default function FinanceKpiStrip({
 
       <div className="summary-card">
         <span className="summary-card-value" style={{ color: "var(--success)" }}>
-          {v(monthTithes)}
+          {v(periodTithes)}
         </span>
-        <span className="summary-card-label">Tithes — {monthLabel}</span>
-        {!loading && <ChangeBadge pct={monthChangePct} />}
+        <span className="summary-card-label">Tithes — {periodLabel}</span>
+        {!loading && <ChangeBadge pct={changePct} />}
       </div>
 
       <div className="summary-card">
         <span className="summary-card-value">{v(ytdTithes)}</span>
-        <span className="summary-card-label">Tithes — Year to date</span>
+        <span className="summary-card-label">Tithes — {ytdYear} year to date</span>
       </div>
 
       <div className="summary-card">
         <span className="summary-card-value" style={{ color: "var(--danger)" }}>
-          {v(monthExpenses)}
+          {v(periodExpenses)}
         </span>
-        <span className="summary-card-label">Expenses — {monthLabel}</span>
+        <span className="summary-card-label">Expenses — {periodLabel}</span>
         <Link to="/Finance/Expenses" className="finance-kpi-sub finance-kpi-link">
           View / add expenses →
         </Link>
