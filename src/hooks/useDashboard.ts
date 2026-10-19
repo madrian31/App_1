@@ -6,7 +6,7 @@ import { getLineUpForDate } from "../services/programLineUp/programLineUpService
 import { getAllEvents } from "../services/calendar/calendarEventsService";
 import { getAllCategories } from "../services/calendar/calendarCategoriesService";
 import { getMonthlyCelebrants, type Member, type MonthlyCelebrant } from "../types/member";
-import type { ProgramLineUpEntry } from "../types/programLineUp";
+import type { ProgramLineUpEntry, RoleAssignment } from "../types/programLineUp";
 import type { CalendarCategoryItem, CalendarEvent } from "../types/calendarEvent";
 import { FOLLOW_UP_MISSED_SUNDAYS } from "./useMembersAttendanceReport";
 import { addDays, iso, timeToMinutes } from "./useCalendar";
@@ -65,6 +65,63 @@ function pad(n: number): string {
 
 function fullName(m: Member): string {
   return `${m.firstName} ${m.lastName}`.trim();
+}
+
+/** The clean-up the old member import used to build ids like "malate-michael-1978-11-07". */
+function toIdSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** "lastname-firstname-birthday" — captures the name part. */
+const OLD_MEMBER_ID = /^(.+)-(\d{4}-\d{2}-\d{2}|no-bday)$/;
+
+function capitalizeWords(text: string): string {
+  return text.replace(/\b[a-z]/g, (c) => c.toUpperCase());
+}
+
+/**
+ * Display name for a saved line-up role. Line-ups generated from rotation queues that still
+ * hold old-style member ids have that id saved as the name (the generator couldn't find the
+ * member), so look the person up by id first, then by the name inside the old id. Category
+ * roles ("Men", "Youth Girls") pass through unchanged.
+ */
+function resolveRoleName(role: RoleAssignment, members: Member[]): string {
+  const byId = members.find((m) => m.id === role.id);
+  if (byId) return fullName(byId);
+
+  const old = OLD_MEMBER_ID.exec(role.id) ?? OLD_MEMBER_ID.exec(role.name);
+  if (!old) return role.name;
+
+  const nameKey = old[1];
+  const sameName = members.filter((m) => toIdSlug(`${m.lastName}-${m.firstName}`) === nameKey);
+  const match =
+    sameName.find((m) => toIdSlug(`${m.lastName}-${m.firstName}-${m.birthday || "no-bday"}`) === old[0]) ??
+    sameName.find((m) => !m.isArchived) ??
+    sameName[0];
+  if (match) return fullName(match);
+
+  // Not in the members list at all: best guess from the id itself ("malate-michael" -> "Michael Malate").
+  const [last, ...first] = nameKey.split("-");
+  return capitalizeWords([...first, last].join(" "));
+}
+
+function withResolvedNames(entry: ProgramLineUpEntry, members: Member[]): ProgramLineUpEntry {
+  const fix = <T extends RoleAssignment | undefined>(role: T): T =>
+    (role && { ...role, name: resolveRoleName(role, members) }) as T;
+  return {
+    ...entry,
+    presider: fix(entry.presider),
+    speaker: fix(entry.speaker),
+    specialNumber: fix(entry.specialNumber),
+    usher: fix(entry.usher),
+    flowerFamily: fix(entry.flowerFamily),
+  };
 }
 
 /** The most recent `count` Sundays up to `today` (today included), newest first. */
@@ -230,7 +287,7 @@ export default function useDashboard() {
   }, [members, activeMembers, today, todayISO]);
 
   // ── Upcoming service line-ups ──
-  const [services, setServices] = useState<DashboardService[] | null>(null);
+  const [savedServices, setServices] = useState<DashboardService[] | null>(null);
   const [servicesError, setServicesError] = useState(false);
 
   useEffect(() => {
@@ -251,6 +308,15 @@ export default function useDashboard() {
       cancelled = true;
     };
   }, [serviceDates]);
+
+  // Names are resolved against the members list, so wait for it (unless it failed to load).
+  const services = useMemo<DashboardService[] | null>(() => {
+    if (!savedServices || (!members && !peopleError)) return null;
+    return savedServices.map((s) => ({
+      ...s,
+      entry: s.entry && withResolvedNames(s.entry, members ?? []),
+    }));
+  }, [savedServices, members, peopleError]);
 
   // ── Upcoming calendar events ──
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
