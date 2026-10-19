@@ -29,7 +29,7 @@ export default function FinanceMonthFlow({
   // Every line names its period, so "tithes received" is never ambiguous.
   const inPeriod = periodLabel.includes("–") ? `(${periodLabel})` : `in ${periodLabel}`;
 
-  const m = getFinanceStatus(periodTithes, periodExpenses, startBalance, endBalance, inPeriod, fmtPeso);
+  const m = getFinanceStatus(periodTithes, periodExpenses, endBalance, inPeriod, fmtPeso);
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
   // Both bars share one scale so their lengths can be compared directly.

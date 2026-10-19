@@ -86,7 +86,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   // ── Financial status for the period ──
   // Same headline and wording as the on-screen Financial Status card.
   const inPeriod = data.periodLabel.includes("–") ? `(${data.periodLabel})` : `in ${data.periodLabel}`;
-  const s = getFinanceStatus(data.periodTithes, data.periodExpenses, data.startBalance, data.endBalance, inPeriod, peso);
+  const s = getFinanceStatus(data.periodTithes, data.periodExpenses, data.endBalance, inPeriod, peso);
   doc.setFontSize(8.5);
   const statusLines = doc.splitTextToSize(`${s.headline.toUpperCase()}: ${s.detail}`, CONTENT_W - 8) as string[];
   const boxH = 18 + statusLines.length * 4;
