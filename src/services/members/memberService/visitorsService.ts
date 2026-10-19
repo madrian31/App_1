@@ -9,13 +9,14 @@ export interface VisitorAttendanceStats {
   timesAttended: number;
   firstVisit: string; // ISO date, "" if never marked present
   lastVisit: string; // ISO date, "" if never marked present
+  visitDates: string[]; // ISO dates of every Sunday marked present
 }
 
 /** Times present + first/last visit for each visitor, from their attendance docs
  *  (`{ trackeeId, year, month (0-based), days: { [day]: boolean } }`). */
 export async function getVisitorAttendanceStats(visitorIds: string[]): Promise<Record<string, VisitorAttendanceStats>> {
   const out: Record<string, VisitorAttendanceStats> = {};
-  visitorIds.forEach((id) => (out[id] = { timesAttended: 0, firstVisit: "", lastVisit: "" }));
+  visitorIds.forEach((id) => (out[id] = { timesAttended: 0, firstVisit: "", lastVisit: "", visitDates: [] }));
 
   // Firestore "in" takes at most 30 values.
   for (let i = 0; i < visitorIds.length; i += 30) {
@@ -29,6 +30,7 @@ export async function getVisitorAttendanceStats(visitorIds: string[]): Promise<R
         if (!present) return;
         const iso = toLocalISODate(new Date(data.year!, data.month!, Number(day)));
         stats.timesAttended += 1;
+        stats.visitDates.push(iso);
         if (!stats.firstVisit || iso < stats.firstVisit) stats.firstVisit = iso;
         if (!stats.lastVisit || iso > stats.lastVisit) stats.lastVisit = iso;
       });

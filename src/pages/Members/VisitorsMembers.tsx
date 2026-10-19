@@ -17,6 +17,9 @@ export default function VisitorsMembers() {
     filteredCount,
     search,
     onSearchChange,
+    sunday,
+    sundayOptions,
+    onSundayChange,
     pageSize,
     currentPage,
     totalPages,
@@ -49,10 +52,16 @@ export default function VisitorsMembers() {
           <p className="visitors-help">
             <i className="fa-solid fa-circle-info" aria-hidden="true" /> Visitors are people from the attendance who
             aren't in the members directory yet. Click <strong>Make Member</strong> to add them as a member and complete
-            their profile.
+            their profile. Choose a Sunday to see only the visitors who came that day.
           </p>
 
-          <MembersToolbar search={search} onSearchChange={onSearchChange} hideFilter />
+          <MembersToolbar
+            search={search}
+            onSearchChange={onSearchChange}
+            filter={sunday}
+            onFilterChange={onSundayChange}
+            filterOptions={sundayOptions}
+          />
 
           <div className="members-card">
             <VisitorsTable

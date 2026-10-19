@@ -7,13 +7,19 @@ import {
   type VisitorAttendanceStats,
 } from "../services/members/memberService/visitorsService";
 import type { Member } from "../types/member";
+import type { FilterOption } from "../components/members/MembersToolbar";
+import { formatDisplayDate } from "../utils/date";
 
 export interface VisitorRow extends Member, VisitorAttendanceStats {}
+
+/** Sunday filter value: "all", or the ISO date of one Sunday. */
+const ALL_SUNDAYS = "all";
 
 /**
  * Drives Members → Visitors: people the attendance import added as visitors (not in the
  * directory yet), with how often they've attended, plus Make Member / Remove actions.
  * Most frequent attendees come first — they're the ones to follow up with.
+ * The Sunday filter narrows the list to the visitors who came on one Sunday.
  */
 export default function useVisitors() {
   const [loading, setLoading] = useState(true);
@@ -23,6 +29,7 @@ export default function useVisitors() {
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
+  const [sunday, setSunday] = useState(ALL_SUNDAYS);
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -57,11 +64,28 @@ export default function useVisitors() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  // Every Sunday at least one visitor attended, newest first, with how many came.
+  const sundayOptions = useMemo<FilterOption<string>[]>(() => {
+    const counts = new Map<string, number>();
+    visitors.forEach((v) => v.visitDates.forEach((d) => counts.set(d, (counts.get(d) ?? 0) + 1)));
+    const dates = [...counts.keys()].sort((a, b) => b.localeCompare(a));
+    return [
+      { value: ALL_SUNDAYS, label: "All Sundays" },
+      ...dates.map((d) => {
+        const n = counts.get(d)!;
+        return { value: d, label: `${formatDisplayDate(d)} · ${n} visitor${n !== 1 ? "s" : ""}` };
+      }),
+    ];
+  }, [visitors]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return visitors;
-    return visitors.filter((m) => `${m.firstName} ${m.middleInitial ?? ""} ${m.lastName}`.toLowerCase().includes(q));
-  }, [visitors, search]);
+    return visitors.filter(
+      (m) =>
+        (sunday === ALL_SUNDAYS || m.visitDates.includes(sunday)) &&
+        (!q || `${m.firstName} ${m.middleInitial ?? ""} ${m.lastName}`.toLowerCase().includes(q))
+    );
+  }, [visitors, search, sunday]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
@@ -69,6 +93,10 @@ export default function useVisitors() {
 
   function onSearchChange(value: string) {
     setSearch(value);
+    setCurrentPage(1);
+  }
+  function onSundayChange(value: string) {
+    setSunday(value);
     setCurrentPage(1);
   }
   function onPageSizeChange(size: number) {
@@ -114,6 +142,9 @@ export default function useVisitors() {
     filteredCount: filtered.length,
     search,
     onSearchChange,
+    sunday,
+    sundayOptions,
+    onSundayChange,
     pageSize,
     currentPage: safePage,
     totalPages,
