@@ -429,3 +429,32 @@
 .is-deficit .finance-status-figure-value {
     color: var(--danger);
 }
+
+/* KPI row fills the full width and lines up with the Financial Status card below.
+   The global .summary-cards is a content-sized flex row; here it's an even grid,
+   with the General Fund Balance a little wider as the headline number. */
+.summary-cards.finance-kpis {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.finance-kpis .summary-card {
+    min-width: 0;
+}
+
+.finance-kpis .summary-card-value {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 1000px) {
+    .summary-cards.finance-kpis {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .summary-cards.finance-kpis {
+        grid-template-columns: 1fr;
+    }
+}
