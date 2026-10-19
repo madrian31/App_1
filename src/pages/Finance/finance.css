@@ -390,3 +390,8 @@
     margin: 8px 0 0;
     text-decoration: none;
 }
+
+.is-balanced .finance-status-verdict {
+    background: #ecfdf5;
+    color: #065f46;
+}
