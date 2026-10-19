@@ -1,11 +1,8 @@
-import { formatDisplayDate } from "../../utils/date";
 import { fmtPeso } from "./financeFormat";
 
 interface FinanceMonthFlowProps {
   loading: boolean;
   periodLabel: string;
-  dateFrom: string; // ISO — first day of the period
-  dateTo: string; // ISO — last day of the period
   startBalance: number; // carried over from before the period
   periodTithes: number;
   periodExpenses: number;
@@ -23,8 +20,6 @@ type FlowStatus = "empty" | "surplus" | "covered" | "deficit";
 export default function FinanceMonthFlow({
   loading,
   periodLabel,
-  dateFrom,
-  dateTo,
   startBalance,
   periodTithes,
   periodExpenses,
@@ -42,8 +37,6 @@ export default function FinanceMonthFlow({
 
   // Every line names its period, so "tithes received" is never ambiguous.
   const inPeriod = periodLabel.includes("–") ? `(${periodLabel})` : `in ${periodLabel}`;
-  const startLabel = formatDisplayDate(dateFrom);
-  const endLabel = formatDisplayDate(dateTo);
 
   const verdict: Record<FlowStatus, { icon: string; headline: string; detail: string }> = {
     empty: {
@@ -95,7 +88,7 @@ export default function FinanceMonthFlow({
         )}
 
         <div className="finance-status-left">
-          <span className="finance-status-left-label">Money left as of {endLabel}</span>
+          <span className="finance-status-left-label">Remaining Balance</span>
           <span className="finance-status-left-value">{v(endBalance)}</span>
         </div>
       </div>
@@ -134,7 +127,7 @@ export default function FinanceMonthFlow({
 
         <dl className="finance-receipt">
           <div>
-            <dt>Money we had before {startLabel}</dt>
+            <dt>Previous Balance</dt>
             <dd>{v(startBalance)}</dd>
           </div>
           <div>
@@ -146,7 +139,7 @@ export default function FinanceMonthFlow({
             <dd className="finance-down">− {v(periodExpenses)}</dd>
           </div>
           <div className="finance-receipt-total">
-            <dt>Money left as of {endLabel}</dt>
+            <dt>Remaining Balance</dt>
             <dd>{v(endBalance)}</dd>
           </div>
         </dl>

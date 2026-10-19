@@ -93,22 +93,24 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
         ? `COVERED BY SAVINGS: tithes were ${peso(-net)} short, covered by what earlier months left over.`
         : `SURPLUS: tithes covered the expenses, ${peso(net)} added to the fund.`;
   doc.setDrawColor(...RULE);
-  doc.roundedRect(MARGIN, y - 5, CONTENT_W, 20, 2, 2, "S");
-  doc.setFont("helvetica", "bold");
+  doc.roundedRect(MARGIN, y - 5, CONTENT_W, 25, 2, 2, "S");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(...TEXT);
   doc.text(
-    `Carried over ${peso(data.startBalance)}  +  Tithes ${peso(data.periodTithes)}  -  Expenses ${peso(
+    `Previous Balance ${peso(data.startBalance)}  +  Tithes ${peso(data.periodTithes)}  -  Expenses ${peso(
       data.periodExpenses
-    )}  =  Left ${peso(data.endBalance)}`,
+    )}`,
     MARGIN + 4,
     y + 1.5
   );
+  doc.setFont("helvetica", "bold");
+  doc.text(`=  Remaining Balance ${peso(data.endBalance)}`, MARGIN + 4, y + 7);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...MUTED);
-  doc.text(status, MARGIN + 4, y + 8.5);
-  y += 26;
+  doc.text(status, MARGIN + 4, y + 14);
+  y += 31;
 
   // ── Tables ──
   function sectionTitle(title: string) {

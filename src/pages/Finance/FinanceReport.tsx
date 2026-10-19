@@ -137,8 +137,6 @@ export default function FinanceReport() {
             <FinanceMonthFlow
               loading={loading}
               periodLabel={periodLabel}
-              dateFrom={dateFrom}
-              dateTo={dateTo}
               startBalance={startBalance}
               periodTithes={periodTithes}
               periodExpenses={periodExpenses}
