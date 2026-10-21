@@ -12,8 +12,6 @@ interface AddPraiseWorshipMembersModalProps {
 
 type ChecklistView = "all" | "team";
 
-const PAGE_SIZE = 10;
-
 function initials(m: { firstName: string; lastName: string }) {
   return `${m.firstName?.[0] || ""}${m.lastName?.[0] || ""}`.toUpperCase();
 }
@@ -31,6 +29,12 @@ export default function AddPraiseWorshipMembersModal({
   const [search, setSearch] = useState(initialSearch);
   const [view, setView] = useState<ChecklistView>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  function handlePageSizeChange(size: number) {
+    setPageSize(size);
+    setCurrentPage(1);
+  }
 
   function handleSearchChange(value: string) {
     setSearch(value);
@@ -61,10 +65,10 @@ export default function AddPraiseWorshipMembersModal({
       .sort((a, b) => fullName(a).localeCompare(fullName(b)));
   }, [members, search, view]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
-  const start = (safePage - 1) * PAGE_SIZE;
-  const visible = filtered.slice(start, start + PAGE_SIZE);
+  const start = (safePage - 1) * pageSize;
+  const visible = filtered.slice(start, start + pageSize);
 
   const teamCount = useMemo(() => members.filter(isPraiseWorshipTeamMember).length, [members]);
 
@@ -75,7 +79,7 @@ export default function AddPraiseWorshipMembersModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal" role="dialog" aria-modal="true" aria-label="Add Team Members">
+      <div className="modal pw-add-modal" role="dialog" aria-modal="true" aria-label="Add Team Members">
         <div className="modal-header">
           <h2>Add Team Members</h2>
           <button type="button" className="btn-icon" onClick={onClose} aria-label="Close">
@@ -123,23 +127,24 @@ export default function AddPraiseWorshipMembersModal({
             ) : (
               visible.map((m) => {
                 const onTeam = isPraiseWorshipTeamMember(m);
+                // The whole row is the label, so tapping the name toggles too.
                 return (
-                  <div className="teacher-checklist-row" key={m.id}>
-                    <div className="avatar avatar-sm">{initials(m)}</div>
+                  <label className="teacher-checklist-row pw-add-row" key={m.id}>
+                    <span className="avatar avatar-sm">{initials(m)}</span>
                     <span className="teacher-checklist-name">{fullName(m)}</span>
-                    <label className="teacher-role-check">
+                    <span className="teacher-role-check">
                       <input type="checkbox" checked={onTeam} onChange={() => onSetOnTeam(m.id, !onTeam)} />
                       On the team
-                    </label>
-                  </div>
+                    </span>
+                  </label>
                 );
               })
             )}
           </div>
 
           <Pagination
-            pageSize={PAGE_SIZE}
-            onPageSizeChange={() => {}}
+            pageSize={pageSize}
+            onPageSizeChange={handlePageSizeChange}
             currentPage={safePage}
             totalPages={totalPages}
             start={start}

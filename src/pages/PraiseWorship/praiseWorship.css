@@ -38,6 +38,53 @@
 }
 
 /* =========================================================
+   Add Team Members modal
+   ========================================================= */
+
+/* .search-wrap is `flex: 1` for toolbars — inside this column layout that
+   squashed it down to the height of its text. */
+.pw-add-modal .search-wrap {
+    flex: none;
+}
+
+.pw-add-modal .pledger-checklist-hint {
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+
+.pw-add-modal .checklist-view-toggle {
+    margin: 12px 0 14px;
+}
+
+/* Use the modal's height for the list instead of a short fixed box, so a
+   page of members fits without scrolling on most screens. */
+.pw-add-modal .pledger-checklist {
+    margin-top: 0;
+    max-height: none;
+    flex: 1 1 auto;
+}
+
+.pw-add-row {
+    cursor: pointer;
+}
+
+.pw-add-modal .table-footer {
+    padding: 12px 0 0;
+    border-top: none;
+}
+
+.pw-add-modal .pledger-checklist-footer {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.pw-add-modal .pledger-checklist-footer .btn-primary {
+    flex: none;
+    min-width: 120px;
+}
+
+/* =========================================================
    Edit Positions modal
    ========================================================= */
 
