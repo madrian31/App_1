@@ -59,6 +59,22 @@ function newSong(song: PraiseWorshipSong): SongItem {
   return { key: `song-${nextSongKey}`, title: song.title, artist: song.artist ?? "" };
 }
 
+/** Comparable fingerprint of what Save would write — used to tell whether
+ *  the form has changes that aren't saved yet. */
+function snapshotOf(
+  assignments: Record<string, RoleAssignment[]>,
+  songs: PraiseWorshipSong[],
+  practiceDate: string,
+  practiceTime: string
+): string {
+  return JSON.stringify({
+    assignments: PW_SLOTS.map((s) => (assignments[s.key] ?? []).map((p) => p.id)),
+    songs: songs.map((s) => [s.title.trim(), (s.artist ?? "").trim()]),
+    practiceDate,
+    practiceTime,
+  });
+}
+
 export interface SlotOptions {
   qualified: RoleAssignment[]; // team members marked for this position
   others: RoleAssignment[]; // the rest of the team, as a fallback
@@ -81,6 +97,11 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
   const [practiceDate, setPracticeDate] = useState("");
   const [practiceTime, setPracticeTime] = useState(DEFAULT_PRACTICE_TIME);
 
+  // What's saved in Firestore for this date, as a snapshot, so unsaved
+  // changes can be flagged before they're lost to a refresh.
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [hasSavedEntry, setHasSavedEntry] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -99,10 +120,16 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     getPraiseWorshipLineUp(date)
       .then((entry) => {
         if (cancelled) return;
-        setAssignments({ ...emptyAssignments(), ...entry?.assignments });
-        setSongs((entry?.songs ?? []).map((song) => newSong(song)));
-        setPracticeDate(entry ? entry.practiceDate ?? "" : dayBefore(date));
-        setPracticeTime(entry ? entry.practiceTime ?? "" : DEFAULT_PRACTICE_TIME);
+        const loadedAssignments = { ...emptyAssignments(), ...entry?.assignments };
+        const loadedSongs = entry?.songs ?? [];
+        const loadedPracticeDate = entry ? entry.practiceDate ?? "" : dayBefore(date);
+        const loadedPracticeTime = entry ? entry.practiceTime ?? "" : DEFAULT_PRACTICE_TIME;
+        setAssignments(loadedAssignments);
+        setSongs(loadedSongs.map((song) => newSong(song)));
+        setPracticeDate(loadedPracticeDate);
+        setPracticeTime(loadedPracticeTime);
+        setSavedSnapshot(snapshotOf(loadedAssignments, loadedSongs, loadedPracticeDate, loadedPracticeTime));
+        setHasSavedEntry(Boolean(entry));
         setEntryError(null);
         setLoadedDate(date);
       })
@@ -192,6 +219,24 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     [date, assignments, songList, practiceDate, practiceTime]
   );
 
+  const currentSnapshot = useMemo(
+    () => snapshotOf(assignments, songList, practiceDate, practiceTime),
+    [assignments, songList, practiceDate, practiceTime]
+  );
+  const isDirty = loadedDate === date && savedSnapshot !== null && currentSnapshot !== savedSnapshot;
+
+  // The browser's own "Leave site? Changes you made may not be saved."
+  // prompt on refresh / closing the tab while there are unsaved changes.
+  useEffect(() => {
+    if (!isDirty) return;
+    function warn(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty]);
+
   async function submit(): Promise<boolean> {
     if (loadedDate !== date) return false;
     setSaving(true);
@@ -205,6 +250,8 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
         practiceTime: practiceTime || undefined,
         addedBy: currentUser,
       });
+      setSavedSnapshot(currentSnapshot);
+      setHasSavedEntry(true);
       setToast("Line-up saved.");
       return true;
     } catch (err) {
@@ -231,6 +278,8 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     loading: loadingMembers || loadedDate !== date,
     loadError: membersError ?? entryError,
     saving,
+    isDirty,
+    hasSavedEntry,
     toast,
 
     teamCount: team.length,

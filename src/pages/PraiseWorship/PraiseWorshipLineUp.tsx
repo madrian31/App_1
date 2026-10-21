@@ -30,6 +30,8 @@ export default function PraiseWorshipLineUp() {
     loading,
     loadError,
     saving,
+    isDirty,
+    hasSavedEntry,
     toast,
 
     teamCount,
@@ -51,6 +53,16 @@ export default function PraiseWorshipLineUp() {
     submit,
     copyMessage,
   } = usePraiseWorshipLineUp(CURRENT_USER, searchParams.get("date") ?? undefined);
+
+  // Switching dates reloads the form, so check first instead of silently
+  // dropping what hasn't been saved yet.
+  function changeDate(next: string) {
+    if (!next || next === date) return;
+    if (isDirty && !window.confirm("This line-up has changes that are not saved yet. Switch dates without saving?")) {
+      return;
+    }
+    setDate(next);
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -77,7 +89,7 @@ export default function PraiseWorshipLineUp() {
                 type="date"
                 aria-label="Service date"
                 value={date}
-                onChange={(e) => e.target.value && setDate(e.target.value)}
+                onChange={(e) => changeDate(e.target.value)}
                 style={{ border: "none", background: "transparent" }}
               />
             </div>
@@ -85,6 +97,17 @@ export default function PraiseWorshipLineUp() {
               <i className="fa-solid fa-floppy-disk" aria-hidden="true" />
               {saving ? "Saving…" : "Save Line-up"}
             </button>
+            {isDirty ? (
+              <span className="pw-save-status pw-save-status--dirty" role="status">
+                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                Unsaved changes — click Save Line-up to keep them
+              </span>
+            ) : hasSavedEntry && !loading ? (
+              <span className="pw-save-status" role="status">
+                <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                Saved
+              </span>
+            ) : null}
           </div>
 
           {loadError && (

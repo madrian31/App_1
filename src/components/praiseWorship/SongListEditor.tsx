@@ -75,26 +75,31 @@ export default function SongListEditor({ songs, disabled, onAdd, onUpdate, onRem
                   />
                 </div>
                 <div className="pw-song-actions">
-                  <button
-                    type="button"
-                    className="btn-icon"
-                    title="Move up"
-                    aria-label={`Move ${name} up`}
-                    disabled={disabled || i === 0}
-                    onClick={() => onMove(song.key, -1)}
-                  >
-                    <i className="fa-solid fa-arrow-up" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-icon"
-                    title="Move down"
-                    aria-label={`Move ${name} down`}
-                    disabled={disabled || i === songs.length - 1}
-                    onClick={() => onMove(song.key, 1)}
-                  >
-                    <i className="fa-solid fa-arrow-down" aria-hidden="true" />
-                  </button>
+                  {/* Nothing to reorder with a single song. */}
+                  {songs.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        title="Move up"
+                        aria-label={`Move ${name} up`}
+                        disabled={disabled || i === 0}
+                        onClick={() => onMove(song.key, -1)}
+                      >
+                        <i className="fa-solid fa-arrow-up" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        title="Move down"
+                        aria-label={`Move ${name} down`}
+                        disabled={disabled || i === songs.length - 1}
+                        onClick={() => onMove(song.key, 1)}
+                      >
+                        <i className="fa-solid fa-arrow-down" aria-hidden="true" />
+                      </button>
+                    </>
+                  )}
                   <button
                     type="button"
                     className="btn-icon danger"
