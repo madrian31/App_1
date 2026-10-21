@@ -46,10 +46,9 @@ export interface Member {
   excludeFromAutoLineUp?: boolean;
 
   // ── Praise & Worship ──
-  // Left unset until someone is added/removed on the Praise & Worship page;
-  // until then the `ministry` list decides (see isPraiseWorshipTeamMember).
-  isPraiseWorshipMember?: boolean;
-  // Positions this member can take in a line-up (keys of PW_SKILLS).
+  // Team membership is the "Praise & Worship" entry in `ministry` (see
+  // isPraiseWorshipTeamMember) — this only holds the positions they can take
+  // in a line-up (keys of PW_SKILLS).
   praiseWorshipSkills?: PraiseWorshipSkill[];
 
   // ── Wedding Anniversary ──
@@ -82,12 +81,28 @@ export function isWedPresiderPoolMember(m: Member): boolean {
   return (isCouncilPoolMember(m) || Boolean(m.category?.startsWith("Youth"))) && !isWorkerPoolMember(m);
 }
 
-/** On the Praise & Worship team. Once the P&W page has set
- *  isPraiseWorshipMember, that decides (so removing someone sticks even if
- *  their ministry text still says P&W). Before that, members already tagged
- *  "Praise & Worship" in the directory's ministry list count as on the team. */
+// The directory writes "Praise & Worship"; Manage Lists may spell it
+// "Praise and Worship". Both count; new entries use the directory spelling.
+const PRAISE_WORSHIP_MINISTRY = "Praise & Worship";
+const PRAISE_WORSHIP_ALIASES = ["praise & worship", "praise and worship"];
+// What the directory puts in `ministry` when someone has none.
+const NO_MINISTRY_PLACEHOLDER = "no ministry yet";
+
+/** On the Praise & Worship team = has P&W in their ministry list, so the
+ *  P&W page, the Profile page and the directory file always agree. */
 export function isPraiseWorshipTeamMember(m: Member): boolean {
-  return m.isPraiseWorshipMember ?? (ministryHas(m, "Praise & Worship") || ministryHas(m, "Praise and Worship"));
+  return PRAISE_WORSHIP_ALIASES.some((alias) => ministryHas(m, alias));
+}
+
+/** `ministry` with Praise & Worship added or removed, keeping their other
+ *  ministries. Adding also drops the "No Ministry Yet" placeholder. */
+export function withPraiseWorshipMinistry(ministry: string | undefined, onTeam: boolean): string {
+  const others = (ministry ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s && !PRAISE_WORSHIP_ALIASES.includes(s.toLowerCase()));
+  if (!onTeam) return others.join(", ");
+  return [...others.filter((s) => s.toLowerCase() !== NO_MINISTRY_PLACEHOLDER), PRAISE_WORSHIP_MINISTRY].join(", ");
 }
 
 /** Anyone the auto-generator could assign as Presider or Speaker. */

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllMembers, updateMember } from "../services/members/memberService/membersService";
-import { isPraiseWorshipTeamMember } from "../types/member";
+import { isPraiseWorshipTeamMember, withPraiseWorshipMinistry } from "../types/member";
 import type { Member } from "../types/member";
 import type { PraiseWorshipSkill } from "../types/praiseWorship";
 
@@ -53,10 +53,13 @@ export default function usePraiseWorshipMembers() {
   async function setOnTeam(id: string, onTeam: boolean) {
     const target = members.find((m) => m.id === id);
     if (!target) return;
+    // Team membership lives in the member's ministry list, so the Profile
+    // page shows the change too.
+    const ministry = withPraiseWorshipMinistry(target.ministry, onTeam);
     const prev = members;
-    setMembers((cur) => cur.map((m) => (m.id === id ? { ...m, isPraiseWorshipMember: onTeam } : m)));
+    setMembers((cur) => cur.map((m) => (m.id === id ? { ...m, ministry } : m)));
     try {
-      await updateMember(id, { isPraiseWorshipMember: onTeam });
+      await updateMember(id, { ministry });
       setToast(onTeam ? `${target.firstName} added to the team.` : `${target.firstName} removed from the team.`);
     } catch (err) {
       console.error("Failed to update Praise & Worship team:", err);

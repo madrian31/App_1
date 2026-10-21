@@ -27,6 +27,16 @@
     color: var(--primary);
 }
 
+.empty-state .pw-empty-action {
+    margin-top: 8px;
+}
+
+/* .empty-state enlarges and fades its icon — not wanted inside the button. */
+.empty-state .pw-empty-action i {
+    font-size: 14px;
+    opacity: 1;
+}
+
 /* =========================================================
    Edit Positions modal
    ========================================================= */

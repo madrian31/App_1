@@ -12,7 +12,8 @@ import "../SundaySchool/sundaySchool.css"; // shared modal + checklist styles
 import "./praiseWorship.css";
 
 export default function PraiseWorshipMembers() {
-  const [showAddModal, setShowAddModal] = useState(false);
+  // null = Add Members is closed; a string = open, starting with that search.
+  const [addSearch, setAddSearch] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const {
     loading,
@@ -47,7 +48,7 @@ export default function PraiseWorshipMembers() {
                 <i className="fa-solid fa-list-ol" aria-hidden="true" />
                 Set Line-up
               </Link>
-              <button className="btn-add" onClick={() => setShowAddModal(true)}>
+              <button className="btn-add" onClick={() => setAddSearch("")}>
                 <i className="fa-solid fa-user-plus" aria-hidden="true" />
                 Add Members
               </button>
@@ -83,18 +84,21 @@ export default function PraiseWorshipMembers() {
             <PraiseWorshipMembersTable
               members={team}
               loading={loading}
+              search={search}
               onEditPositions={setEditingId}
               onRemove={(id) => setOnTeam(id, false)}
+              onSearchAllMembers={() => setAddSearch(search.trim())}
             />
           </div>
 
           <Toast message={toast} />
 
-          {showAddModal && (
+          {addSearch !== null && (
             <AddPraiseWorshipMembersModal
               members={allMembers}
+              initialSearch={addSearch}
               onSetOnTeam={setOnTeam}
-              onClose={() => setShowAddModal(false)}
+              onClose={() => setAddSearch(null)}
             />
           )}
 

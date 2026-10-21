@@ -4,8 +4,11 @@ import { PW_SKILLS } from "../../types/praiseWorship";
 interface PraiseWorshipMembersTableProps {
   members: Member[];
   loading: boolean;
+  search: string;
   onEditPositions: (id: string) => void;
   onRemove: (id: string) => void;
+  // Opens Add Members with the same search, for when the person isn't on the team yet.
+  onSearchAllMembers: () => void;
 }
 
 function initials(m: { firstName: string; lastName: string }) {
@@ -17,9 +20,13 @@ const COL_COUNT = 3; // Member, Positions, actions
 export default function PraiseWorshipMembersTable({
   members,
   loading,
+  search,
   onEditPositions,
   onRemove,
+  onSearchAllMembers,
 }: PraiseWorshipMembersTableProps) {
+  const query = search.trim();
+
   return (
     <div className="table-scroll">
       <table className="members-table">
@@ -44,7 +51,18 @@ export default function PraiseWorshipMembersTable({
               <td colSpan={COL_COUNT} className="empty-cell">
                 <div className="empty-state">
                   <i className="fa-solid fa-music" />
-                  <p>No team members found.</p>
+                  {query ? (
+                    <>
+                      <p>No one on the team matches "{query}".</p>
+                      <p>This list only shows team members. If the person isn't on the team yet, add them first.</p>
+                      <button type="button" className="btn-secondary pw-empty-action" onClick={onSearchAllMembers}>
+                        <i className="fa-solid fa-user-plus" aria-hidden="true" />
+                        Search "{query}" in all members
+                      </button>
+                    </>
+                  ) : (
+                    <p>No team members found.</p>
+                  )}
                 </div>
               </td>
             </tr>

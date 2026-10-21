@@ -5,6 +5,7 @@ import Pagination from "../members/Pagination";
 
 interface AddPraiseWorshipMembersModalProps {
   members: Member[]; // every active member
+  initialSearch?: string;
   onSetOnTeam: (id: string, onTeam: boolean) => void;
   onClose: () => void;
 }
@@ -23,10 +24,11 @@ function fullName(m: Member): string {
 
 export default function AddPraiseWorshipMembersModal({
   members,
+  initialSearch = "",
   onSetOnTeam,
   onClose,
 }: AddPraiseWorshipMembersModalProps) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [view, setView] = useState<ChecklistView>("all");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -83,7 +85,8 @@ export default function AddPraiseWorshipMembersModal({
 
         <div className="modal-body">
           <p className="pledger-checklist-hint">
-            Check a member to add them to the Praise &amp; Worship team. Changes save right away.
+            Check a member to add them to the Praise &amp; Worship team. This also adds Praise &amp; Worship to their
+            ministry. Changes save right away.
           </p>
 
           <div className="search-wrap">
