@@ -26,11 +26,12 @@ export default function PraiseWorshipLineUp() {
   const [searchParams] = useSearchParams();
   const {
     date,
-    setDate,
+    changeDate,
     loading,
     loadError,
     saving,
-    isDirty,
+    saveError,
+    retrySave,
     hasSavedEntry,
     toast,
 
@@ -50,19 +51,8 @@ export default function PraiseWorshipLineUp() {
     setPracticeTime,
 
     message,
-    submit,
     copyMessage,
   } = usePraiseWorshipLineUp(CURRENT_USER, searchParams.get("date") ?? undefined);
-
-  // Switching dates reloads the form, so check first instead of silently
-  // dropping what hasn't been saved yet.
-  function changeDate(next: string) {
-    if (!next || next === date) return;
-    if (isDirty && !window.confirm("This line-up has changes that are not saved yet. Switch dates without saving?")) {
-      return;
-    }
-    setDate(next);
-  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -93,21 +83,33 @@ export default function PraiseWorshipLineUp() {
                 style={{ border: "none", background: "transparent" }}
               />
             </div>
-            <button className="btn-add" onClick={submit} disabled={saving || loading}>
-              <i className="fa-solid fa-floppy-disk" aria-hidden="true" />
-              {saving ? "Saving…" : "Save Line-up"}
-            </button>
-            {isDirty ? (
-              <span className="pw-save-status pw-save-status--dirty" role="status">
-                <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-                Unsaved changes — click Save Line-up to keep them
-              </span>
-            ) : hasSavedEntry && !loading ? (
-              <span className="pw-save-status" role="status">
-                <i className="fa-solid fa-circle-check" aria-hidden="true" />
-                Saved
-              </span>
-            ) : null}
+            {/* No Save button — changes save on their own; this says where that's at. */}
+            <div className="pw-save-status-wrap" role="status" aria-live="polite">
+              {loading ? null : saveError ? (
+                <span className="pw-save-status pw-save-status--error">
+                  <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
+                  Could not save. Check your internet connection.
+                  <button type="button" className="pw-link-btn" onClick={retrySave}>
+                    Try again
+                  </button>
+                </span>
+              ) : saving ? (
+                <span className="pw-save-status pw-save-status--muted">
+                  <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+                  Saving…
+                </span>
+              ) : hasSavedEntry ? (
+                <span className="pw-save-status">
+                  <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                  All changes saved
+                </span>
+              ) : (
+                <span className="pw-save-status pw-save-status--muted">
+                  <i className="fa-solid fa-cloud" aria-hidden="true" />
+                  Changes save automatically
+                </span>
+              )}
+            </div>
           </div>
 
           {loadError && (

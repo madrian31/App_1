@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAllMembers } from "../services/members/memberService/membersService";
 import {
   getPraiseWorshipLineUp,
@@ -8,12 +8,20 @@ import { isPraiseWorshipTeamMember } from "../types/member";
 import type { Member } from "../types/member";
 import type { RoleAssignment } from "../types/programLineUp";
 import { PW_SLOTS, formatLineUpMessage } from "../types/praiseWorship";
-import type { PraiseWorshipSkill, PraiseWorshipSong } from "../types/praiseWorship";
+import type { NewPraiseWorshipLineUpEntry, PraiseWorshipSkill, PraiseWorshipSong } from "../types/praiseWorship";
 import { toLocalISODate } from "../utils/date";
 
 // The team's usual practice: the Saturday before, 4 PM. Only a starting
 // value for a new line-up — saved line-ups keep whatever was set.
 const DEFAULT_PRACTICE_TIME = "16:00";
+
+// Changes save on their own this long after the last edit.
+const AUTO_SAVE_DELAY_MS = 1000;
+
+interface PendingSave {
+  entry: NewPraiseWorshipLineUpEntry;
+  snapshot: string; // what `entry` looks like as a snapshot, to mark it saved
+}
 
 /** Today if it's Sunday, otherwise the coming Sunday. */
 function nextSunday(): string {
@@ -97,13 +105,25 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
   const [practiceDate, setPracticeDate] = useState("");
   const [practiceTime, setPracticeTime] = useState(DEFAULT_PRACTICE_TIME);
 
-  // What's saved in Firestore for this date, as a snapshot, so unsaved
-  // changes can be flagged before they're lost to a refresh.
+  // What's saved in Firestore for this date, as a snapshot — the form
+  // auto-saves whenever what's on screen differs from it.
   const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
   const [hasSavedEntry, setHasSavedEntry] = useState(false);
 
-  const [saving, setSaving] = useState(false);
+  const [savesInFlight, setSavesInFlight] = useState(0);
+  const [saveError, setSaveError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
+
+  // The save waiting out its delay, and its timer. Kept in refs so switching
+  // dates or leaving the page can send it right away instead of losing it.
+  const pendingSave = useRef<PendingSave | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dateRef = useRef(date);
+
+  useEffect(() => {
+    dateRef.current = date;
+  }, [date]);
 
   useEffect(() => {
     getAllMembers()
@@ -223,25 +243,52 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     () => snapshotOf(assignments, songList, practiceDate, practiceTime),
     [assignments, songList, practiceDate, practiceTime]
   );
+  // Only once this date's saved line-up is in the form — before that, the
+  // form still holds the previous date and must never be written over this one.
   const isDirty = loadedDate === date && savedSnapshot !== null && currentSnapshot !== savedSnapshot;
 
-  // The browser's own "Leave site? Changes you made may not be saved."
-  // prompt on refresh / closing the tab while there are unsaved changes.
-  useEffect(() => {
-    if (!isDirty) return;
-    function warn(e: BeforeUnloadEvent) {
-      e.preventDefault();
-      e.returnValue = "";
-    }
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [isDirty]);
-
-  async function submit(): Promise<boolean> {
-    if (loadedDate !== date) return false;
-    setSaving(true);
+  const persist = useCallback(async ({ entry, snapshot }: PendingSave) => {
+    setSavesInFlight((n) => n + 1);
+    setSaveError(false);
     try {
-      await savePraiseWorshipLineUp({
+      await savePraiseWorshipLineUp(entry);
+      // A save sent while switching dates can finish after the next date is
+      // on screen — it mustn't mark that one as saved.
+      if (dateRef.current === entry.date) {
+        setSavedSnapshot(snapshot);
+        setHasSavedEntry(true);
+      }
+    } catch (err) {
+      console.error("Failed to save line-up:", err);
+      if (dateRef.current === entry.date) setSaveError(true);
+      else setToast(`Could not save the line-up for ${entry.date}. Please open that date and check it.`);
+    } finally {
+      setSavesInFlight((n) => n - 1);
+    }
+  }, []);
+
+  /** Sends the waiting save now, if there is one. */
+  const flushSave = useCallback(() => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    const pending = pendingSave.current;
+    pendingSave.current = null;
+    if (pending) persist(pending);
+  }, [persist]);
+
+  // Auto-save: every change (re)starts the delay, so typing a song title
+  // sends one save when you pause, not one per letter.
+  useEffect(() => {
+    if (!isDirty) {
+      // Nothing to save, or changed back to what's saved — drop any waiting save.
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      pendingSave.current = null;
+      return;
+    }
+    pendingSave.current = {
+      snapshot: currentSnapshot,
+      entry: {
         id: date,
         date,
         assignments,
@@ -249,18 +296,39 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
         practiceDate: practiceDate || undefined,
         practiceTime: practiceTime || undefined,
         addedBy: currentUser,
-      });
-      setSavedSnapshot(currentSnapshot);
-      setHasSavedEntry(true);
-      setToast("Line-up saved.");
-      return true;
-    } catch (err) {
-      console.error("Failed to save line-up:", err);
-      setToast("Failed to save line-up.");
-      return false;
-    } finally {
-      setSaving(false);
+      },
+    };
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(flushSave, AUTO_SAVE_DELAY_MS);
+  }, [isDirty, currentSnapshot, date, assignments, songList, practiceDate, practiceTime, currentUser, retryCount, flushSave]);
+
+  // Leaving the page (e.g. another sidebar item) sends the last change right away.
+  useEffect(() => () => flushSave(), [flushSave]);
+
+  // Refreshing or closing the tab within the delay: send the save and let the
+  // browser ask "Leave site?" so it has time to go out.
+  useEffect(() => {
+    if (!isDirty) return;
+    function warn(e: BeforeUnloadEvent) {
+      flushSave();
+      e.preventDefault();
+      e.returnValue = "";
     }
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isDirty, flushSave]);
+
+  function retrySave() {
+    setSaveError(false);
+    setRetryCount((n) => n + 1);
+  }
+
+  /** Switches to another service date, sending any waiting save first so
+   *  nothing typed on this date is lost. */
+  function changeDate(next: string) {
+    if (!next || next === date) return;
+    flushSave();
+    setDate(next);
   }
 
   async function copyMessage() {
@@ -274,11 +342,12 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
 
   return {
     date,
-    setDate,
+    changeDate,
     loading: loadingMembers || loadedDate !== date,
     loadError: membersError ?? entryError,
-    saving,
-    isDirty,
+    saving: isDirty || savesInFlight > 0, // waiting out the delay counts as saving
+    saveError,
+    retrySave,
     hasSavedEntry,
     toast,
 
@@ -298,7 +367,6 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     setPracticeTime,
 
     message,
-    submit,
     copyMessage,
   };
 }

@@ -145,10 +145,15 @@
     margin-bottom: 16px;
 }
 
+.pw-save-status-wrap {
+    display: flex;
+    align-items: center;
+}
+
 .pw-save-status {
     display: inline-flex;
     align-items: center;
-    align-self: center;
+    flex-wrap: wrap;
     gap: 6px;
 
     font-size: 13px;
@@ -156,8 +161,17 @@
     color: var(--success);
 }
 
-.pw-save-status--dirty {
-    color: #b45309;
+.pw-save-status--muted {
+    color: var(--text-muted);
+}
+
+.pw-save-status--error {
+    color: var(--danger);
+}
+
+.pw-save-status--error .pw-link-btn {
+    color: inherit;
+    font-weight: 700;
 }
 
 .pw-notice {
