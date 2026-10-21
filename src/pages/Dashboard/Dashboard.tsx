@@ -3,6 +3,7 @@ import { Sidebar } from "../../components/sidebar/Sidebar";
 import useDashboard from "../../hooks/useDashboard";
 import DashboardKpiStrip from "../../components/dashboard/DashboardKpiStrip";
 import UpcomingServicesCard from "../../components/dashboard/UpcomingServicesCard";
+import PraiseWorshipCard from "../../components/dashboard/PraiseWorshipCard";
 import CelebrantsCard from "../../components/dashboard/CelebrantsCard";
 import UpcomingEventsCard from "../../components/dashboard/UpcomingEventsCard";
 import FollowUpCard from "../../components/dashboard/FollowUpCard";
@@ -12,8 +13,18 @@ import "../ProgramLineUp/programLineUp.css";
 import "./dashboard.css";
 
 export default function Dashboard() {
-  const { today, attendance, peopleError, celebrants, services, servicesError, upcomingEvents, eventsError } =
-    useDashboard();
+  const {
+    today,
+    attendance,
+    peopleError,
+    celebrants,
+    services,
+    servicesError,
+    praiseWorship,
+    praiseWorshipError,
+    upcomingEvents,
+    eventsError,
+  } = useDashboard();
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -48,6 +59,7 @@ export default function Dashboard() {
 
           <div className="dash-grid">
             <UpcomingServicesCard services={services} error={servicesError} today={today} />
+            <PraiseWorshipCard praiseWorship={praiseWorship} error={praiseWorshipError} today={today} />
             <CelebrantsCard celebrants={celebrants} error={peopleError} today={today} />
             <UpcomingEventsCard events={upcomingEvents} error={eventsError} today={today} />
             <FollowUpCard attendance={attendance} error={peopleError} />

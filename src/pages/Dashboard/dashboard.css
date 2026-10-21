@@ -342,6 +342,29 @@
 
 
 /* =========================================================
+   Praise & Worship
+   ========================================================= */
+
+.dash-songs {
+    margin: 4px 0 0;
+    padding-left: 22px;
+
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+}
+
+.dash-songs li::marker {
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.dash-group-label + .dash-roles {
+    margin-top: 6px;
+}
+
+
+/* =========================================================
    Upcoming events
    ========================================================= */
 

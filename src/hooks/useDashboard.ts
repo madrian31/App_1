@@ -3,10 +3,12 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { getAllMembers } from "../services/members/memberService/membersService";
 import { getLineUpForDate } from "../services/programLineUp/programLineUpService";
+import { getPraiseWorshipLineUp } from "../services/praiseWorship/praiseWorshipLineUpService";
 import { getAllEvents } from "../services/calendar/calendarEventsService";
 import { getAllCategories } from "../services/calendar/calendarCategoriesService";
 import { getMonthlyCelebrants, type Member, type MonthlyCelebrant } from "../types/member";
 import type { ProgramLineUpEntry, RoleAssignment } from "../types/programLineUp";
+import type { PraiseWorshipLineUpEntry } from "../types/praiseWorship";
 import type { CalendarCategoryItem, CalendarEvent } from "../types/calendarEvent";
 import { FOLLOW_UP_MISSED_SUNDAYS } from "./useMembersAttendanceReport";
 import { addDays, iso, timeToMinutes } from "./useCalendar";
@@ -48,6 +50,11 @@ export interface DashboardAttendance {
 export interface DashboardService {
   date: string; // ISO
   entry: ProgramLineUpEntry | null; // null = no line-up saved for that date yet
+}
+
+export interface DashboardPraiseWorship {
+  date: string; // ISO — the coming Sunday (today, if it's Sunday)
+  entry: PraiseWorshipLineUpEntry | null; // null = no P&W line-up saved for that date yet
 }
 
 export interface DashboardCelebrant extends MonthlyCelebrant {
@@ -318,6 +325,30 @@ export default function useDashboard() {
     }));
   }, [savedServices, members, peopleError]);
 
+  // ── Praise & Worship line-up for the coming Sunday ──
+  const praiseWorshipDate = useMemo(() => iso(addDays(today, (7 - today.getDay()) % 7)), [today]);
+  const [praiseWorship, setPraiseWorship] = useState<DashboardPraiseWorship | null>(null);
+  const [praiseWorshipError, setPraiseWorshipError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const entry = await getPraiseWorshipLineUp(praiseWorshipDate);
+        if (!cancelled) setPraiseWorship({ date: praiseWorshipDate, entry });
+      } catch (err) {
+        console.error("Failed to load the Praise & Worship line-up for the dashboard:", err);
+        if (!cancelled) setPraiseWorshipError(true);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, [praiseWorshipDate]);
+
   // ── Upcoming calendar events ──
   const [events, setEvents] = useState<CalendarEvent[] | null>(null);
   const [categories, setCategories] = useState<CalendarCategoryItem[]>([]);
@@ -367,6 +398,8 @@ export default function useDashboard() {
     celebrants,
     services,
     servicesError,
+    praiseWorship,
+    praiseWorshipError,
     upcomingEvents,
     eventsError,
   };
