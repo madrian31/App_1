@@ -58,11 +58,15 @@ export default function Dashboard() {
           )}
 
           <div className="dash-grid">
-            <UpcomingServicesCard services={services} error={servicesError} today={today} />
-            <PraiseWorshipCard praiseWorship={praiseWorship} error={praiseWorshipError} today={today} />
-            <CelebrantsCard celebrants={celebrants} error={peopleError} today={today} />
-            <UpcomingEventsCard events={upcomingEvents} error={eventsError} today={today} />
-            <FollowUpCard attendance={attendance} error={peopleError} />
+            <div className="dash-col">
+              <UpcomingServicesCard services={services} error={servicesError} today={today} />
+              <PraiseWorshipCard praiseWorship={praiseWorship} error={praiseWorshipError} today={today} />
+              <CelebrantsCard celebrants={celebrants} error={peopleError} today={today} />
+            </div>
+            <div className="dash-col">
+              <UpcomingEventsCard events={upcomingEvents} error={eventsError} today={today} />
+              <FollowUpCard attendance={attendance} error={peopleError} />
+            </div>
           </div>
         </div>
       </main>

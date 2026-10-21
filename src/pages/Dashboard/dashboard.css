@@ -111,6 +111,15 @@
     }
 }
 
+/* Each column stacks its own cards, so a short card never leaves a gap
+   beside a tall one in the other column. */
+.dash-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+}
+
 .dash-panel {
     min-width: 0;
 
