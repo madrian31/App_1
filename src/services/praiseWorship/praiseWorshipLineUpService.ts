@@ -1,12 +1,15 @@
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
+import { normalizeSongs } from "../../types/praiseWorship";
 import type { NewPraiseWorshipLineUpEntry, PraiseWorshipLineUpEntry } from "../../types/praiseWorship";
 
 const COLLECTION = "praiseWorshipLineUp";
 
 export async function getPraiseWorshipLineUp(date: string): Promise<PraiseWorshipLineUpEntry | null> {
   const snap = await getDoc(doc(db, COLLECTION, date));
-  return snap.exists() ? (snap.data() as PraiseWorshipLineUpEntry) : null;
+  if (!snap.exists()) return null;
+  const data = snap.data() as PraiseWorshipLineUpEntry;
+  return { ...data, songs: normalizeSongs(data.songs) };
 }
 
 function stripUndefined<T extends object>(obj: T): Partial<T> {

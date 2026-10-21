@@ -39,7 +39,7 @@ export default function PraiseWorshipLineUp() {
 
     songs,
     addSongs,
-    renameSong,
+    updateSong,
     removeSong,
     moveSong,
     practiceDate,
@@ -128,7 +128,7 @@ export default function PraiseWorshipLineUp() {
                   songs={songs}
                   disabled={loading}
                   onAdd={addSongs}
-                  onRename={renameSong}
+                  onUpdate={updateSong}
                   onRemove={removeSong}
                   onMove={moveSong}
                 />

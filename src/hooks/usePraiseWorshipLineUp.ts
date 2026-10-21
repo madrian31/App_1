@@ -8,7 +8,7 @@ import { isPraiseWorshipTeamMember } from "../types/member";
 import type { Member } from "../types/member";
 import type { RoleAssignment } from "../types/programLineUp";
 import { PW_SLOTS, formatLineUpMessage } from "../types/praiseWorship";
-import type { PraiseWorshipSkill } from "../types/praiseWorship";
+import type { PraiseWorshipSkill, PraiseWorshipSong } from "../types/praiseWorship";
 import { toLocalISODate } from "../utils/date";
 
 // The team's usual practice: the Saturday before, 4 PM. Only a starting
@@ -33,23 +33,30 @@ function emptyAssignments(): Record<string, RoleAssignment[]> {
 }
 
 /** One song per line. Leading bullets ("* ", "- ", "• ") are dropped, so a
- *  list pasted from the group chat works as-is. */
-function parseSongs(text: string): string[] {
+ *  list pasted from the group chat works as-is, and "Title - Artist" (a
+ *  dash with spaces around it) fills in both. */
+function parseSongs(text: string): PraiseWorshipSong[] {
   return text
     .split("\n")
     .map((line) => line.trim().replace(/^[*\-•]+\s*/, ""))
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((line) => {
+      const [title, ...rest] = line.split(/\s+[-–—]\s+/);
+      const artist = rest.join(" - ").trim();
+      return { title: title.trim(), artist };
+    });
 }
 
 export interface SongItem {
   key: string; // stable React key, so a row keeps focus while it's edited or moved
   title: string;
+  artist: string; // "" when not known
 }
 
 let nextSongKey = 0;
-function newSong(title: string): SongItem {
+function newSong(song: PraiseWorshipSong): SongItem {
   nextSongKey += 1;
-  return { key: `song-${nextSongKey}`, title };
+  return { key: `song-${nextSongKey}`, title: song.title, artist: song.artist ?? "" };
 }
 
 export interface SlotOptions {
@@ -93,7 +100,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
       .then((entry) => {
         if (cancelled) return;
         setAssignments({ ...emptyAssignments(), ...entry?.assignments });
-        setSongs((entry?.songs ?? []).map((title) => newSong(title)));
+        setSongs((entry?.songs ?? []).map((song) => newSong(song)));
         setPracticeDate(entry ? entry.practiceDate ?? "" : dayBefore(date));
         setPracticeTime(entry ? entry.practiceTime ?? "" : DEFAULT_PRACTICE_TIME);
         setEntryError(null);
@@ -139,14 +146,18 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     setAssignments((cur) => ({ ...cur, [slotKey]: people }));
   }
 
-  /** Adds one title, or several at once when a list is pasted (one per line). */
-  function addSongs(text: string) {
-    const titles = parseSongs(text);
-    if (titles.length > 0) setSongs((cur) => [...cur, ...titles.map((title) => newSong(title))]);
+  /** Adds what was typed in the Title/Artist boxes. With no artist typed,
+   *  the title goes through parseSongs, so a pasted list (one per line) or
+   *  "Title - Artist" still splits correctly. */
+  function addSongs(title: string, artist = "") {
+    const added = (artist.trim() ? [{ title: title.trim(), artist: artist.trim() }] : parseSongs(title)).filter(
+      (s) => s.title
+    );
+    if (added.length > 0) setSongs((cur) => [...cur, ...added.map((song) => newSong(song))]);
   }
 
-  function renameSong(key: string, title: string) {
-    setSongs((cur) => cur.map((s) => (s.key === key ? { ...s, title } : s)));
+  function updateSong(key: string, patch: Partial<Pick<SongItem, "title" | "artist">>) {
+    setSongs((cur) => cur.map((s) => (s.key === key ? { ...s, ...patch } : s)));
   }
 
   function removeSong(key: string) {
@@ -164,12 +175,21 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     });
   }
 
-  // A row emptied while editing is simply left out of the message and the save.
-  const songTitles = useMemo(() => songs.map((s) => s.title.trim()).filter(Boolean), [songs]);
+  // A row whose title was emptied is left out of the message and the save.
+  // Artist is only included when filled in — Firestore rejects `undefined`
+  // inside array items, so the key is left off instead.
+  const songList = useMemo<PraiseWorshipSong[]>(
+    () =>
+      songs
+        .map((s) => ({ title: s.title.trim(), artist: s.artist.trim() }))
+        .filter((s) => s.title)
+        .map((s) => (s.artist ? s : { title: s.title })),
+    [songs]
+  );
 
   const message = useMemo(
-    () => formatLineUpMessage({ date, assignments, songs: songTitles, practiceDate, practiceTime }),
-    [date, assignments, songTitles, practiceDate, practiceTime]
+    () => formatLineUpMessage({ date, assignments, songs: songList, practiceDate, practiceTime }),
+    [date, assignments, songList, practiceDate, practiceTime]
   );
 
   async function submit(): Promise<boolean> {
@@ -180,7 +200,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
         id: date,
         date,
         assignments,
-        songs: songTitles,
+        songs: songList,
         practiceDate: practiceDate || undefined,
         practiceTime: practiceTime || undefined,
         addedBy: currentUser,
@@ -220,7 +240,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
 
     songs,
     addSongs,
-    renameSong,
+    updateSong,
     removeSong,
     moveSong,
     practiceDate,

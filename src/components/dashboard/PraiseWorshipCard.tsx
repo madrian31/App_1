@@ -45,7 +45,10 @@ export default function PraiseWorshipCard({ praiseWorship, error, today }: Prais
           {songs.length > 0 ? (
             <ol className="dash-songs">
               {songs.map((song, i) => (
-                <li key={`${i}-${song}`}>{song}</li>
+                <li key={`${i}-${song.title}`}>
+                  {song.title}
+                  {song.artist && <span className="dash-song-artist"> — {song.artist}</span>}
+                </li>
               ))}
             </ol>
           ) : (

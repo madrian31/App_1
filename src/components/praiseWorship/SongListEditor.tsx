@@ -1,23 +1,28 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ClipboardEvent, KeyboardEvent } from "react";
 import type { SongItem } from "../../hooks/usePraiseWorshipLineUp";
 
 interface SongListEditorProps {
   songs: SongItem[];
   disabled?: boolean;
-  onAdd: (text: string) => void; // one title, or several lines pasted at once
-  onRename: (key: string, title: string) => void;
+  onAdd: (title: string, artist: string) => void;
+  onUpdate: (key: string, patch: Partial<Pick<SongItem, "title" | "artist">>) => void;
   onRemove: (key: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
 }
 
-export default function SongListEditor({ songs, disabled, onAdd, onRename, onRemove, onMove }: SongListEditorProps) {
-  const [draft, setDraft] = useState("");
+export default function SongListEditor({ songs, disabled, onAdd, onUpdate, onRemove, onMove }: SongListEditorProps) {
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const titleRef = useRef<HTMLInputElement>(null);
 
   function addDraft() {
-    if (!draft.trim()) return;
-    onAdd(draft);
-    setDraft("");
+    if (!title.trim()) return;
+    onAdd(title, artist);
+    setTitle("");
+    setArtist("");
+    // Straight back to the title box, ready for the next song.
+    titleRef.current?.focus();
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
@@ -33,7 +38,7 @@ export default function SongListEditor({ songs, disabled, onAdd, onRename, onRem
     const text = e.clipboardData.getData("text");
     if (!text.includes("\n")) return;
     e.preventDefault();
-    onAdd(text);
+    onAdd(text, "");
   }
 
   return (
@@ -49,15 +54,26 @@ export default function SongListEditor({ songs, disabled, onAdd, onRename, onRem
                 <span className="pw-song-num" aria-hidden="true">
                   {i + 1}
                 </span>
-                <input
-                  type="text"
-                  className="pw-song-input"
-                  value={song.title}
-                  placeholder="Song title"
-                  aria-label={`Song ${i + 1}`}
-                  disabled={disabled}
-                  onChange={(e) => onRename(song.key, e.target.value)}
-                />
+                <div className="pw-song-fields">
+                  <input
+                    type="text"
+                    className="pw-song-input"
+                    value={song.title}
+                    placeholder="Song title"
+                    aria-label={`Song ${i + 1} title`}
+                    disabled={disabled}
+                    onChange={(e) => onUpdate(song.key, { title: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    className="pw-song-input pw-song-artist"
+                    value={song.artist}
+                    placeholder="Add artist"
+                    aria-label={`Song ${i + 1} artist`}
+                    disabled={disabled}
+                    onChange={(e) => onUpdate(song.key, { artist: e.target.value })}
+                  />
+                </div>
                 <div className="pw-song-actions">
                   <button
                     type="button"
@@ -98,21 +114,36 @@ export default function SongListEditor({ songs, disabled, onAdd, onRename, onRem
 
       <div className="pw-song-add">
         <input
+          ref={titleRef}
           type="text"
-          placeholder="Type a song title, then press Enter"
-          aria-label="Add a song"
-          value={draft}
+          placeholder="Song title"
+          aria-label="New song title"
+          value={title}
           disabled={disabled}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
         />
-        <button type="button" className="btn-secondary" onClick={addDraft} disabled={disabled || !draft.trim()}>
-          <i className="fa-solid fa-plus" aria-hidden="true" />
-          Add
-        </button>
+        <div className="pw-song-add-row">
+          <input
+            type="text"
+            placeholder="Artist (optional)"
+            aria-label="New song artist"
+            value={artist}
+            disabled={disabled}
+            onChange={(e) => setArtist(e.target.value)}
+            onKeyDown={handleKeyDown}
+          />
+          <button type="button" className="btn-secondary" onClick={addDraft} disabled={disabled || !title.trim()}>
+            <i className="fa-solid fa-plus" aria-hidden="true" />
+            Add
+          </button>
+        </div>
       </div>
-      <p className="pw-field-hint">Tip: you can paste the whole song list from the group chat. Each line becomes one song.</p>
+      <p className="pw-field-hint">
+        Tip: you can paste the whole song list from the group chat. Each line becomes one song, and "Title - Artist"
+        fills in both.
+      </p>
     </div>
   );
 }

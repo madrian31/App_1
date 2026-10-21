@@ -363,6 +363,11 @@
     line-height: 1.7;
 }
 
+.dash-song-artist {
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
 .dash-songs li::marker {
     color: var(--text-muted);
     font-weight: 600;

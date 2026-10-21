@@ -54,6 +54,32 @@ export const PW_SLOTS: PwSlot[] = [
   { key: "multimediaTech", label: "Multimedia Tech", skill: "multimediaTech" },
 ];
 
+export interface PraiseWorshipSong {
+  title: string;
+  artist?: string; // who sings/recorded it, e.g. "Victory Worship"
+}
+
+/** Songs as stored — line-ups saved before artists were added hold plain
+ *  title strings, so those are turned into { title } here. */
+export function normalizeSongs(raw: unknown): PraiseWorshipSong[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((s): PraiseWorshipSong | null => {
+      if (typeof s === "string") return { title: s };
+      if (s && typeof s === "object" && typeof (s as PraiseWorshipSong).title === "string") {
+        const { title, artist } = s as PraiseWorshipSong;
+        return artist ? { title, artist } : { title };
+      }
+      return null;
+    })
+    .filter((s): s is PraiseWorshipSong => s !== null && s.title.trim() !== "");
+}
+
+/** "Papuri Kay Yahweh - Victory Worship", or just the title. */
+export function formatSong(song: PraiseWorshipSong): string {
+  return song.artist ? `${song.title} - ${song.artist}` : song.title;
+}
+
 export interface PraiseWorshipLineUpEntry {
   /** Deterministic: the ISO service date itself — one line-up per date. */
   id: string;
@@ -62,7 +88,7 @@ export interface PraiseWorshipLineUpEntry {
   /** Slot key (PW_SLOTS) -> who's on it. Every slot is an array so Backup
    *  Singers (several people) and single slots are handled the same way. */
   assignments: Record<string, RoleAssignment[]>;
-  songs: string[]; // in the order they'll be sung
+  songs: PraiseWorshipSong[]; // in the order they'll be sung
 
   practiceDate?: string; // ISO date
   practiceTime?: string; // "HH:mm", 24-hour
@@ -98,7 +124,7 @@ export function formatPracticeTime(practiceDate?: string, practiceTime?: string)
 export function formatLineUpMessage(lineUp: {
   date: string;
   assignments: Record<string, RoleAssignment[]>;
-  songs: string[];
+  songs: PraiseWorshipSong[];
   practiceDate?: string;
   practiceTime?: string;
 }): string {
@@ -120,7 +146,7 @@ export function formatLineUpMessage(lineUp: {
     ...roles,
     "",
     "**Line-up",
-    ...lineUp.songs.map((s) => `* ${s}`),
+    ...lineUp.songs.map((s) => `* ${formatSong(s)}`),
     "",
     "**Prax Time",
     practice ? `- ${practice}` : "-",
