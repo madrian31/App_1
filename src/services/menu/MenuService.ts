@@ -63,6 +63,14 @@ export class MenuService implements IMenuService {
 
         { sortOrder: 60, name: 'Program Line-up', iconClass: 'fa-solid fa-list-ol', path: '/ProgramLineUp' },
 
+        {
+            sortOrder: 61, name: 'Praise & Worship', iconClass: 'fa-solid fa-music', path: '',
+            subMenuItems: [
+                { sortOrder: 62, name: 'Members', iconClass: 'fa-solid fa-users', path: '/PraiseWorship/Members' },
+                { sortOrder: 63, name: 'Line-up', iconClass: 'fa-solid fa-list-ol', path: '/PraiseWorship/LineUp' }
+            ]
+        },
+
         // { sortOrder: 65, name: 'Profile', iconClass: 'fa-solid fa-user', path: '/profile' },
         {
             sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '',

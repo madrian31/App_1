@@ -19,6 +19,8 @@ import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
 import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
 import ProgramLineUpSchedule from "../pages/ProgramLineUp/ProgramLineUpSchedule";
+import PraiseWorshipMembers from "../pages/PraiseWorship/PraiseWorshipMembers";
+import PraiseWorshipLineUp from "../pages/PraiseWorship/PraiseWorshipLineUp";
 import SundaySchoolKidsMembers from "../pages/SundaySchool/SundaySchoolKidsMembers";
 import SundaySchoolChildForm from "../pages/SundaySchool/SundaySchoolChildForm";
 import SundaySchoolAttendance from "../pages/SundaySchool/SundaySchoolAttendance";
@@ -76,6 +78,10 @@ export default function AppRoutes() {
 
       <Route path="/ProgramLineUp" element={<ProgramLineUp />} />
       <Route path="/ProgramLineUpSchedule" element={<ProgramLineUpSchedule />} />
+
+      <Route path="/PraiseWorship" element={<Navigate to="/PraiseWorship/Members" replace />} />
+      <Route path="/PraiseWorship/Members" element={<PraiseWorshipMembers />} />
+      <Route path="/PraiseWorship/LineUp" element={<PraiseWorshipLineUp />} />
 
       <Route path="/login" element={<LoginPage />} />
     </Routes>

@@ -1,3 +1,5 @@
+import type { PraiseWorshipSkill } from "./praiseWorship";
+
 export interface Member {
   id: string;
 
@@ -43,6 +45,13 @@ export interface Member {
   // Stored as an exclusion so existing members default to included.
   excludeFromAutoLineUp?: boolean;
 
+  // ── Praise & Worship ──
+  // Left unset until someone is added/removed on the Praise & Worship page;
+  // until then the `ministry` list decides (see isPraiseWorshipTeamMember).
+  isPraiseWorshipMember?: boolean;
+  // Positions this member can take in a line-up (keys of PW_SKILLS).
+  praiseWorshipSkills?: PraiseWorshipSkill[];
+
   // ── Wedding Anniversary ──
   // ISO date string. Populated by the "BIRTHDAYS & ANNIVERSARIES" sheet import
   // (see anniversaryExcelMapper.ts) — matched to this member by name, confirmed
@@ -71,6 +80,14 @@ export function isWorkerPoolMember(m: Member): boolean {
  *  even if that person is also Youth and/or Council. */
 export function isWedPresiderPoolMember(m: Member): boolean {
   return (isCouncilPoolMember(m) || Boolean(m.category?.startsWith("Youth"))) && !isWorkerPoolMember(m);
+}
+
+/** On the Praise & Worship team. Once the P&W page has set
+ *  isPraiseWorshipMember, that decides (so removing someone sticks even if
+ *  their ministry text still says P&W). Before that, members already tagged
+ *  "Praise & Worship" in the directory's ministry list count as on the team. */
+export function isPraiseWorshipTeamMember(m: Member): boolean {
+  return m.isPraiseWorshipMember ?? (ministryHas(m, "Praise & Worship") || ministryHas(m, "Praise and Worship"));
 }
 
 /** Anyone the auto-generator could assign as Presider or Speaker. */
