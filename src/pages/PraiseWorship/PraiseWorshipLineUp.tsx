@@ -2,6 +2,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import usePraiseWorshipLineUp from "../../hooks/usePraiseWorshipLineUp";
 import LineUpSlotRow from "../../components/praiseWorship/LineUpSlotRow";
+import SongListEditor from "../../components/praiseWorship/SongListEditor";
 import Toast from "../../components/members/Toast";
 import { PW_SLOTS } from "../../types/praiseWorship";
 import "../ProgramLineUp/programLineUp.css"; // shared line-up row + text card styles
@@ -36,8 +37,11 @@ export default function PraiseWorshipLineUp() {
     assignments,
     setSlot,
 
-    songsText,
-    setSongsText,
+    songs,
+    addSongs,
+    renameSong,
+    removeSong,
+    moveSong,
     practiceDate,
     setPracticeDate,
     practiceTime,
@@ -116,18 +120,18 @@ export default function PraiseWorshipLineUp() {
 
             <div>
               <div className="lineup-text-card">
-                <h2 className="pw-card-title">Songs</h2>
-                <div className="ledger-field">
-                  <label htmlFor="pw-songs">Song line-up (one song per line)</label>
-                  <textarea
-                    id="pw-songs"
-                    className="pw-songs"
-                    placeholder={"Papuri Kay Yahweh\nNatagpuan\nPusong Basag"}
-                    value={songsText}
-                    disabled={loading}
-                    onChange={(e) => setSongsText(e.target.value)}
-                  />
-                </div>
+                <h2 className="pw-card-title">
+                  Songs
+                  {songs.length > 0 && <span className="pw-card-count">{songs.length}</span>}
+                </h2>
+                <SongListEditor
+                  songs={songs}
+                  disabled={loading}
+                  onAdd={addSongs}
+                  onRename={renameSong}
+                  onRemove={removeSong}
+                  onMove={moveSong}
+                />
               </div>
 
               <div className="lineup-text-card">

@@ -256,22 +256,180 @@
 }
 
 .pw-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
     margin: 0 0 12px;
     font-size: 15px;
     font-weight: 700;
 }
 
-.lineup-text-card textarea.pw-songs {
-    min-height: 110px;
+.pw-card-count {
+    min-width: 22px;
+    padding: 1px 7px;
+
+    border-radius: 999px;
+    background: #eef1ff;
+    color: var(--primary);
+
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
 }
 
 .lineup-text-row.pw-practice-row {
     margin-bottom: 0;
 }
 
-.pw-practice-row .ledger-field input:disabled,
-.pw-songs:disabled {
+.pw-practice-row .ledger-field input:disabled {
     background: #f7f8fa;
+}
+
+/* =========================================================
+   Song list editor
+   ========================================================= */
+
+.pw-songs-empty {
+    margin: 0 0 10px;
+    padding: 16px 14px;
+
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.pw-song-list {
+    margin: 0 0 10px;
+    padding: 0;
+    list-style: none;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.pw-song-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.pw-song-row:last-child {
+    border-bottom: none;
+}
+
+.pw-song-num {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+    background: #eef1ff;
+    color: var(--primary);
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* Reads as plain text until hovered or focused, then shows it's editable. */
+.pw-song-input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 8px;
+
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: var(--text);
+}
+
+.pw-song-input:hover:not(:disabled) {
+    border-color: var(--border);
+}
+
+.pw-song-input:focus,
+.pw-song-add input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--card);
+    box-shadow: 0 0 0 3px rgba(59, 91, 253, 0.12);
+}
+
+.pw-song-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.pw-song-actions .btn-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+}
+
+.pw-song-actions .btn-icon:disabled,
+.pw-song-actions .btn-icon:disabled:hover {
+    opacity: 0.35;
+    cursor: default;
+
+    background: #fff;
+    color: var(--text-muted);
+    border-color: var(--border);
+}
+
+.pw-song-add {
+    display: flex;
+    gap: 8px;
+}
+
+.pw-song-add input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--text);
+}
+
+.pw-song-add input:disabled {
+    background: #f7f8fa;
+}
+
+.pw-song-add .btn-secondary {
+    flex-shrink: 0;
+    padding: 8px 14px;
+}
+
+.pw-song-add .btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.pw-field-hint {
+    margin: 8px 0 0;
+
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-muted);
 }
 
 .pw-message {

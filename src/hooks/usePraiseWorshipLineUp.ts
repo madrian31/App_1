@@ -41,6 +41,17 @@ function parseSongs(text: string): string[] {
     .filter(Boolean);
 }
 
+export interface SongItem {
+  key: string; // stable React key, so a row keeps focus while it's edited or moved
+  title: string;
+}
+
+let nextSongKey = 0;
+function newSong(title: string): SongItem {
+  nextSongKey += 1;
+  return { key: `song-${nextSongKey}`, title };
+}
+
 export interface SlotOptions {
   qualified: RoleAssignment[]; // team members marked for this position
   others: RoleAssignment[]; // the rest of the team, as a fallback
@@ -59,7 +70,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
   const [entryError, setEntryError] = useState<string | null>(null);
 
   const [assignments, setAssignments] = useState<Record<string, RoleAssignment[]>>(emptyAssignments);
-  const [songsText, setSongsText] = useState("");
+  const [songs, setSongs] = useState<SongItem[]>([]);
   const [practiceDate, setPracticeDate] = useState("");
   const [practiceTime, setPracticeTime] = useState(DEFAULT_PRACTICE_TIME);
 
@@ -82,7 +93,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
       .then((entry) => {
         if (cancelled) return;
         setAssignments({ ...emptyAssignments(), ...entry?.assignments });
-        setSongsText(entry?.songs?.join("\n") ?? "");
+        setSongs((entry?.songs ?? []).map((title) => newSong(title)));
         setPracticeDate(entry ? entry.practiceDate ?? "" : dayBefore(date));
         setPracticeTime(entry ? entry.practiceTime ?? "" : DEFAULT_PRACTICE_TIME);
         setEntryError(null);
@@ -128,11 +139,37 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     setAssignments((cur) => ({ ...cur, [slotKey]: people }));
   }
 
-  const songs = useMemo(() => parseSongs(songsText), [songsText]);
+  /** Adds one title, or several at once when a list is pasted (one per line). */
+  function addSongs(text: string) {
+    const titles = parseSongs(text);
+    if (titles.length > 0) setSongs((cur) => [...cur, ...titles.map((title) => newSong(title))]);
+  }
+
+  function renameSong(key: string, title: string) {
+    setSongs((cur) => cur.map((s) => (s.key === key ? { ...s, title } : s)));
+  }
+
+  function removeSong(key: string) {
+    setSongs((cur) => cur.filter((s) => s.key !== key));
+  }
+
+  function moveSong(key: string, direction: -1 | 1) {
+    setSongs((cur) => {
+      const from = cur.findIndex((s) => s.key === key);
+      const to = from + direction;
+      if (from === -1 || to < 0 || to >= cur.length) return cur;
+      const next = [...cur];
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  }
+
+  // A row emptied while editing is simply left out of the message and the save.
+  const songTitles = useMemo(() => songs.map((s) => s.title.trim()).filter(Boolean), [songs]);
 
   const message = useMemo(
-    () => formatLineUpMessage({ date, assignments, songs, practiceDate, practiceTime }),
-    [date, assignments, songs, practiceDate, practiceTime]
+    () => formatLineUpMessage({ date, assignments, songs: songTitles, practiceDate, practiceTime }),
+    [date, assignments, songTitles, practiceDate, practiceTime]
   );
 
   async function submit(): Promise<boolean> {
@@ -143,7 +180,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
         id: date,
         date,
         assignments,
-        songs,
+        songs: songTitles,
         practiceDate: practiceDate || undefined,
         practiceTime: practiceTime || undefined,
         addedBy: currentUser,
@@ -181,8 +218,11 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
     assignments,
     setSlot,
 
-    songsText,
-    setSongsText,
+    songs,
+    addSongs,
+    renameSong,
+    removeSong,
+    moveSong,
     practiceDate,
     setPracticeDate,
     practiceTime,
