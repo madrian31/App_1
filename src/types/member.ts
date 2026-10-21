@@ -59,6 +59,14 @@ export interface Member {
   weddingAnniversary?: string;
 }
 
+/** "Roma Christianika D. Daganta" — how a person's name reads in line-ups. */
+export function memberDisplayName(m: Pick<Member, "firstName" | "middleInitial" | "lastName">): string {
+  return [m.firstName, m.middleInitial, m.lastName]
+    .map((part) => (part ?? "").trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 function ministryHas(m: Member, value: string): boolean {
   return (m.ministry ?? "").split(",").map((s) => s.trim().toLowerCase()).includes(value.toLowerCase());
 }

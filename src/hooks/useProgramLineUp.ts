@@ -5,6 +5,7 @@ import {
   seedRotationQueueIfEmpty,
   advanceRotationQueue,
   syncRotationQueueItems,
+  reconcileRotationQueue,
 } from "../services/rotationQueue/rotationQueueService";
 import { getLineUpForDate, saveLineUp } from "../services/programLineUp/programLineUpService";
 import { getLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
@@ -13,7 +14,13 @@ import { resolveProgramType } from "../types/programLineUp";
 import type { ProgramType, RoleAssignment } from "../types/programLineUp";
 import type { RotationRole } from "../types/rotationQueue";
 import type { ThemePreset } from "../types/themePreset";
-import { getMonthlyCelebrants, isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember } from "../types/member";
+import {
+  getMonthlyCelebrants,
+  isCouncilPoolMember,
+  isWorkerPoolMember,
+  isWedPresiderPoolMember,
+  memberDisplayName,
+} from "../types/member";
 import type { Member, MonthlyCelebrant } from "../types/member";
 import { toLocalISODate } from "../utils/date";
 
@@ -101,7 +108,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
 
   function nameOf(id: string): string {
     const m = members.find((x) => x.id === id);
-    return m ? `${m.firstName} ${m.lastName}` : id;
+    return m ? memberDisplayName(m) : id;
   }
 
   /** Builds a RoleState from a queue's ordered items, resolving display names
@@ -115,14 +122,23 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     };
   }
 
+  /** Brings the role's queue in line with its current pool first, so ids
+   *  that no longer match a member never show up as a raw id. */
   async function loadRole(
     role: RotationRole,
-    seedItems: string[],
+    poolItems: string[],
     resolveName: (id: string) => string
   ): Promise<RoleState> {
-    await seedRotationQueueIfEmpty(role, seedItems);
-    const q = await getRotationQueue(role);
-    return buildRoleState(q?.items ?? [], resolveName);
+    const items = await reconcileRotationQueue(role, poolItems);
+    return buildRoleState(items, resolveName);
+  }
+
+  /** Flower Family has no pool to reconcile against (names are typed in by
+   *  hand), so it's only ever seeded empty and then read as-is. */
+  async function loadFlowerFamily(): Promise<RoleState> {
+    await seedRotationQueueIfEmpty("flowerFamily", []);
+    const q = await getRotationQueue("flowerFamily");
+    return buildRoleState(q?.items ?? [], (id) => id);
   }
 
   /** Same idea as loadRole, but for sources (like theme presets) that can
@@ -155,7 +171,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
         loadRole("speakerWorker", workerIds, nameOf),
         loadRole("specialNumberCategory", categoryOptions, (id) => id),
         loadRole("usherCategory", categoryOptions, (id) => id),
-        loadRole("flowerFamily", [], (id) => id), // family list has no auto-seed yet — added manually for now
+        loadFlowerFamily(), // family list has no auto-seed yet — added manually for now
         syncThemePresetQueue(themePresetIds),
         getLineUpForDate(date),
       ]);
@@ -233,15 +249,15 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
   // Full pools (not just queue order) — used by the Reassign modal so any
   // eligible person/category can be picked, not only whoever's next in line.
   const councilPool: RoleAssignment[] = useMemo(
-    () => members.filter(isCouncilPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isCouncilPoolMember).map((m) => ({ id: m.id, name: memberDisplayName(m) })),
     [members]
   );
   const workerPool: RoleAssignment[] = useMemo(
-    () => members.filter(isWorkerPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isWorkerPoolMember).map((m) => ({ id: m.id, name: memberDisplayName(m) })),
     [members]
   );
   const wedPresiderPool: RoleAssignment[] = useMemo(
-    () => members.filter(isWedPresiderPoolMember).map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.filter(isWedPresiderPoolMember).map((m) => ({ id: m.id, name: memberDisplayName(m) })),
     [members]
   );
   const usherPool: RoleAssignment[] = categoryOptions.map((c) => ({ id: c, name: c }));
@@ -249,7 +265,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
   // Search pool for assigning one or more specific members to Special
   // Number, as an alternative to picking a whole category.
   const specialNumberMemberPool: RoleAssignment[] = useMemo(
-    () => members.map((m) => ({ id: m.id, name: `${m.firstName} ${m.lastName}` })),
+    () => members.map((m) => ({ id: m.id, name: memberDisplayName(m) })),
     [members]
   );
 

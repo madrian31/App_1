@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { getAllMembers, updateMember } from "../services/members/memberService/membersService";
 import { getLookupList, seedLookupListIfEmpty } from "../services/settings/lookupListsService";
-import { getRotationQueue, seedRotationQueueIfEmpty, saveRotationQueue } from "../services/rotationQueue/rotationQueueService";
+import {
+  getRotationQueue,
+  seedRotationQueueIfEmpty,
+  saveRotationQueue,
+  reconcileRotationQueue,
+} from "../services/rotationQueue/rotationQueueService";
 import { getLineUpsInRange, saveLineUp } from "../services/programLineUp/programLineUpService";
 import { generateLineUpBatch, type QueueSnapshot } from "../services/programLineUp/lineUpGeneratorServices";
 import { isCouncilPoolMember, isWorkerPoolMember, isWedPresiderPoolMember, isLineUpPoolMember } from "../types/member";
@@ -54,13 +59,15 @@ export default function useAutoGenerateLineUps(currentUser: string) {
       const workerIds = members.filter(isWorkerPoolMember).map((m) => m.id);
       const wedPresiderIds = members.filter(isWedPresiderPoolMember).map((m) => m.id);
 
-      // Seed every role's queue if it doesn't exist yet (no-op if it does).
+      // Bring every queue in line with its current pool (creating it if
+      // missing), so the batch never assigns an id that isn't a member.
+      // Flower Family has no pool — it's only seeded.
       await Promise.all([
-        seedRotationQueueIfEmpty("presiderCouncil", councilIds),
-        seedRotationQueueIfEmpty("speakerWorker", workerIds),
-        seedRotationQueueIfEmpty("wedPresiderPool", wedPresiderIds),
-        seedRotationQueueIfEmpty("usherCategory", categoryOptions),
-        seedRotationQueueIfEmpty("specialNumberCategory", categoryOptions),
+        reconcileRotationQueue("presiderCouncil", councilIds),
+        reconcileRotationQueue("speakerWorker", workerIds),
+        reconcileRotationQueue("wedPresiderPool", wedPresiderIds),
+        reconcileRotationQueue("usherCategory", categoryOptions),
+        reconcileRotationQueue("specialNumberCategory", categoryOptions),
         seedRotationQueueIfEmpty("flowerFamily", []),
       ]);
 

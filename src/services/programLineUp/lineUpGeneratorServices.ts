@@ -1,5 +1,6 @@
 import { resolveProgramType } from "../../types/programLineUp";
 import type { NewProgramLineUpEntry } from "../../types/programLineUp";
+import { memberDisplayName } from "../../types/member";
 import type { Member } from "../../types/member";
 import type { RotationRole } from "../../types/rotationQueue";
 import { toLocalISODate } from "../../utils/date";
@@ -21,7 +22,7 @@ export function getServiceDatesInRange(dateFrom: string, dateTo: string): string
 
 function nameFor(members: Member[], id: string): string {
   const m = members.find((x) => x.id === id);
-  return m ? `${m.firstName} ${m.lastName}` : id;
+  return m ? memberDisplayName(m) : id;
 }
 
 /** Takes the first non-excluded id in a queue and returns the advanced

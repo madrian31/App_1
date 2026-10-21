@@ -32,6 +32,27 @@ export async function saveRotationQueue(role: RotationRole, items: string[]): Pr
   await setDoc(ref, { id: role, role, items, dateModified: new Date().toISOString() } as RotationQueue);
 }
 
+/** Keeps a queue in step with its current pool: ids no longer in the pool
+ *  (archived, moved out of Council, or re-imported under a new member id)
+ *  are dropped, and pool entries not queued yet join at the back. Everyone
+ *  else keeps their place. Creates the doc if missing and only writes when
+ *  something changed. An empty pool is treated as "not loaded" and leaves
+ *  the queue as-is, so a failed member fetch can never wipe a rotation. */
+export async function reconcileRotationQueue(role: RotationRole, poolIds: string[]): Promise<string[]> {
+  const current = await getRotationQueue(role);
+  const items = current?.items ?? [];
+  if (poolIds.length === 0) return items;
+
+  const pool = new Set(poolIds);
+  const kept = items.filter((id, i) => pool.has(id) && items.indexOf(id) === i);
+  const queued = new Set(kept);
+  const next = [...kept, ...poolIds.filter((id) => !queued.has(id))];
+
+  const unchanged = current && next.length === items.length && next.every((id, i) => id === items[i]);
+  if (!unchanged) await saveRotationQueue(role, next);
+  return next;
+}
+
 /** Moves `usedId` to the back of the queue — call this after an assignment
  *  (auto pick from the front, OR a manual out-of-turn reassign) is saved. */
 export async function advanceRotationQueue(role: RotationRole, usedId: string): Promise<void> {
