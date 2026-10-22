@@ -1,32 +1,32 @@
 import { useState } from "react";
-import { validateEmail, validatePassword } from "../utils/validation";
 import type { FormStatus } from "../types/auth";
-import { loginUser } from "../services/auth/authService";
-import { useNavigate } from "react-router-dom";
+import { authErrorMessage, signIn } from "../services/auth/authService";
+import { useAuth } from "../auth/authContext";
 
+/** Sign-in form state. After a successful sign-in the Login page sends the
+ *  user on, once AuthProvider has loaded their account. */
 export function useLoginForm() {
-  const [email, setEmail] = useState("");
+  const { clearNotice } = useAuth();
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [remember, setRemember] = useState(true);
 
-  const [emailError, setEmailError] = useState("");
+  const [identifierError, setIdentifierError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [status, setStatus] = useState<FormStatus>("idle");
   const [formMessage, setFormMessage] = useState("");
 
   const validate = () => {
-    const emailErr = validateEmail(email);
-    const passwordErr = validatePassword(password);
-
-    setEmailError(emailErr);
-    setPasswordError(passwordErr);
-
-    return !emailErr && !passwordErr;
+    const idErr = identifier.trim() ? "" : "Please enter your username or email.";
+    const pwErr = password ? "" : "Please enter your password.";
+    setIdentifierError(idErr);
+    setPasswordError(pwErr);
+    return !idErr && !pwErr;
   };
 
-  const handleEmailChange = (value: string) => {
-    setEmail(value);
-    if (emailError) setEmailError("");
+  const handleIdentifierChange = (value: string) => {
+    setIdentifier(value);
+    if (identifierError) setIdentifierError("");
   };
 
   const handlePasswordChange = (value: string) => {
@@ -36,38 +36,33 @@ export function useLoginForm() {
 
   const handleSubmit = async () => {
     setFormMessage("");
-
+    clearNotice();
     if (!validate()) {
       setStatus("idle");
       return;
     }
 
     setStatus("loading");
-
     try {
-      await loginUser({ email, password });
+      await signIn(identifier, password, remember);
       setStatus("success");
-      setFormMessage("Welcome back!");
-
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
-
-    } catch {
+      setFormMessage("Signing you in…");
+    } catch (err) {
       setStatus("error");
-      setFormMessage("We couldn't find an account with those details. Try again or sign up.");
+      setFormMessage(authErrorMessage(err));
     }
   };
 
   return {
-    email,
+    identifier,
     password,
-    emailError,
+    remember,
+    setRemember,
+    identifierError,
     passwordError,
     status,
     formMessage,
-    handleEmailChange,
+    handleIdentifierChange,
     handlePasswordChange,
     handleSubmit,
   };

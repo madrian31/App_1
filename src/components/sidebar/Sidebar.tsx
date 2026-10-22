@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBars, faRightFromBracket, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { SidebarItem } from "./SidebarItem";
+import ChangePasswordModal from "./ChangePasswordModal";
 import { MenuService } from "../../services/menu/MenuService";
+import { useAuth } from "../../auth/authContext";
+import { USER_ROLE_LABELS } from "../../types/auth";
 import type {
   MenuItem,
   UserAccess,
@@ -16,10 +19,8 @@ import "./sidebar.css";
 const menuService = new MenuService();
 
 interface SidebarProps {
-  // Pass the logged-in user's resolved access here (role + department
-  // names). If omitted, MenuService falls back to "no access yet" and
-  // only shows items with no restrictions, to avoid a flash of items
-  // the user isn't allowed to see.
+  // Override for the signed-in user's access (role + department names).
+  // Normally omitted: the access comes from the signed-in account's role.
   userAccess?: UserAccess;
 
   // Optional: called whenever the user picks a menu item that has a
@@ -29,7 +30,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
-  const menuItems = menuService.getMenuItems(userAccess);
+  const { user, signOut } = useAuth();
+  const access = userAccess ?? (user ? { role: user.role, departments: [], departmentNames: [] } : undefined);
+  const menuItems = menuService.getMenuItems(access);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,6 +68,12 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
     navigate(path);
     setDrawerOpen(false);
     onNavigate?.(path);
+  };
+
+  const handleLogout = async () => {
+    setDrawerOpen(false);
+    await signOut();
+    navigate("/login", { replace: true });
   };
 
   const handleParentClick = (item: MenuItem) => {
@@ -190,12 +200,36 @@ export function Sidebar({ userAccess, onNavigate }: SidebarProps) {
       </ul>
 
       <div className="sidebar-footer">
-        <button className="sidebar-logout">
+        {user && (
+          <div className="sidebar-user">
+            <span className="sidebar-user__avatar" aria-hidden="true">
+              {(user.displayName || user.username).slice(0, 1).toUpperCase()}
+            </span>
+            <span className="sidebar-user__info">
+              <span className="sidebar-user__name" title={user.displayName}>
+                {user.displayName || user.username}
+              </span>
+              <span className="sidebar-user__role">{USER_ROLE_LABELS[user.role]}</span>
+            </span>
+            <button
+              type="button"
+              className="sidebar-user__action"
+              title="Change password"
+              aria-label="Change password"
+              onClick={() => setShowChangePassword(true)}
+            >
+              <i className="fa-solid fa-key" aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        <button type="button" className="sidebar-logout" onClick={handleLogout}>
           <FontAwesomeIcon icon={faRightFromBracket} />
           <span>Log out</span>
         </button>
       </div>
     </div>
+
+    {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
     </>
   );
 }

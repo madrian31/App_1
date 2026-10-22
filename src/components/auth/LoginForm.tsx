@@ -1,41 +1,58 @@
 import { useState } from "react";
 import { useLoginForm } from "../../hooks/useLoginForm";
 
-export default function LoginForm() {
+interface LoginFormProps {
+  onForgotPassword: () => void;
+}
+
+export default function LoginForm({ onForgotPassword }: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
 
   const {
-    email,
+    identifier,
     password,
-    emailError,
+    remember,
+    setRemember,
+    identifierError,
     passwordError,
     status,
     formMessage,
-    handleEmailChange,
+    handleIdentifierChange,
     handlePasswordChange,
     handleSubmit,
   } = useLoginForm();
 
-  const isLoading = status === "loading";
+  // Stays busy after success too, until the page moves on.
+  const isLoading = status === "loading" || status === "success";
 
   return (
-    <>
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
       <div className="login-fields">
         <div className="login-field-group">
           <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => handleEmailChange(e.target.value)}
-            className={`login-input ${emailError ? "login-input-error" : ""}`}
-            aria-invalid={!!emailError}
-            aria-describedby={emailError ? "email-error" : undefined}
+            type="text"
+            placeholder="Username or email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            value={identifier}
+            onChange={(e) => handleIdentifierChange(e.target.value)}
+            className={`login-input ${identifierError ? "login-input-error" : ""}`}
+            aria-label="Username or email"
+            aria-invalid={!!identifierError}
+            aria-describedby={identifierError ? "identifier-error" : undefined}
             disabled={isLoading}
+            autoFocus
           />
-          {emailError && (
-            <p id="email-error" className="login-field-error" role="alert">
-              {emailError}
+          {identifierError && (
+            <p id="identifier-error" className="login-field-error" role="alert">
+              {identifierError}
             </p>
           )}
         </div>
@@ -45,9 +62,11 @@ export default function LoginForm() {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => handlePasswordChange(e.target.value)}
               className={`login-input login-input-password ${passwordError ? "login-input-error" : ""}`}
+              aria-label="Password"
               aria-invalid={!!passwordError}
               aria-describedby={passwordError ? "password-error" : undefined}
               disabled={isLoading}
@@ -73,15 +92,15 @@ export default function LoginForm() {
         <label className="login-remember">
           <input
             type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
             className="login-checkbox"
           />
           Remember me
         </label>
-        <a href="#" className="login-link">
+        <button type="button" className="login-link" onClick={onForgotPassword}>
           Forgot password?
-        </a>
+        </button>
       </div>
 
       {formMessage && (
@@ -95,12 +114,7 @@ export default function LoginForm() {
         </p>
       )}
 
-      <button
-        onClick={handleSubmit}
-        className="login-submit"
-        disabled={isLoading}
-        aria-busy={isLoading}
-      >
+      <button type="submit" className="login-submit" disabled={isLoading} aria-busy={isLoading}>
         {isLoading ? (
           <>
             <i className="fa-solid fa-spinner login-spinner"></i>
@@ -110,6 +124,6 @@ export default function LoginForm() {
           "Sign In"
         )}
       </button>
-    </>
+    </form>
   );
 }

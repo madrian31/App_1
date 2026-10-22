@@ -4,15 +4,14 @@ import ExpenseCategorySummary from "../../components/expenses/ExpenseCategorySum
 import ExpensesToolbar from "../../components/expenses/ExpensesToolbar";
 import ExpensesTable from "../../components/expenses/ExpensesTable";
 import ExpenseFormModal from "../../components/expenses/ExpenseFormModal";
+import { useCurrentUserName } from "../../auth/authContext";
 import "../Ledger/ledger.css";
 import "./expenses.css";
 
-// TODO: replace with the actual logged-in user's name/role once auth/session
-// wiring is in place — mirrors the TODO already in Ledger.tsx.
-const CURRENT_USER = "Unknown";
 const CAN_MANAGE = true; // TODO: derive from role (Admin/Moderator) once available
 
 export default function Expenses() {
+  const currentUser = useCurrentUserName();
   const {
     curMonth,
     setCurMonth,
@@ -45,7 +44,7 @@ export default function Expenses() {
     total,
     filteredTotal,
     categoryTotals,
-  } = useExpenses(CURRENT_USER);
+  } = useExpenses(currentUser);
 
   const monthLabel = `${EXPENSE_MONTHS[curMonth]} ${curYear}`;
 

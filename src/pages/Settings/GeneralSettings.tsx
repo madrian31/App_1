@@ -1,13 +1,12 @@
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import StartingBalanceEditor from "../../components/settings/StartingBalanceEditor";
 import useGeneralFundSettings from "../../hooks/useGeneralFundSettings";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./settings.css";
 
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
-
 export default function GeneralSettings() {
-  const fund = useGeneralFundSettings(CURRENT_USER);
+  const currentUser = useCurrentUserName();
+  const fund = useGeneralFundSettings(currentUser);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>

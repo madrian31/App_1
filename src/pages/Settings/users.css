@@ -1,0 +1,281 @@
+/* Reuse the shared page/card/table/modal styles and design tokens. */
+@import "../Members/members.css";
+
+/* =========================================================
+   Users table
+   ========================================================= */
+
+.account-row-off td {
+    color: var(--text-muted);
+}
+
+.account-you {
+    margin-left: 8px;
+    padding: 1px 7px;
+
+    border-radius: 999px;
+    background: #eef1ff;
+    color: var(--primary);
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.account-muted {
+    color: var(--text-muted);
+}
+
+.account-badge-admin {
+    background: #eef1ff;
+    color: var(--primary);
+    border: 1px solid #dbe0ff;
+}
+
+.account-badge-user {
+    background: #f3f4f6;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+.account-badge-on {
+    background: #ecfdf5;
+    color: var(--success);
+    border: 1px solid #a7f3d0;
+}
+
+.account-badge-off {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid #f8c9cb;
+}
+
+.actions-cell .btn-icon:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.account-page-note {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+
+    margin: 16px 0 0;
+
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.account-page-note i {
+    margin-top: 3px;
+    color: var(--primary);
+}
+
+/* =========================================================
+   Account modals (Add / Edit / Reset / Change password)
+   ========================================================= */
+
+.modal-box.account-modal {
+    max-width: 480px;
+}
+
+.account-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    margin-bottom: 16px;
+}
+
+.account-field-hint {
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.account-modal-text {
+    margin: 0 0 16px;
+
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text);
+}
+
+.account-modal-success {
+    margin: 0 0 8px;
+    padding: 12px 14px;
+
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #166534;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.account-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.account-check input {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--primary);
+}
+
+.account-member-row,
+.account-password-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.account-member-row .member-search-select,
+.account-password-row input {
+    flex: 1;
+    min-width: 0;
+}
+
+.account-readonly {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: #f7f8fa;
+}
+
+.account-readonly div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.account-readonly span {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.account-readonly strong {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.account-readonly .account-field-hint {
+    grid-column: 1 / -1;
+}
+
+.account-roles {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.account-roles legend {
+    margin-bottom: 6px;
+    padding: 0;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.account-role {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    cursor: pointer;
+}
+
+.account-role.checked {
+    border-color: var(--primary);
+    background: #eef1ff;
+}
+
+.account-roles:disabled .account-role {
+    cursor: default;
+    opacity: 0.7;
+}
+
+.account-role input {
+    margin-top: 3px;
+    accent-color: var(--primary);
+}
+
+.account-role span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.account-role strong {
+    font-size: 14px;
+}
+
+.account-role small {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Sign-in details shown once after making an account or resetting */
+.account-credentials {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    margin-bottom: 8px;
+}
+
+.account-credentials-lead {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.account-credentials-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 8px 16px;
+
+    margin: 0;
+    padding: 14px 16px;
+
+    border: 1px dashed var(--primary);
+    border-radius: 8px;
+    background: #f7f8ff;
+}
+
+.account-credentials-list dt {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.account-credentials-list dd {
+    margin: 0;
+
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 15px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.account-credentials-copy {
+    align-self: flex-start;
+}

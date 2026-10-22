@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { RequireAdmin, RequireAuth } from "../auth/RequireAuth";
 import CalendarPage from "../pages/Calendar/Calendar";
 import Dashboard from "../pages/Dashboard/Dashboard";
 import LoginPage from "../pages/Login/Login";
@@ -15,6 +16,7 @@ import VisitForm from "../pages/Visitation/VisitForm";
 import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
 import GeneralSettings from "../pages/Settings/GeneralSettings";
+import UsersPage from "../pages/Settings/Users";
 import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
 import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
@@ -33,57 +35,63 @@ import ComingSoon from "../pages/ComingSoon/ComingSoon";
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
-
-      <Route path="/Calendar" element={<CalendarPage />} />
-
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/members" element={<Members />} />
-      <Route path="/ArchivesMembers" element={<ArchivesMembers />} />
-      <Route path="/MembersVisitors" element={<VisitorsMembers />} />
-      <Route path="/MembersAttendance" element={<MembersAttendance />} />
-      <Route path="/MembersAttendanceReport" element={<AttendanceReport />} />
-      <Route path="/Profile/:id" element={<Profile />} />
-
-      <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />
-      <Route path="/SundaySchoolKidsMembers/new" element={<SundaySchoolChildForm />} />
-      <Route path="/SundaySchoolKidsMembers/:id" element={<SundaySchoolChildForm />} />
-      <Route path="/SundaySchoolAttendance" element={<Navigate to="/SundaySchoolAttendance/attendance" replace />}/>
-      <Route path="/SundaySchoolAttendance/:filter" element={<SundaySchoolAttendance />}/>
-
-      <Route path="/PledgesMembers" element={<PledgesMembers />} />
-      <Route path="/PledgeTracker" element={<PledgeTracker />} />
-      <Route path="/PledgesReport" element={<PledgesReport />} />
-
-      <Route path="/Visitation" element={<Visitation />} />
-      <Route path="/Visitation/Reports" element={<VisitationReports />} />
-      <Route path="/Visitation/new" element={<VisitForm />} />
-      <Route path="/Visitation/:id" element={<VisitForm />} />
-
-      <Route path="/Settings/ManageLists" element={<ManageLists />} />
-
-      {/* Menu items without a page yet */}
-      <Route path="/Roles" element={<ComingSoon title="Roles" />} />
-      <Route path="/settings" element={<GeneralSettings />} />
-      <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
-      <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
-      <Route path="/Finance/Tithes" element={<Tithes />} />
-      <Route path="/Finance/Offerings" element={<Offerings />} />
-      <Route path="/Finance/Expenses" element={<Expenses />} />
-      {/* Old per-utility pages were merged into Expenses — keep bookmarks working. */}
-      <Route path="/Finance/Expenses/*" element={<Navigate to="/Finance/Expenses" replace />} />
-      <Route path="/Finance/Report" element={<FinanceReport />} />
-
-      <Route path="/ledger/:department" element={<Ledger />} />
-
-      <Route path="/ProgramLineUp" element={<ProgramLineUp />} />
-      <Route path="/ProgramLineUpSchedule" element={<ProgramLineUpSchedule />} />
-
-      <Route path="/PraiseWorship" element={<Navigate to="/PraiseWorship/Members" replace />} />
-      <Route path="/PraiseWorship/Members" element={<PraiseWorshipMembers />} />
-      <Route path="/PraiseWorship/LineUp" element={<PraiseWorshipLineUp />} />
-
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Everything below needs a signed-in user. */}
+      <Route element={<RequireAuth />}>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        <Route path="/Calendar" element={<CalendarPage />} />
+
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/members" element={<Members />} />
+        <Route path="/ArchivesMembers" element={<ArchivesMembers />} />
+        <Route path="/MembersVisitors" element={<VisitorsMembers />} />
+        <Route path="/MembersAttendance" element={<MembersAttendance />} />
+        <Route path="/MembersAttendanceReport" element={<AttendanceReport />} />
+        <Route path="/Profile/:id" element={<Profile />} />
+
+        <Route path="/SundaySchoolKidsMembers" element={<SundaySchoolKidsMembers />} />
+        <Route path="/SundaySchoolKidsMembers/new" element={<SundaySchoolChildForm />} />
+        <Route path="/SundaySchoolKidsMembers/:id" element={<SundaySchoolChildForm />} />
+        <Route path="/SundaySchoolAttendance" element={<Navigate to="/SundaySchoolAttendance/attendance" replace />}/>
+        <Route path="/SundaySchoolAttendance/:filter" element={<SundaySchoolAttendance />}/>
+
+        <Route path="/PledgesMembers" element={<PledgesMembers />} />
+        <Route path="/PledgeTracker" element={<PledgeTracker />} />
+        <Route path="/PledgesReport" element={<PledgesReport />} />
+
+        <Route path="/Visitation" element={<Visitation />} />
+        <Route path="/Visitation/Reports" element={<VisitationReports />} />
+        <Route path="/Visitation/new" element={<VisitForm />} />
+        <Route path="/Visitation/:id" element={<VisitForm />} />
+
+        <Route path="/Settings/ManageLists" element={<ManageLists />} />
+        <Route element={<RequireAdmin />}>
+          <Route path="/Settings/Users" element={<UsersPage />} />
+        </Route>
+
+        {/* Menu items without a page yet */}
+        <Route path="/Roles" element={<ComingSoon title="Roles" />} />
+        <Route path="/settings" element={<GeneralSettings />} />
+        <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
+        <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />
+        <Route path="/Finance/Tithes" element={<Tithes />} />
+        <Route path="/Finance/Offerings" element={<Offerings />} />
+        <Route path="/Finance/Expenses" element={<Expenses />} />
+        {/* Old per-utility pages were merged into Expenses — keep bookmarks working. */}
+        <Route path="/Finance/Expenses/*" element={<Navigate to="/Finance/Expenses" replace />} />
+        <Route path="/Finance/Report" element={<FinanceReport />} />
+
+        <Route path="/ledger/:department" element={<Ledger />} />
+
+        <Route path="/ProgramLineUp" element={<ProgramLineUp />} />
+        <Route path="/ProgramLineUpSchedule" element={<ProgramLineUpSchedule />} />
+
+        <Route path="/PraiseWorship" element={<Navigate to="/PraiseWorship/Members" replace />} />
+        <Route path="/PraiseWorship/Members" element={<PraiseWorshipMembers />} />
+        <Route path="/PraiseWorship/LineUp" element={<PraiseWorshipLineUp />} />
+      </Route>
     </Routes>
   );
 }

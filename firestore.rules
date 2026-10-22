@@ -1,0 +1,77 @@
+rules_version = '2';
+
+// LINK Up — Firestore security rules.
+//
+// To use: Firebase Console → Firestore Database → Rules → paste this whole
+// file → Publish. Do it only AFTER the first admin account exists and you
+// can sign in, or you'll be locked out of your own data.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function account() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // Signed in, with an account record that an admin hasn't turned off.
+    function isActiveUser() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && account().isActive == true;
+    }
+
+    function isAdmin() {
+      return isActiveUser() && account().role == 'admin';
+    }
+
+    function setupDone() {
+      return exists(/databases/$(database)/documents/appConfig/setup);
+    }
+
+    // ── First-time setup flag. The login page checks it before anyone is
+    // signed in; it's made once (with the first admin) and never changed.
+    match /appConfig/setup {
+      allow get: if true;
+      allow create: if signedIn() && !setupDone();
+      allow update, delete: if false;
+    }
+
+    // ── Username → sign-in email, looked up by the login page before
+    // sign-in. One username at a time only — nobody can list them all.
+    match /usernames/{username} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isAdmin()
+        || (signedIn() && !setupDone() && request.resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Accounts.
+    match /users/{uid} {
+      // Your own record — even when turned off, so the app can tell you why.
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+      // Admins make accounts; the very first account makes itself an admin.
+      allow create: if isAdmin()
+        || (signedIn() && !setupDone() && request.auth.uid == uid && request.resource.data.role == 'admin');
+      // Admins can change any account; everyone else may only record the
+      // time they last opened the app.
+      allow update: if isAdmin()
+        || (isActiveUser() && request.auth.uid == uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']));
+      allow delete: if false;
+    }
+
+    // ── All church data (members, attendance, finance, line-ups, …):
+    // any signed-in user with an active account. The account collections
+    // above are left out, so these looser rules never apply to them.
+    match /{collection}/{document=**} {
+      allow read, write: if isActiveUser()
+        && !(collection in ['users', 'usernames', 'appConfig']);
+    }
+  }
+}

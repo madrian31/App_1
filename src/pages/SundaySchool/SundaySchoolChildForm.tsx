@@ -1,15 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useSundaySchoolChildForm from "../../hooks/useSundaySchoolChildForm";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./sundaySchool.css";
 
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
-
 export default function SundaySchoolChildForm() {
+  const currentUser = useCurrentUserName();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { form, isEditing, loading, saving, error, update, submit } = useSundaySchoolChildForm(id, CURRENT_USER);
+  const { form, isEditing, loading, saving, error, update, submit } = useSundaySchoolChildForm(id, currentUser);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

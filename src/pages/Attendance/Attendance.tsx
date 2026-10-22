@@ -5,12 +5,10 @@ import useAttendanceTracker, { type AttendanceTrackee } from "../../hooks/useAtt
 import useAttendanceImport from "../../hooks/useAttendanceImport";
 import AttendanceCard from "../../components/attendance/AttendanceCard";
 import AttendanceImportModal from "../../components/attendance/AttendanceImportModal";
+import { useCurrentUserName } from "../../auth/authContext";
 
 const MEMBERS_COLLECTION_NAME = "members";
 const MEMBERS_ATTENDANCE_COLLECTION_NAME = "membersAttendance";
-
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
 
 function mapMemberTrackee(id: string, data: Record<string, unknown>): AttendanceTrackee | null {
   // Archived members are hidden. Filtered here rather than with a Firestore
@@ -28,6 +26,7 @@ function mapMemberTrackee(id: string, data: Record<string, unknown>): Attendance
 }
 
 export default function MembersAttendance() {
+  const currentUser = useCurrentUserName();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -38,7 +37,7 @@ export default function MembersAttendance() {
     mapTrackee: mapMemberTrackee,
   });
 
-  const importer = useAttendanceImport(CURRENT_USER);
+  const importer = useAttendanceImport(currentUser);
 
   function onFileChosen(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

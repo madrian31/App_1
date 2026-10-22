@@ -6,18 +6,17 @@ import TithesToolbar from "../../components/tithes/TithesToolbar";
 import TithesTable from "../../components/tithes/TithesTable";
 import TitheFormModal from "../../components/tithes/TitheFormModal";
 import TithesMemberView from "../../components/tithes/TithesMemberView";
+import { useCurrentUserName } from "../../auth/authContext";
 import "../Ledger/ledger.css";
 import "../Finance/finance.css";
 import "./tithes.css";
 
-// TODO: replace with the actual logged-in user's name/role once auth/session
-// wiring is in place — mirrors the TODO already in Ledger.tsx.
-const CURRENT_USER = "Unknown";
 const CAN_MANAGE = true; // TODO: derive from role (Admin/Moderator) once available
 
 type TithesView = "members" | "entries";
 
 export default function Tithes() {
+  const currentUser = useCurrentUserName();
   const [view, setView] = useState<TithesView>("members");
   const {
     curMonth,
@@ -52,7 +51,7 @@ export default function Tithes() {
     giverCount,
     averagePerService,
     filteredTotal,
-  } = useTithes(CURRENT_USER);
+  } = useTithes(currentUser);
 
   const monthLabel = `${TITHE_MONTHS[curMonth]} ${curYear}`;
 
@@ -101,7 +100,7 @@ export default function Tithes() {
           </div>
 
           {view === "members" ? (
-            <TithesMemberView currentUser={CURRENT_USER} canManage={CAN_MANAGE} />
+            <TithesMemberView currentUser={currentUser} canManage={CAN_MANAGE} />
           ) : (
             <>
               <TithesKpiStrip

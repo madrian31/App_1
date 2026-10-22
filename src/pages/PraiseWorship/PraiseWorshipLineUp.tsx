@@ -5,13 +5,10 @@ import LineUpSlotRow from "../../components/praiseWorship/LineUpSlotRow";
 import SongListEditor from "../../components/praiseWorship/SongListEditor";
 import Toast from "../../components/members/Toast";
 import { PW_SLOTS } from "../../types/praiseWorship";
+import { useCurrentUserName } from "../../auth/authContext";
 import "../ProgramLineUp/programLineUp.css"; // shared line-up row + text card styles
 import "../Ledger/ledger.css"; // .ledger-field form fields
 import "./praiseWorship.css";
-
-// TODO: replace with the actual logged-in user's name once auth/session
-// wiring is in place — mirrors the TODO in ProgramLineUp.tsx.
-const CURRENT_USER = "Unknown";
 
 function formatServiceDate(iso: string): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString("en-US", {
@@ -23,6 +20,7 @@ function formatServiceDate(iso: string): string {
 }
 
 export default function PraiseWorshipLineUp() {
+  const currentUser = useCurrentUserName();
   const [searchParams] = useSearchParams();
   const {
     date,
@@ -52,7 +50,7 @@ export default function PraiseWorshipLineUp() {
 
     message,
     copyMessage,
-  } = usePraiseWorshipLineUp(CURRENT_USER, searchParams.get("date") ?? undefined);
+  } = usePraiseWorshipLineUp(currentUser, searchParams.get("date") ?? undefined);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>

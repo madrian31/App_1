@@ -76,7 +76,8 @@ export class MenuService implements IMenuService {
             sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '',
             subMenuItems: [
                 { sortOrder: 71, name: 'General', iconClass: 'fa-solid fa-gear', path: '/settings' },
-                { sortOrder: 72, name: 'Manage Lists', iconClass: 'fa-solid fa-list-check', path: '/Settings/ManageLists' }
+                { sortOrder: 72, name: 'Manage Lists', iconClass: 'fa-solid fa-list-check', path: '/Settings/ManageLists' },
+                { sortOrder: 73, name: 'Users', iconClass: 'fa-solid fa-user-gear', path: '/Settings/Users', allowedRoles: ['admin'] }
             ]
         }
     ];

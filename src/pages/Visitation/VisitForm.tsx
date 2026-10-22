@@ -4,15 +4,14 @@ import useVisitForm from "../../hooks/useVisitForm";
 import MemberSearchSelect from "../../components/visitation/MemberSearchSelect";
 import LeaderPicker from "../../components/visitation/LeaderPicker";
 import ParticipantPicker from "../../components/visitation/ParticipantPicker";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./visitation.css";
-
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
 
 const DEPARTMENTS = ["Men's Dept.", "Women's Dept.", "Youth Dept."];
 const PURPOSE_OPTIONS = ["Follow-up", "Encouragement", "Home Visit", "Prayer", "Outreach"];
 
 export default function VisitForm() {
+  const currentUser = useCurrentUserName();
   const { id } = useParams();
   const navigate = useNavigate();
   const {
@@ -26,7 +25,7 @@ export default function VisitForm() {
     addParticipant,
     removeParticipant,
     submit,
-  } = useVisitForm(id, CURRENT_USER);
+  } = useVisitForm(id, currentUser);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

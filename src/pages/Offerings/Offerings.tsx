@@ -4,12 +4,10 @@ import OfferingsTable from "../../components/offerings/OfferingsTable";
 import { fmtPeso } from "../../components/finance/financeFormat";
 import useOfferings from "../../hooks/useOfferings";
 import type { OfferingService } from "../../types/offering";
+import { useCurrentUserName } from "../../auth/authContext";
 import "../Finance/finance.css";
 import "./offerings.css";
 
-// TODO: replace with the actual logged-in user's name/role once auth/session
-// wiring is in place — mirrors the TODO already in Tithes.tsx.
-const CURRENT_USER = "Unknown";
 const CAN_MANAGE = true; // TODO: derive from role (Admin/Moderator) once available
 
 type ServiceFilter = "all" | OfferingService;
@@ -21,6 +19,7 @@ const SERVICE_FILTERS: { value: ServiceFilter; label: string; icon?: string }[] 
 ];
 
 export default function Offerings() {
+  const currentUser = useCurrentUserName();
   const {
     monthLabel,
     stepMonth,
@@ -40,7 +39,7 @@ export default function Offerings() {
     recordedCount,
     pastServiceCount,
     averagePerService,
-  } = useOfferings(CURRENT_USER);
+  } = useOfferings(currentUser);
 
   const [serviceFilter, setServiceFilter] = useState<ServiceFilter>("all");
   const visibleDays = serviceFilter === "all" ? days : days.filter((d) => d.service === serviceFilter);

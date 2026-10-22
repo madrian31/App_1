@@ -9,11 +9,8 @@ import MonthlyCelebrants from "../../components/programLineUp/MonthlyCelebrants"
 import AutoGenerateModal from "../../components/programLineUp/AutoGenerateModal";
 import type { RoleAssignment, ProgramType } from "../../types/programLineUp";
 import { sundayOccurrenceInMonth } from "../../types/programLineUp";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./programLineUp.css";
-
-// TODO: replace with the actual logged-in user's name once auth/session
-// wiring is in place — mirrors the TODO already in Ledger.tsx / PledgeTracker.tsx.
-const CURRENT_USER = "Unknown";
 
 const PROGRAM_TYPE_LABELS: Record<ProgramType, string> = {
   traditional: "Traditional",
@@ -30,6 +27,7 @@ const PROGRAM_TYPE_ICONS: Record<ProgramType, string> = {
 type ActiveReassign = "presider" | "speaker" | "specialNumber" | "usher" | "flowerFamily" | null;
 
 export default function ProgramLineUp() {
+  const currentUser = useCurrentUserName();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlDate = searchParams.get("date") ?? undefined;
@@ -69,9 +67,9 @@ export default function ProgramLineUp() {
     reassignFlowerFamily,
 
     submit,
-  } = useProgramLineUp(CURRENT_USER, urlDate);
+  } = useProgramLineUp(currentUser, urlDate);
 
-  const { generate, generating } = useAutoGenerateLineUps(CURRENT_USER);
+  const { generate, generating } = useAutoGenerateLineUps(currentUser);
   const [showAutoGenerate, setShowAutoGenerate] = useState(false);
 
   const [activeReassign, setActiveReassign] = useState<ActiveReassign>(null);

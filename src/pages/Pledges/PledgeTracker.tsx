@@ -2,16 +2,15 @@ import { Sidebar } from "../../components/sidebar/Sidebar";
 import usePledgeTracker from "../../hooks/usePledgeTracker";
 import PledgeTrackerFilters from "../../components/pledges/PledgeTrackerFilters";
 import PledgeTrackerTable from "../../components/pledges/PledgeTrackerTable";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./pledgesMembers.css";
-
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
 
 function fmt(n: number): string {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function PledgeTracker() {
+  const currentUser = useCurrentUserName();
   const {
     pledgers,
     loadingPledgers,
@@ -34,7 +33,7 @@ export default function PledgeTracker() {
     total,
     paidCount,
     exportCSV,
-  } = usePledgeTracker(CURRENT_USER);
+  } = usePledgeTracker(currentUser);
 
   const sundayCount = sundays.length;
   const collectionRate = sundayCount > 0 ? Math.round((paidCount / sundayCount) * 100) : 0;

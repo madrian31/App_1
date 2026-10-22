@@ -6,16 +6,15 @@ import LedgerKpiStrip from "../../components/ledger/LedgerKpiStrip";
 import LedgerToolbar from "../../components/ledger/LedgerToolbar";
 import LedgerTable from "../../components/ledger/LedgerTable";
 import LedgerFormModal from "../../components/ledger/LedgerFormModal";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./ledger.css";
 
-// TODO: replace with the actual logged-in user's name/role once auth/session
-// wiring is in place — mirrors the TODO already in PledgeTracker.tsx.
-const CURRENT_USER = "Unknown";
 const CAN_MANAGE = true; // TODO: derive from role (Admin/Moderator) once available
 
 const VALID_DEPARTMENTS = Object.keys(LEDGER_DEPARTMENT_LABELS) as LedgerDepartment[];
 
 export default function Ledger() {
+  const currentUser = useCurrentUserName();
   const { department: departmentParam } = useParams<{ department: string }>();
   const department: LedgerDepartment = VALID_DEPARTMENTS.includes(departmentParam as LedgerDepartment)
     ? (departmentParam as LedgerDepartment)
@@ -47,7 +46,7 @@ export default function Ledger() {
     totalLoanOut,
     totalRepayment,
     netOutflow,
-  } = useLedger(department, CURRENT_USER);
+  } = useLedger(department, currentUser);
 
   const monthLabel = `${LEDGER_MONTHS[curMonth]} ${curYear}`;
 

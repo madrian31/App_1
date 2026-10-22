@@ -146,3 +146,43 @@
 .login-signup {
   @apply text-center text-sm text-gray-500 mt-6;
 }
+
+/* ---------- Real sign-in: notices, setup and reset forms ---------- */
+
+.login-notice {
+  @apply flex items-start gap-2 text-sm rounded-lg px-3 py-2 mb-5 bg-amber-50 text-amber-800 border border-amber-200;
+}
+
+.login-notice i {
+  @apply mt-0.5;
+}
+
+.login-help {
+  @apply text-sm text-gray-500 mb-5 leading-relaxed;
+}
+
+.login-label {
+  @apply text-sm font-medium text-gray-700 pl-1;
+}
+
+.login-field-hint {
+  @apply text-xs text-gray-400 pl-1;
+}
+
+.login-form-message-spaced {
+  @apply mt-4;
+}
+
+.login-submit-spaced {
+  @apply mt-6;
+}
+
+.login-back {
+  @apply flex items-center justify-center gap-2 w-full mt-5;
+}
+
+/* Full-page wait while the app checks whether someone is signed in
+   (shown by RequireAuth before any page loads). */
+.auth-loading {
+  @apply min-h-screen flex items-center justify-center gap-3 text-gray-500 bg-gray-100;
+}

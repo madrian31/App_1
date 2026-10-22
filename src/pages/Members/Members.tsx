@@ -7,12 +7,11 @@ import MembersTable from "../../components/members/MembersTable";
 import Pagination from "../../components/members/Pagination";
 import Toast from "../../components/members/Toast";
 import ImportExportBar from "../../components/members/ImportExportBar";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./members.css";
 
-// TODO: replace with the actual logged-in user once auth/session wiring is in place.
-const CURRENT_USER = "Unknown";
-
 export default function Members() {
+  const currentUser = useCurrentUserName();
   const navigate = useNavigate();
   const {
     loading,
@@ -55,7 +54,7 @@ export default function Members() {
             title="Members"
             count={activeCount}
             onAddMember={() => navigate("/Profile/new")}
-            extraActions={<ImportExportBar currentUser={CURRENT_USER} onImported={refetch} pdfMembers={filteredMembers} />}
+            extraActions={<ImportExportBar currentUser={currentUser} onImported={refetch} pdfMembers={filteredMembers} />}
           />
 
           <MembersToolbar
