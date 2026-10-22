@@ -48,12 +48,14 @@ export default function UpcomingEventsCard({ events, error, today }: UpcomingEve
                   <span className={`dash-event-date${when === "Today" ? " is-today" : ""}`}>
                     <span className="dash-event-month">{d.toLocaleDateString("en-US", { month: "short" })}</span>
                     <span className="dash-event-day">{d.getDate()}</span>
-                    <span className="dash-event-weekday">
-                      {when ?? d.toLocaleDateString("en-US", { weekday: "short" })}
-                    </span>
+                    {/* Always the weekday — "Tomorrow" doesn't fit the box; it goes beside the title. */}
+                    <span className="dash-event-weekday">{d.toLocaleDateString("en-US", { weekday: "short" })}</span>
                   </span>
                   <div className="dash-event-info">
-                    <p className="dash-event-title">{event.title}</p>
+                    <p className="dash-event-title">
+                      {event.title}
+                      {when && <span className="dash-when dash-event-when">{when}</span>}
+                    </p>
                     <p className="dash-event-meta">{details}</p>
                     {category && (
                       <span className="dash-event-cat">

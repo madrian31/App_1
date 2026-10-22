@@ -440,6 +440,12 @@ a.dash-person:hover {
     font-weight: 600;
 }
 
+.dash-event-when {
+    display: inline-block;
+    margin-left: 8px;
+    vertical-align: 1px;
+}
+
 .dash-event-meta {
     margin: 2px 0 0;
 
