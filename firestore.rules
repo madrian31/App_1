@@ -3,8 +3,13 @@ rules_version = '2';
 // LINK Up — Firestore security rules.
 //
 // To use: Firebase Console → Firestore Database → Rules → paste this whole
-// file → Publish. Do it only AFTER the first admin account exists and you
-// can sign in, or you'll be locked out of your own data.
+// file → Publish. Do it only AFTER the first Super Admin account exists and
+// you can sign in, or you'll be locked out of your own data.
+//
+// Roles (same split as the app — see UserRole in src/types/auth.ts):
+//   superadmin  everything, including Admin and Super Admin accounts
+//   admin       all church data and settings; manages User accounts only
+//   user        Home, Calendar, Program Line-up and Praise & Worship only
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -17,23 +22,32 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Signed in, with an account record that an admin hasn't turned off.
+    // Signed in, with an account record that hasn't been turned off.
     function isActiveUser() {
       return signedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && account().isActive == true;
     }
 
-    function isAdmin() {
-      return isActiveUser() && account().role == 'admin';
+    function isStaff() {
+      return isActiveUser() && account().role in ['superadmin', 'admin'];
+    }
+
+    function isSuperAdmin() {
+      return isActiveUser() && account().role == 'superadmin';
     }
 
     function setupDone() {
       return exists(/databases/$(database)/documents/appConfig/setup);
     }
 
+    // Role of the account a usernames/ entry points to, after this write.
+    function roleAfter(uid) {
+      return getAfter(/databases/$(database)/documents/users/$(uid)).data.role;
+    }
+
     // ── First-time setup flag. The login page checks it before anyone is
-    // signed in; it's made once (with the first admin) and never changed.
+    // signed in; it's made once (with the first Super Admin), never changed.
     match /appConfig/setup {
       allow get: if true;
       allow create: if signedIn() && !setupDone();
@@ -45,32 +59,75 @@ service cloud.firestore {
     match /usernames/{username} {
       allow get: if true;
       allow list: if false;
-      allow create: if isAdmin()
+      allow create: if isSuperAdmin()
+        || (isStaff() && roleAfter(request.resource.data.uid) == 'user')
         || (signedIn() && !setupDone() && request.resource.data.uid == request.auth.uid);
-      allow update, delete: if isAdmin();
+      // Moved to a new sign-in when a no-email account's password is reset.
+      allow update: if isSuperAdmin()
+        || (isStaff()
+            && get(/databases/$(database)/documents/users/$(resource.data.uid)).data.role == 'user'
+            && roleAfter(request.resource.data.uid) == 'user');
+      allow delete: if isSuperAdmin();
     }
 
     // ── Accounts.
     match /users/{uid} {
       // Your own record — even when turned off, so the app can tell you why.
-      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
-      allow list: if isAdmin();
-      // Admins make accounts; the very first account makes itself an admin.
-      allow create: if isAdmin()
-        || (signedIn() && !setupDone() && request.auth.uid == uid && request.resource.data.role == 'admin');
-      // Admins can change any account; everyone else may only record the
-      // time they last opened the app.
-      allow update: if isAdmin()
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow list: if isStaff();
+      // Super Admins make any account; Admins make Users only; the very
+      // first account makes itself a Super Admin.
+      allow create: if isSuperAdmin()
+        || (isStaff() && request.resource.data.role == 'user')
+        || (signedIn() && !setupDone() && request.auth.uid == uid && request.resource.data.role == 'superadmin');
+      // Super Admins change any account; Admins change Users (who stay
+      // Users); anyone may change their own name and member link, and record
+      // when they last opened the app — never their own role or status.
+      allow update: if isSuperAdmin()
+        || (isStaff() && resource.data.role == 'user' && request.resource.data.role == 'user')
         || (isActiveUser() && request.auth.uid == uid
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoginAt']));
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['lastLoginAt', 'displayName', 'memberId']));
       allow delete: if false;
     }
 
-    // ── All church data (members, attendance, finance, line-ups, …):
-    // any signed-in user with an active account. The account collections
-    // above are left out, so these looser rules never apply to them.
+    // ── What Users' pages need (Home, Calendar, Program Line-up, P&W).
+    match /calendarEvents/{id} {
+      allow read, write: if isActiveUser();
+    }
+    match /calendarCategories/{id} {
+      allow read, write: if isActiveUser();
+    }
+    match /programLineUp/{id} {
+      allow read, write: if isActiveUser();
+    }
+    match /rotationQueues/{id} {
+      allow read, write: if isActiveUser();
+    }
+    match /praiseWorshipLineUp/{id} {
+      allow read, write: if isActiveUser();
+    }
+    match /themePresets/{id} {
+      allow read: if isActiveUser();
+    }
+    match /lookupLists/{id} {
+      allow read: if isActiveUser();
+    }
+    match /members/{id} {
+      // Names for line-ups, the P&W team and birthdays.
+      allow read: if isActiveUser();
+      // Only what the line-up and P&W pages change.
+      allow update: if isActiveUser()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['ministry', 'praiseWorshipSkills', 'excludeFromAutoLineUp']);
+    }
+
+    // ── Everything else (finance, attendance, visitation, pledges, Sunday
+    // School, settings — and full access to the collections above): Super
+    // Admins and Admins. The account collections are left out, so these
+    // rules never apply to them.
     match /{collection}/{document=**} {
-      allow read, write: if isActiveUser()
+      allow read, write: if isStaff()
         && !(collection in ['users', 'usernames', 'appConfig']);
     }
   }

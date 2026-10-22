@@ -152,8 +152,11 @@ function nextServiceDates(today: Date, count: number): string[] {
  *
  * Attendance only counts Sundays that have something recorded: a Sunday with nobody marked
  * present hasn't been encoded yet, and counting it would flag every member for follow-up.
+ *
+ * `includeAttendance` is false for regular Users: attendance is staff-only (the Firestore rules
+ * refuse it), so it isn't asked for at all and the attendance sections stay hidden.
  */
-export default function useDashboard() {
+export default function useDashboard(includeAttendance = true) {
   const [today] = useState(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -177,11 +180,13 @@ export default function useDashboard() {
         const years = Array.from(new Set(sundays.map((d) => d.getFullYear())));
         const [allMembers, snapshot] = await Promise.all([
           getAllMembers(),
-          getDocs(query(collection(db, ATTENDANCE_COLLECTION), where("year", "in", years))),
+          includeAttendance
+            ? getDocs(query(collection(db, ATTENDANCE_COLLECTION), where("year", "in", years)))
+            : Promise.resolve(null),
         ]);
 
         const byMember: Record<string, Record<string, Record<number, boolean>>> = {};
-        snapshot.forEach((docSnap) => {
+        snapshot?.forEach((docSnap) => {
           const data = docSnap.data() as {
             trackeeId?: string;
             year?: number;
@@ -211,7 +216,7 @@ export default function useDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [sundays]);
+  }, [sundays, includeAttendance]);
 
   const activeMembers = useMemo(
     () => (members ?? []).filter((m) => !m.isArchived && !m.isVisitor),

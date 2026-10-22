@@ -260,7 +260,12 @@
     text-decoration: none;
 }
 
-.dash-person:hover {
+span.dash-person:hover {
+    color: var(--text);
+    text-decoration: none;
+}
+
+a.dash-person:hover {
     color: var(--primary);
     text-decoration: underline;
 }

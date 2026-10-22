@@ -1,7 +1,12 @@
 import type { IMenuService, MenuItem, UserAccess } from './interface/IMenuService';
 
 // Users with this role always see every menu item, regardless of department.
-const ADMIN_ROLE = 'admin';
+const SUPERADMIN_ROLE = 'superadmin';
+
+// Everything except Home, Calendar, Program Line-up and Praise & Worship is
+// for Super Admins and Admins only (see UserRole in types/auth.ts). The same
+// split is enforced by RequireRole in AppRoutes and by firestore.rules.
+const STAFF = ['superadmin', 'admin'];
 
 export class MenuService implements IMenuService {
     private menuItems: MenuItem[] = [
@@ -10,7 +15,7 @@ export class MenuService implements IMenuService {
         { sortOrder: 2, name: 'Calendar', iconClass: 'fa-solid fa-calendar', path: '/Calendar' },
 
         {
-            sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '',
+            sortOrder: 10, name: 'Members', iconClass: 'fa-solid fa-users', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 11, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/members' },
                 { sortOrder: 12, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/MembersAttendance' },
@@ -20,10 +25,10 @@ export class MenuService implements IMenuService {
             ] 
         },
 
-        { sortOrder: 20, name: 'Roles', iconClass: 'fa-solid fa-user-shield', path: '/Roles' },
+        { sortOrder: 20, name: 'Roles', iconClass: 'fa-solid fa-user-shield', path: '/Roles', allowedRoles: STAFF },
 
         {
-            sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '',
+            sortOrder: 30, name: 'Pledges', iconClass: 'fa-solid fa-hand-holding-heart', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 31, name: 'All Pledges', iconClass: 'fa-solid fa-list', path: '/PledgeTracker' },
                 { sortOrder: 32, name: 'Pledgers', iconClass: 'fa-solid fa-hand-holding-heart', path: '/PledgesMembers' },
@@ -33,7 +38,7 @@ export class MenuService implements IMenuService {
         },
 
         {
-            sortOrder: 40, name: 'Visitation', iconClass: 'fa-solid fa-house', path: '',
+            sortOrder: 40, name: 'Visitation', iconClass: 'fa-solid fa-house', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 41, name: 'All Visitations', iconClass: 'fa-solid fa-list', path: '/Visitation' },
                 { sortOrder: 42, name: 'Visitation Report', iconClass: 'fa-solid fa-chart-bar', path: '/Visitation/Reports' }
@@ -41,7 +46,7 @@ export class MenuService implements IMenuService {
         },
 
         {
-            sortOrder: 50, name: 'Sunday School', iconClass: 'fa-solid fa-chalkboard-user', path: '',
+            sortOrder: 50, name: 'Sunday School', iconClass: 'fa-solid fa-chalkboard-user', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 51, name: 'All Members', iconClass: 'fa-solid fa-list', path: '/SundaySchoolKidsMembers' },
                 { sortOrder: 52, name: 'Attendance', iconClass: 'fa-solid fa-calendar-check', path: '/SundaySchoolAttendance' },
@@ -52,7 +57,7 @@ export class MenuService implements IMenuService {
         },
 
         {
-            sortOrder: 56, name: 'Finance', iconClass: 'fa-solid fa-money-bill-trend-up', path: '',
+            sortOrder: 56, name: 'Finance', iconClass: 'fa-solid fa-money-bill-trend-up', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 57, name: 'Tithes', iconClass: 'fa-solid fa-hand-holding-dollar', path: '/Finance/Tithes' },
                 { sortOrder: 58, name: 'Offerings', iconClass: 'fa-solid fa-gift', path: '/Finance/Offerings' },
@@ -73,11 +78,11 @@ export class MenuService implements IMenuService {
 
         // { sortOrder: 65, name: 'Profile', iconClass: 'fa-solid fa-user', path: '/profile' },
         {
-            sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '',
+            sortOrder: 70, name: 'Settings', iconClass: 'fa-solid fa-gear', path: '', allowedRoles: STAFF,
             subMenuItems: [
                 { sortOrder: 71, name: 'General', iconClass: 'fa-solid fa-gear', path: '/settings' },
                 { sortOrder: 72, name: 'Manage Lists', iconClass: 'fa-solid fa-list-check', path: '/Settings/ManageLists' },
-                { sortOrder: 73, name: 'Users', iconClass: 'fa-solid fa-user-gear', path: '/Settings/Users', allowedRoles: ['admin'] }
+                { sortOrder: 73, name: 'Users', iconClass: 'fa-solid fa-user-gear', path: '/Settings/Users' }
             ]
         }
     ];
@@ -88,7 +93,7 @@ export class MenuService implements IMenuService {
     }
 
     private hasAccess(item: MenuItem, access: UserAccess): boolean {
-        if (access.role?.toLowerCase() === ADMIN_ROLE) return true;
+        if (access.role?.toLowerCase() === SUPERADMIN_ROLE) return true;
 
         const hasRoleRule = !!item.allowedRoles;
         const hasDeptRule = !!item.allowedDepartments;

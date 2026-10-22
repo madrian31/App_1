@@ -1,11 +1,38 @@
 export type FormStatus = "idle" | "loading" | "success" | "error";
 
-export type UserRole = "admin" | "user";
+/**
+ * - superadmin: everything, including Admin and Super Admin accounts.
+ * - admin: every page and setting; manages User accounts only.
+ * - user: Home, Calendar, Program Line-up and Praise & Worship only.
+ * The Firestore rules (firestore.rules) enforce the same split.
+ */
+export type UserRole = "superadmin" | "admin" | "user";
 
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  superadmin: "Super Admin",
   admin: "Admin",
   user: "User",
 };
+
+/** Roles that see the whole app (everything a User can't). */
+export const STAFF_ROLES: UserRole[] = ["superadmin", "admin"];
+
+export function isStaff(role: UserRole | undefined): boolean {
+  return !!role && STAFF_ROLES.includes(role);
+}
+
+/** Whether `actor` may edit, reset or turn off `target`'s account. Super
+ *  Admins manage everyone; Admins manage Users only. */
+export function canManageAccount(actor: UserRole | undefined, target: UserRole): boolean {
+  if (actor === "superadmin") return true;
+  return actor === "admin" && target === "user";
+}
+
+/** Roles `actor` may give to an account they make or edit. */
+export function assignableRoles(actor: UserRole | undefined): UserRole[] {
+  if (actor === "superadmin") return ["user", "admin", "superadmin"];
+  return actor === "admin" ? ["user"] : [];
+}
 
 /** users/{uid} — one per sign-in account. */
 export interface AppUser {

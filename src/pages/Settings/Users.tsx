@@ -5,7 +5,7 @@ import UserFormModal from "../../components/settings/UserFormModal";
 import ResetPasswordModal from "../../components/settings/ResetPasswordModal";
 import useUserAccounts from "../../hooks/useUserAccounts";
 import { useAuth, useCurrentUserName } from "../../auth/authContext";
-import { USER_ROLE_LABELS, type AppUser } from "../../types/auth";
+import { canManageAccount, USER_ROLE_LABELS, type AppUser } from "../../types/auth";
 import "../Ledger/ledger.css"; // .ledger-field form fields
 import "../Visitation/visitation.css"; // member search picker
 import "./users.css";
@@ -20,8 +20,9 @@ type ModalState = { kind: "add" } | { kind: "edit"; account: AppUser } | { kind:
 export default function UsersPage() {
   const { user } = useAuth();
   const currentUserName = useCurrentUserName();
-  const { accounts, loading, error, toast, activeAdminCount, create, update, setActive, resetPassword } =
+  const { accounts, loading, error, toast, activeSuperAdminCount, create, update, setActive, resetPassword } =
     useUserAccounts(currentUserName);
+  const actorRole = user?.role;
   const [modal, setModal] = useState<ModalState>(null);
 
   function confirmTurnOff(account: AppUser) {
@@ -94,7 +95,9 @@ export default function UsersPage() {
                   ) : (
                     accounts.map((a) => {
                       const isSelf = a.uid === user?.uid;
-                      const isLastAdmin = a.role === "admin" && a.isActive && activeAdminCount <= 1;
+                      // Admins see Admin/Super Admin accounts but can't change them.
+                      const manageable = !isSelf && canManageAccount(actorRole, a.role);
+                      const isLastSuperAdmin = a.role === "superadmin" && a.isActive && activeSuperAdminCount <= 1;
                       return (
                         <tr key={a.uid} className={a.isActive ? "" : "account-row-off"}>
                           <td>
@@ -121,21 +124,23 @@ export default function UsersPage() {
                           </td>
                           <td>
                             <div className="actions-cell">
-                              <button className="btn-icon" title="Edit account" onClick={() => setModal({ kind: "edit", account: a })}>
-                                <i className="fa-regular fa-pen-to-square" />
-                              </button>
+                              {(isSelf || manageable) && (
+                                <button className="btn-icon" title="Edit account" onClick={() => setModal({ kind: "edit", account: a })}>
+                                  <i className="fa-regular fa-pen-to-square" />
+                                </button>
+                              )}
                               {/* Your own password is changed from the key button in the menu. */}
-                              {!isSelf && (
+                              {manageable && (
                                 <button className="btn-icon" title="Reset password" onClick={() => setModal({ kind: "reset", account: a })}>
                                   <i className="fa-solid fa-key" />
                                 </button>
                               )}
-                              {!isSelf &&
+                              {manageable &&
                                 (a.isActive ? (
                                   <button
                                     className="btn-icon danger"
-                                    title={isLastAdmin ? "The only Admin can't be turned off" : "Turn off account"}
-                                    disabled={isLastAdmin}
+                                    title={isLastSuperAdmin ? "The only Super Admin can't be turned off" : "Turn off account"}
+                                    disabled={isLastSuperAdmin}
                                     onClick={() => confirmTurnOff(a)}
                                   >
                                     <i className="fa-solid fa-user-slash" />
@@ -156,19 +161,29 @@ export default function UsersPage() {
             </div>
           </div>
 
-          <p className="account-page-note">
-            <i className="fa-solid fa-circle-info" aria-hidden="true" /> <strong>Admin</strong> can use every page and
-            manage accounts here. <strong>User</strong> can use every page except this one. People with an email can
-            reset a forgotten password from the sign-in page; for everyone else, use the key button above.
-          </p>
+          <div className="account-page-note">
+            <i className="fa-solid fa-circle-info" aria-hidden="true" />
+            <div>
+              <p>
+                <strong>Super Admin</strong> — everything, including Admin and Super Admin accounts.{" "}
+                <strong>Admin</strong> — every page and setting, and User accounts.{" "}
+                <strong>User</strong> — Home, Calendar, Program Line-up and Praise &amp; Worship only.
+              </p>
+              <p>
+                People with an email can reset a forgotten password from the sign-in page. For everyone else, use the
+                key button above. Keep at least two Super Admins, so one can reset the other's password.
+              </p>
+            </div>
+          </div>
 
           <Toast message={toast} />
 
           {(modal?.kind === "add" || modal?.kind === "edit") && (
             <UserFormModal
               account={modal.kind === "edit" ? modal.account : undefined}
+              actorRole={actorRole}
               isSelf={modal.kind === "edit" && modal.account.uid === user?.uid}
-              isLastAdmin={activeAdminCount <= 1}
+              isLastSuperAdmin={activeSuperAdminCount <= 1}
               onCreate={create}
               onUpdate={update}
               onClose={() => setModal(null)}

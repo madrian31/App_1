@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./authContext";
+import type { UserRole } from "../types/auth";
 
 function AuthLoading() {
   return (
@@ -23,9 +24,10 @@ export function RequireAuth() {
   return <Outlet />;
 }
 
-/** Pages only an Admin may open (e.g. Users). Others land on the dashboard. */
-export function RequireAdmin() {
+/** Pages only some roles may open. Anyone else lands on the dashboard —
+ *  this covers typed-in links too, not just the hidden menu items. */
+export function RequireRole({ allow }: { allow: UserRole[] }) {
   const { user } = useAuth();
-  if (user?.role !== "admin") return <Navigate to="/dashboard" replace />;
+  if (!user || !allow.includes(user.role)) return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 }

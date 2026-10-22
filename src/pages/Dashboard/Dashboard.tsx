@@ -8,11 +8,17 @@ import CelebrantsCard from "../../components/dashboard/CelebrantsCard";
 import UpcomingEventsCard from "../../components/dashboard/UpcomingEventsCard";
 import FollowUpCard from "../../components/dashboard/FollowUpCard";
 import { fmtLongDate } from "../../components/dashboard/dashboardFormat";
+import { useAuth } from "../../auth/authContext";
+import { isStaff } from "../../types/auth";
 import "../Visitation/visitation.css";
 import "../ProgramLineUp/programLineUp.css";
 import "./dashboard.css";
 
 export default function Dashboard() {
+  // Attendance numbers, follow-ups and member profiles are for staff; Users
+  // get the line-ups, celebrants and events.
+  const { user } = useAuth();
+  const staff = isStaff(user?.role);
   const {
     today,
     attendance,
@@ -24,7 +30,7 @@ export default function Dashboard() {
     praiseWorshipError,
     upcomingEvents,
     eventsError,
-  } = useDashboard();
+  } = useDashboard(staff);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -38,7 +44,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {attendance?.unrecordedSunday && (
+          {staff && attendance?.unrecordedSunday && (
             <div className="dash-notice">
               <i className="fa-solid fa-circle-info" aria-hidden="true" />
               <span>
@@ -48,7 +54,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {peopleError ? (
+          {!staff ? null : peopleError ? (
             <div className="dash-notice dash-notice-error">
               <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
               <span>Could not load attendance. Please refresh the page.</span>
@@ -61,11 +67,11 @@ export default function Dashboard() {
             <div className="dash-col">
               <UpcomingServicesCard services={services} error={servicesError} today={today} />
               <PraiseWorshipCard praiseWorship={praiseWorship} error={praiseWorshipError} today={today} />
-              <CelebrantsCard celebrants={celebrants} error={peopleError} today={today} />
+              <CelebrantsCard celebrants={celebrants} error={peopleError} today={today} linkToProfiles={staff} />
             </div>
             <div className="dash-col">
               <UpcomingEventsCard events={upcomingEvents} error={eventsError} today={today} />
-              <FollowUpCard attendance={attendance} error={peopleError} />
+              {staff && <FollowUpCard attendance={attendance} error={peopleError} />}
             </div>
           </div>
         </div>

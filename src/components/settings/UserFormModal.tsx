@@ -9,24 +9,34 @@ import {
   type NewAccountInput,
 } from "../../services/auth/userAccountsService";
 import { memberDisplayName } from "../../types/member";
-import type { AppUser, UserRole } from "../../types/auth";
+import { assignableRoles, USER_ROLE_LABELS, type AppUser, type UserRole } from "../../types/auth";
 import { validateEmail, validatePassword } from "../../utils/validation";
 
 interface UserFormModalProps {
   account?: AppUser; // given = edit that account; omitted = make a new one
+  actorRole: UserRole | undefined; // role of whoever is signed in
   isSelf: boolean; // editing your own account
-  isLastAdmin: boolean; // the only active Admin — can't be made a User
+  isLastSuperAdmin: boolean; // the only active Super Admin — must stay one
   onCreate: (input: NewAccountInput) => Promise<AppUser>;
   onUpdate: (uid: string, changes: AccountChanges) => Promise<void>;
   onClose: () => void;
 }
 
-const ROLE_OPTIONS: { value: UserRole; label: string; description: string }[] = [
-  { value: "user", label: "User", description: "Can use every page except Users." },
-  { value: "admin", label: "Admin", description: "Can also make and manage accounts." },
-];
+const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  user: "Home, Calendar, Program Line-up and Praise & Worship only.",
+  admin: "Every page and setting. Can manage User accounts.",
+  superadmin: "Everything, including Admin and Super Admin accounts.",
+};
 
-export default function UserFormModal({ account, isSelf, isLastAdmin, onCreate, onUpdate, onClose }: UserFormModalProps) {
+export default function UserFormModal({
+  account,
+  actorRole,
+  isSelf,
+  isLastSuperAdmin,
+  onCreate,
+  onUpdate,
+  onClose,
+}: UserFormModalProps) {
   const editing = Boolean(account);
   const [displayName, setDisplayName] = useState(account?.displayName ?? "");
   const [memberId, setMemberId] = useState(account?.memberId ?? "");
@@ -57,7 +67,10 @@ export default function UserFormModal({ account, isSelf, isLastAdmin, onCreate, 
       .catch((err) => console.error("Failed to load linked member:", err));
   }, [account?.memberId]);
 
-  const roleLocked = editing && (isSelf || (isLastAdmin && account?.role === "admin"));
+  // Your own role never changes here (an Admin can't raise themselves, and a
+  // Super Admin can't accidentally drop out), nor does the last Super Admin's.
+  const roleLocked = editing && (isSelf || (isLastSuperAdmin && account?.role === "superadmin"));
+  const roleOptions = roleLocked && account ? [account.role] : assignableRoles(actorRole);
 
   async function handleSave() {
     const problem =
@@ -197,20 +210,28 @@ export default function UserFormModal({ account, isSelf, isLastAdmin, onCreate, 
 
               <fieldset className="account-roles" disabled={saving || roleLocked}>
                 <legend>Role</legend>
-                {ROLE_OPTIONS.map((opt) => (
-                  <label key={opt.value} className={`account-role${role === opt.value ? " checked" : ""}`}>
-                    <input type="radio" name="role" value={opt.value} checked={role === opt.value}
-                      onChange={() => setRole(opt.value)} />
+                {roleOptions.map((value) => (
+                  <label key={value} className={`account-role${role === value ? " checked" : ""}`}>
+                    <input type="radio" name="role" value={value} checked={role === value}
+                      onChange={() => setRole(value)} />
                     <span>
-                      <strong>{opt.label}</strong>
-                      <small>{opt.description}</small>
+                      <strong>{USER_ROLE_LABELS[value]}</strong>
+                      <small>{ROLE_DESCRIPTIONS[value]}</small>
                     </span>
                   </label>
                 ))}
-                {roleLocked && (
+                {roleLocked ? (
                   <small className="account-field-hint">
-                    {isSelf ? "You can't change your own role." : "This is the only Admin, so it has to stay an Admin."}
+                    {isSelf
+                      ? "You can't change your own role."
+                      : "This is the only Super Admin, so it has to stay a Super Admin."}
                   </small>
+                ) : (
+                  actorRole === "admin" && (
+                    <small className="account-field-hint">
+                      Admins can make User accounts. Ask a Super Admin for an Admin account.
+                    </small>
+                  )
                 )}
               </fieldset>
             </div>

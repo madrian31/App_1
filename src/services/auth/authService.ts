@@ -98,7 +98,7 @@ export interface FirstAdminInput {
   password: string;
 }
 
-/** Creates the very first account, as an Admin, and signs in with it. */
+/** Creates the very first account, as a Super Admin, and signs in with it. */
 export async function createFirstAdmin(input: FirstAdminInput): Promise<void> {
   if (await isSetupDone()) throw codedError("app/setup-done");
   const username = normalizeUsername(input.username);
@@ -113,7 +113,7 @@ export async function createFirstAdmin(input: FirstAdminInput): Promise<void> {
     displayName: input.displayName.trim(),
     email,
     authEmail,
-    role: "admin",
+    role: "superadmin",
     isActive: true,
     createdAt: now,
     createdBy: input.displayName.trim(),

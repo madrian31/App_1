@@ -8,9 +8,18 @@ interface CelebrantsCardProps {
   celebrants: { thisWeek: DashboardCelebrant[]; laterThisMonth: DashboardCelebrant[] } | null; // null while loading
   error: boolean;
   today: Date;
+  linkToProfiles?: boolean; // false for Users, who can't open member profiles
 }
 
-function CelebrantList({ items, today }: { items: DashboardCelebrant[]; today: Date }) {
+function CelebrantList({
+  items,
+  today,
+  linkToProfiles,
+}: {
+  items: DashboardCelebrant[];
+  today: Date;
+  linkToProfiles: boolean;
+}) {
   return (
     <ul className="dash-list">
       {items.map((c, i) => {
@@ -20,9 +29,13 @@ function CelebrantList({ items, today }: { items: DashboardCelebrant[]; today: D
             <span className={`dash-date-chip${when === "Today" ? " is-today" : ""}`}>
               {when ?? fmtDayDate(c.date)}
             </span>
-            <Link to={`/Profile/${c.memberId}`} className="dash-person">
-              {c.name}
-            </Link>
+            {linkToProfiles ? (
+              <Link to={`/Profile/${c.memberId}`} className="dash-person">
+                {c.name}
+              </Link>
+            ) : (
+              <span className="dash-person">{c.name}</span>
+            )}
             <span className={`badge celebrants-type-${c.type}`}>
               {c.type === "birthday" ? "Birthday" : "Anniversary"}
             </span>
@@ -33,7 +46,7 @@ function CelebrantList({ items, today }: { items: DashboardCelebrant[]; today: D
   );
 }
 
-export default function CelebrantsCard({ celebrants, error, today }: CelebrantsCardProps) {
+export default function CelebrantsCard({ celebrants, error, today, linkToProfiles = true }: CelebrantsCardProps) {
   const monthName = MONTHS[today.getMonth()];
 
   return (
@@ -48,13 +61,13 @@ export default function CelebrantsCard({ celebrants, error, today }: CelebrantsC
           {celebrants.thisWeek.length === 0 ? (
             <PanelMessage>No birthdays or anniversaries in the next 7 days.</PanelMessage>
           ) : (
-            <CelebrantList items={celebrants.thisWeek} today={today} />
+            <CelebrantList items={celebrants.thisWeek} today={today} linkToProfiles={linkToProfiles} />
           )}
 
           {celebrants.laterThisMonth.length > 0 && (
             <>
               <h3 className="dash-group-label">Later in {monthName}</h3>
-              <CelebrantList items={celebrants.laterThisMonth} today={today} />
+              <CelebrantList items={celebrants.laterThisMonth} today={today} linkToProfiles={linkToProfiles} />
             </>
           )}
         </>

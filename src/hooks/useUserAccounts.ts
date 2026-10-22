@@ -34,10 +34,10 @@ export default function useUserAccounts(currentUserName: string) {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  // Guards against locking everyone out: the last active Admin can't be
-  // turned off or made a regular User.
-  const activeAdminCount = useMemo(
-    () => accounts.filter((a) => a.role === "admin" && a.isActive).length,
+  // Guards against locking everyone out: the last active Super Admin can't
+  // be turned off or given a lower role.
+  const activeSuperAdminCount = useMemo(
+    () => accounts.filter((a) => a.role === "superadmin" && a.isActive).length,
     [accounts]
   );
 
@@ -107,5 +107,5 @@ export default function useUserAccounts(currentUserName: string) {
     }
   }
 
-  return { accounts, loading, error, toast, activeAdminCount, create, update, setActive, resetPassword };
+  return { accounts, loading, error, toast, activeSuperAdminCount, create, update, setActive, resetPassword };
 }
