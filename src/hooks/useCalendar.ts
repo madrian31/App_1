@@ -10,6 +10,7 @@ import {
 import { parseICS } from "../utils/icsParser";
 import * as calendarEventsService from "../services/calendar/calendarEventsService";
 import * as calendarCategoriesService from "../services/calendar/calendarCategoriesService";
+import { HOLIDAY_CATEGORY_ID, phHolidaysExcept } from "../data/phHolidays";
 import { getAllMembers } from "../services/members/memberService/membersService";
 import type { Member } from "../types/member";
 
@@ -63,7 +64,9 @@ interface CelebrantEntry {
   cat: "birthdays" | "anniversaries";
 }
 
-export default function useCalendar() {
+/** `canEdit: false` (view-only accounts) loads the calendar without writing anything —
+ *  no category seeding or restoring, which those accounts aren't allowed to save. */
+export default function useCalendar(canEdit = true) {
   const today = useMemo(() => new Date(), []);
 
   const [view, setView] = useState<CalendarView>("month");
@@ -86,12 +89,19 @@ export default function useCalendar() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      await calendarCategoriesService.seedCategoriesIfEmpty();
-      const [fetchedEvents, fetchedCategories, fetchedMembers] = await Promise.all([
+      if (canEdit) await calendarCategoriesService.seedCategoriesIfEmpty();
+      const [fetchedEvents, categoryList, fetchedMembers] = await Promise.all([
         calendarEventsService.getAllEvents(),
         calendarCategoriesService.getAllCategories(),
         getAllMembers(),
       ]);
+      let fetchedCategories = categoryList;
+      // The built-in PH holidays are filed under the Holidays category and
+      // never show without it, so put it back if it was deleted.
+      if (canEdit && !fetchedCategories.some((c) => c.id === HOLIDAY_CATEGORY_ID)) {
+        const restored = await calendarCategoriesService.restoreDefaultCategory(HOLIDAY_CATEGORY_ID);
+        if (restored) fetchedCategories = [...fetchedCategories, restored].sort((a, b) => a.label.localeCompare(b.label));
+      }
       setEvents(fetchedEvents);
       setCategories(fetchedCategories);
       setMembers(fetchedMembers.filter((m) => !m.isArchived));
@@ -102,7 +112,7 @@ export default function useCalendar() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [canEdit]);
 
   useEffect(() => {
     loadAll();
@@ -132,26 +142,34 @@ export default function useCalendar() {
     return map;
   }, [members]);
 
-  // NEW — turns a day's celebrants into CalendarEvent-shaped objects so every
-  // view (Month/Week/Day) can render them exactly like a real event, without
-  // any of it being written to Firestore.
+  // Philippine holidays from the Official Gazette proclamations (see data/phHolidays.ts).
+  const holidaysByDate = useMemo(() => {
+    const map = new Map<string, CalendarEvent[]>();
+    for (const h of phHolidaysExcept(events)) {
+      map.set(h.date, [...(map.get(h.date) ?? []), h]);
+    }
+    return map;
+  }, [events]);
+
+  // NEW — turns a day's celebrants and holidays into CalendarEvent-shaped
+  // objects so every view (Month/Week/Day) can render them exactly like a
+  // real event, without any of it being written to Firestore.
   function virtualEventsForDay(dateObj: Date): CalendarEvent[] {
     const key = iso(dateObj);
     const monthDayKey = `${pad(dateObj.getMonth() + 1)}-${pad(dateObj.getDate())}`;
-    const celebrants = celebrantsByMonthDay.get(monthDayKey) ?? [];
+    const celebrants = (celebrantsByMonthDay.get(monthDayKey) ?? []).map((c) => ({
+      id: `virtual-${c.cat}-${c.memberId}-${key}`,
+      title: c.title,
+      date: key,
+      start: "00:00",
+      end: "23:59",
+      allDay: true,
+      cat: c.cat,
+    }));
 
-    return celebrants
-      .filter((c) => activeCats.has(c.cat)) // still respects the category filter
-      .filter((c) => !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase())) // still respects search
-      .map((c) => ({
-        id: `virtual-${c.cat}-${c.memberId}-${key}`,
-        title: c.title,
-        date: key,
-        start: "00:00",
-        end: "23:59",
-        allDay: true,
-        cat: c.cat,
-      }));
+    return [...(holidaysByDate.get(key) ?? []), ...celebrants]
+      .filter((e) => activeCats.has(e.cat)) // still respects the category filter
+      .filter((e) => !searchQuery || e.title.toLowerCase().includes(searchQuery.toLowerCase())); // still respects search
   }
 
   // Modal state
@@ -435,7 +453,7 @@ export default function useCalendar() {
       .filter((x) => dateFilter !== "all" || x.d >= new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate()))
       .sort((a, b) => a.d.getTime() - b.d.getTime() || timeToMinutes(a.e.start) - timeToMinutes(b.e.start));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredEvents, dateFilter, currentDate, celebrantsByMonthDay, activeCats, searchQuery, customFrom, customTo]);
+  }, [filteredEvents, dateFilter, currentDate, celebrantsByMonthDay, holidaysByDate, activeCats, searchQuery, customFrom, customTo]);
 
   return {
     today,

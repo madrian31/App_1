@@ -16,13 +16,15 @@ export interface FinanceStatus {
  * The full numbers are already in the breakdown beside it.
  *
  * `money` formats amounts — "₱" on screen, "PHP" in the PDF (its fonts can't draw "₱").
+ * `outLabel` names what `expenses` covers — "expenses and department funds" once departments were given budget.
  */
 export function getFinanceStatus(
   income: number, // tithes + offerings
-  expenses: number,
+  expenses: number, // expenses, plus budget given to departments less what they returned
   remainingBalance: number,
   inPeriod: string, // "in October 2026" / "(Mar 1, 2026 – Sep 15, 2026)"
-  money: (n: number) => string
+  money: (n: number) => string,
+  outLabel = "expenses"
 ): FinanceStatus {
   const diff = Math.abs(income - expenses);
 
@@ -40,8 +42,8 @@ export function getFinanceStatus(
       kind: "deficit",
       icon: "fa-triangle-exclamation",
       headline: "Not Enough Funds",
-      detail: `The fund does not have enough money to pay the expenses ${inPeriod}.`,
-      figure: { value: money(-remainingBalance), label: "Still needed to pay all expenses" },
+      detail: `The fund does not have enough money to pay the ${outLabel} ${inPeriod}.`,
+      figure: { value: money(-remainingBalance), label: `Still needed to pay all ${outLabel}` },
     };
   }
   if (expenses > income) {
@@ -49,8 +51,8 @@ export function getFinanceStatus(
       kind: "covered",
       icon: "fa-arrow-down",
       headline: "Fund Decreased",
-      detail: `Tithes and offerings were not enough for the expenses ${inPeriod}, so the difference was taken from the fund.`,
-      figure: { value: money(diff), label: "More tithes & offerings needed to cover the expenses" },
+      detail: `Tithes and offerings were not enough for the ${outLabel} ${inPeriod}, so the difference was taken from the fund.`,
+      figure: { value: money(diff), label: `More tithes & offerings needed to cover the ${outLabel}` },
     };
   }
   if (income > expenses) {
@@ -58,7 +60,7 @@ export function getFinanceStatus(
       kind: "surplus",
       icon: "fa-arrow-up",
       headline: "Fund Increased",
-      detail: `Tithes and offerings covered all the expenses ${inPeriod}, with money left over.`,
+      detail: `Tithes and offerings covered all the ${outLabel} ${inPeriod}, with money left over.`,
       figure: { value: `+${money(diff)}`, label: "Added to the fund" },
     };
   }
@@ -66,7 +68,7 @@ export function getFinanceStatus(
     kind: "balanced",
     icon: "fa-equals",
     headline: "No Change",
-    detail: `Tithes and offerings were the same as the expenses ${inPeriod}.`,
+    detail: `Tithes and offerings were the same as the ${outLabel} ${inPeriod}.`,
     figure: null,
   };
 }

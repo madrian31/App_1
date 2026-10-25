@@ -5,6 +5,7 @@ interface FinanceMonthlyTableProps {
   months: FinanceMonthRow[];
   loading: boolean;
   selectedKey: string | null; // month currently shown on its own, if any
+  showDepartments: boolean; // adds a Department Funds column once departments have been given budget
   onSelectMonth: (year: number, month: number) => void;
 }
 
@@ -12,11 +13,14 @@ export default function FinanceMonthlyTable({
   months,
   loading,
   selectedKey,
+  showDepartments,
   onSelectMonth,
 }: FinanceMonthlyTableProps) {
   const totalTithes = months.reduce((s, m) => s + m.tithes, 0);
   const totalOfferings = months.reduce((s, m) => s + m.offerings, 0);
   const totalExpenses = months.reduce((s, m) => s + m.expenses, 0);
+  const totalDeptFunds = months.reduce((s, m) => s + m.departmentFunds, 0);
+  const colCount = showDepartments ? 7 : 6;
 
   return (
     <div className="members-card">
@@ -28,6 +32,11 @@ export default function FinanceMonthlyTable({
               <th className="finance-num">Tithes</th>
               <th className="finance-num">Offerings</th>
               <th className="finance-num">Expenses</th>
+              {showDepartments && (
+                <th className="finance-num" title="Budget given to departments, less unused budget they returned">
+                  Dept. Funds
+                </th>
+              )}
               <th className="finance-num">Net</th>
               <th className="finance-num">Fund Balance</th>
             </tr>
@@ -35,7 +44,7 @@ export default function FinanceMonthlyTable({
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="empty-cell">
+                <td colSpan={colCount} className="empty-cell">
                   <div className="empty-state">
                     <p>Loading…</p>
                   </div>
@@ -52,13 +61,18 @@ export default function FinanceMonthlyTable({
                   <td className="finance-num">{fmtPeso(m.tithes)}</td>
                   <td className="finance-num">{fmtPeso(m.offerings)}</td>
                   <td className="finance-num">{fmtPeso(m.expenses)}</td>
+                  {showDepartments && <td className="finance-num">{signedPeso(m.departmentFunds)}</td>}
                   <td className={`finance-num ${m.net < 0 ? "finance-down" : ""}`}>
                     {m.net < 0 ? "−" : ""}
                     {fmtPeso(Math.abs(m.net))}
                     {m.net < 0 && (
                       <i
                         className="fa-solid fa-triangle-exclamation"
-                        title="Expenses were more than tithes and offerings"
+                        title={
+                          showDepartments
+                            ? "Expenses and department funds were more than tithes and offerings"
+                            : "Expenses were more than tithes and offerings"
+                        }
                         aria-label="Deficit"
                         style={{ marginLeft: 6 }}
                       />
@@ -84,8 +98,13 @@ export default function FinanceMonthlyTable({
                 <td className="finance-num" style={{ fontWeight: 700 }}>
                   {fmtPeso(totalExpenses)}
                 </td>
+                {showDepartments && (
+                  <td className="finance-num" style={{ fontWeight: 700 }}>
+                    {signedPeso(totalDeptFunds)}
+                  </td>
+                )}
                 <td className="finance-num" style={{ fontWeight: 700 }}>
-                  {fmtPeso(totalTithes + totalOfferings - totalExpenses)}
+                  {signedPeso(totalTithes + totalOfferings - totalExpenses - totalDeptFunds)}
                 </td>
                 <td></td>
               </tr>
@@ -95,4 +114,9 @@ export default function FinanceMonthlyTable({
       </div>
     </div>
   );
+}
+
+/** "−₱1,200.00" for negatives — fmtPeso alone would print "₱-1,200.00". */
+function signedPeso(n: number): string {
+  return n < 0 ? `−${fmtPeso(-n)}` : fmtPeso(n);
 }

@@ -1,4 +1,9 @@
-import type { FinanceCategoryRow, FinanceMonthRow, FinanceServiceRow } from "../../hooks/useFinanceReport";
+import type {
+  FinanceCategoryRow,
+  FinanceDepartmentRow,
+  FinanceMonthRow,
+  FinanceServiceRow,
+} from "../../hooks/useFinanceReport";
 import { formatDisplayDate, toLocalISODate } from "../../utils/date";
 import { getFinanceStatus } from "../../components/finance/financeStatus";
 
@@ -26,6 +31,9 @@ export interface FinanceReportPdfData {
   periodOfferings: number;
   periodIncome: number; // tithes + offerings
   periodExpenses: number;
+  periodDeptGiven: number; // budget given to departments in the period
+  periodDeptReturned: number; // unused budget departments returned in the period
+  hasDepartmentFunds: boolean; // any department budget given ever — adds the department column and section
   ytdIncome: number;
   ytdYear: number;
   startBalance: number;
@@ -33,6 +41,7 @@ export interface FinanceReportPdfData {
   months: FinanceMonthRow[];
   services: FinanceServiceRow[];
   expenseCategories: FinanceCategoryRow[];
+  departmentRows: FinanceDepartmentRow[];
 }
 
 /** Downloads the Finance Report as a one-to-two page PDF. jsPDF is loaded on demand. */
@@ -82,20 +91,40 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
-  doc.text("General Fund Balance = starting balance + all tithes + all offerings - all expenses.", MARGIN, y);
-  y += 10;
+  const formulaLines = doc.splitTextToSize(
+    data.hasDepartmentFunds
+      ? "General Fund Balance = starting balance + all tithes + all offerings - all expenses - all budget given to departments + all unused budget they returned."
+      : "General Fund Balance = starting balance + all tithes + all offerings - all expenses.",
+    CONTENT_W
+  ) as string[];
+  doc.text(formulaLines, MARGIN, y);
+  y += 10 + (formulaLines.length - 1) * 3.5;
 
   // ── Financial status for the period ──
   // Same headline and wording as the on-screen Financial Status card.
   const inPeriod = data.periodLabel.includes("–") ? `(${data.periodLabel})` : `in ${data.periodLabel}`;
-  const s = getFinanceStatus(data.periodIncome, data.periodExpenses, data.endBalance, inPeriod, peso);
+  const withDepartments = data.periodDeptGiven > 0 || data.periodDeptReturned > 0;
+  const s = getFinanceStatus(
+    data.periodIncome,
+    data.periodExpenses + data.periodDeptGiven - data.periodDeptReturned,
+    data.endBalance,
+    inPeriod,
+    peso,
+    withDepartments ? "expenses and department funds" : "expenses"
+  );
   doc.setFontSize(8.5);
   const figureText = s.figure ? ` ${s.figure.label}: ${s.figure.value}.` : "";
   const statusLines = doc.splitTextToSize(
     `${s.headline.toUpperCase()}: ${s.detail}${figureText}`,
     CONTENT_W - 8
   ) as string[];
-  const boxH = 18 + statusLines.length * 4;
+  // The department line only appears in periods where departments were given or returned budget.
+  const deptParts = [
+    data.periodDeptGiven > 0 ? `-  Given to departments ${peso(data.periodDeptGiven)}` : "",
+    data.periodDeptReturned > 0 ? `+  Returned by departments ${peso(data.periodDeptReturned)}` : "",
+  ].filter(Boolean);
+  const extra = deptParts.length > 0 ? 5.5 : 0;
+  const boxH = 18 + extra + statusLines.length * 4;
   doc.setDrawColor(...RULE);
   doc.roundedRect(MARGIN, y - 5, CONTENT_W, boxH, 2, 2, "S");
   doc.setFont("helvetica", "normal");
@@ -108,12 +137,13 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     MARGIN + 4,
     y + 1.5
   );
+  if (deptParts.length > 0) doc.text(deptParts.join("  "), MARGIN + 4, y + 7);
   doc.setFont("helvetica", "bold");
-  doc.text(`=  Remaining Balance ${peso(data.endBalance)}`, MARGIN + 4, y + 7);
+  doc.text(`=  Remaining Balance ${peso(data.endBalance)}`, MARGIN + 4, y + 7 + extra);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...MUTED);
-  doc.text(statusLines, MARGIN + 4, y + 13);
+  doc.text(statusLines, MARGIN + 4, y + 13 + extra);
   y += boxH + 6;
 
   // ── Tables ──
@@ -128,14 +158,19 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     y += 6;
   }
 
-  function table(cols: { label: string; width: number; right?: boolean }[], rows: string[][], bold?: string[]) {
+  function table(
+    cols: { label: string; width: number; right?: boolean }[],
+    rows: string[][],
+    bold?: string[],
+    fontSize = 9.5 // smaller for tables with many amount columns, so the amounts don't touch
+  ) {
     const draw = (cells: string[], header: boolean, strong: boolean) => {
       if (y > PAGE_H - 24) {
         doc.addPage();
         y = MARGIN + 6;
       }
       doc.setFont("helvetica", header || strong ? "bold" : "normal");
-      doc.setFontSize(header ? 8 : 9.5);
+      doc.setFontSize(header ? Math.min(8, fontSize) : fontSize);
       doc.setTextColor(...(header ? MUTED : TEXT));
       let x = MARGIN;
       cols.forEach((c, i) => {
@@ -155,18 +190,24 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
   }
 
   sectionTitle(`Monthly Breakdown — ${data.chartTitle}`);
+  // A Dept. Funds column (budget given less budget returned) once departments have been given budget.
+  const showDept = data.hasDepartmentFunds;
   const monthW = 24;
-  const w = (CONTENT_W - monthW) / 5;
-  const sum = (key: "tithes" | "offerings" | "expenses") => data.months.reduce((s, m) => s + m[key], 0);
+  const w = (CONTENT_W - monthW) / (showDept ? 6 : 5);
+  const sum = (key: "tithes" | "offerings" | "expenses" | "departmentFunds") =>
+    data.months.reduce((s, m) => s + m[key], 0);
   const rowsTithes = sum("tithes");
   const rowsOfferings = sum("offerings");
   const rowsExpenses = sum("expenses");
+  const rowsDept = sum("departmentFunds");
+  const onlyIf = <T,>(cond: boolean, item: T): T[] => (cond ? [item] : []);
   table(
     [
       { label: "Month", width: monthW },
       { label: "Tithes", width: w, right: true },
       { label: "Offerings", width: w, right: true },
       { label: "Expenses", width: w, right: true },
+      ...onlyIf(showDept, { label: "Dept. Funds", width: w, right: true }),
       { label: "Net", width: w, right: true },
       { label: "Fund Balance", width: w, right: true },
     ],
@@ -175,6 +216,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       peso(m.tithes),
       peso(m.offerings),
       peso(m.expenses),
+      ...onlyIf(showDept, peso(m.departmentFunds)),
       peso(m.net),
       m.balance === null ? "—" : peso(m.balance),
     ]),
@@ -183,9 +225,11 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       peso(rowsTithes),
       peso(rowsOfferings),
       peso(rowsExpenses),
-      peso(rowsTithes + rowsOfferings - rowsExpenses),
+      ...onlyIf(showDept, peso(rowsDept)),
+      peso(rowsTithes + rowsOfferings - rowsExpenses - rowsDept),
       "",
-    ]
+    ],
+    showDept ? 8.5 : 9.5
   );
 
   sectionTitle(`Collections per Service — ${data.periodLabel}`);
@@ -219,6 +263,7 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
     doc.setFontSize(9.5);
     doc.setTextColor(...MUTED);
     doc.text("No expenses recorded for this period.", MARGIN, y);
+    y += 12;
   } else {
     const cw = CONTENT_W / 3;
     table(
@@ -234,6 +279,34 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       ]),
       ["Total", peso(data.periodExpenses), ""]
     );
+  }
+
+  if (data.hasDepartmentFunds) {
+    if (y > PAGE_H - 50) {
+      doc.addPage();
+      y = MARGIN + 6;
+    }
+    sectionTitle(`Budget Given to Departments — ${data.periodLabel}`);
+    if (data.departmentRows.length === 0) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(...MUTED);
+      doc.text("No budget given to or returned by departments for this period.", MARGIN, y);
+    } else {
+      const dw = CONTENT_W / 4;
+      const given = data.departmentRows.reduce((s, r) => s + r.given, 0);
+      const returned = data.departmentRows.reduce((s, r) => s + r.returned, 0);
+      table(
+        [
+          { label: "Department", width: dw },
+          { label: "Given", width: dw, right: true },
+          { label: "Returned", width: dw, right: true },
+          { label: "From the Fund", width: dw, right: true },
+        ],
+        data.departmentRows.map((r) => [r.name, peso(r.given), r.returned > 0 ? peso(r.returned) : "—", peso(r.net)]),
+        ["Total", peso(given), peso(returned), peso(given - returned)]
+      );
+    }
   }
 
   // ── Footer on every page ──

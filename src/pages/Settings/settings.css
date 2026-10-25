@@ -175,3 +175,130 @@
     font-weight: 600;
     color: var(--text-muted);
 }
+
+
+/* =========================================================
+   Auto-save status (pages without a Save button)
+   ========================================================= */
+
+.autosave-status {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: var(--text-muted);
+}
+
+.autosave-status.is-saved {
+    color: var(--success);
+}
+
+.autosave-status.is-error {
+    color: var(--danger);
+}
+
+.autosave-retry {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   Settings → Departments
+   ========================================================= */
+
+.dept-notice {
+    justify-content: space-between;
+}
+
+.dept-notice .btn-icon {
+    margin-left: auto;
+    color: inherit;
+}
+
+.dept-add-row {
+    max-width: 560px;
+}
+
+/* Inline field that saves itself (AutoSaveInput) — also used by Finance → Department Funds. */
+.dept-input {
+    width: 100%;
+    min-width: 140px;
+    box-sizing: border-box;
+
+    padding: 7px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 6px;
+
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+
+    background: transparent;
+}
+
+.dept-input:hover {
+    border-color: var(--border);
+}
+
+.dept-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: var(--card);
+    box-shadow: 0 0 0 3px rgba(59, 91, 253, 0.12);
+}
+
+.dept-input--amount {
+    max-width: 170px;
+    text-align: right;
+}
+
+.dept-row-inactive .dept-input {
+    color: var(--text-muted);
+}
+
+.dept-status-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 5px 12px;
+
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+
+    color: var(--text-muted);
+    background: transparent;
+
+    cursor: pointer;
+}
+
+.dept-status-btn.is-active {
+    border-color: #a7f3d0;
+    color: var(--success);
+    background: #ecfdf5;
+}
+
+.dept-status-btn:hover {
+    border-color: var(--primary);
+}
+
+.dept-help {
+    margin: 14px 0 0;
+    padding-left: 18px;
+
+    font-size: 13px;
+    line-height: 1.6;
+
+    color: var(--text-muted);
+}

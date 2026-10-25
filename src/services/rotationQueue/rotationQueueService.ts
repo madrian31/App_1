@@ -37,8 +37,13 @@ export async function saveRotationQueue(role: RotationRole, items: string[]): Pr
  *  are dropped, and pool entries not queued yet join at the back. Everyone
  *  else keeps their place. Creates the doc if missing and only writes when
  *  something changed. An empty pool is treated as "not loaded" and leaves
- *  the queue as-is, so a failed member fetch can never wipe a rotation. */
-export async function reconcileRotationQueue(role: RotationRole, poolIds: string[]): Promise<string[]> {
+ *  the queue as-is, so a failed member fetch can never wipe a rotation.
+ *  `save: false` only works the order out (for view-only accounts, which can't write). */
+export async function reconcileRotationQueue(
+  role: RotationRole,
+  poolIds: string[],
+  { save = true }: { save?: boolean } = {}
+): Promise<string[]> {
   const current = await getRotationQueue(role);
   const items = current?.items ?? [];
   if (poolIds.length === 0) return items;
@@ -49,7 +54,7 @@ export async function reconcileRotationQueue(role: RotationRole, poolIds: string
   const next = [...kept, ...poolIds.filter((id) => !queued.has(id))];
 
   const unchanged = current && next.length === items.length && next.every((id, i) => id === items[i]);
-  if (!unchanged) await saveRotationQueue(role, next);
+  if (!unchanged && save) await saveRotationQueue(role, next);
   return next;
 }
 
@@ -67,8 +72,13 @@ export async function advanceRotationQueue(role: RotationRole, usedId: string): 
  *  seedRotationQueueIfEmpty, this runs every time (not just on an empty/
  *  missing doc), so newly-added items — like a fresh theme preset created
  *  after the queue doc already existed — always show up instead of being
- *  invisible forever behind an already-seeded doc. */
-export async function syncRotationQueueItems(role: RotationRole, validIds: string[]): Promise<string[]> {
+ *  invisible forever behind an already-seeded doc.
+ *  `save: false` only works the order out (for view-only accounts, which can't write). */
+export async function syncRotationQueueItems(
+  role: RotationRole,
+  validIds: string[],
+  { save = true }: { save?: boolean } = {}
+): Promise<string[]> {
   const current = await getRotationQueue(role);
   const existingItems = current?.items ?? [];
   const newItems = validIds.filter((id) => !existingItems.includes(id));
@@ -77,7 +87,7 @@ export async function syncRotationQueueItems(role: RotationRole, validIds: strin
     return existingItems; // wala namang bago, may doc na — skip write
   }
 
-  const merged = [...newItems, ...existingItems]; 
-  await saveRotationQueue(role, merged);
+  const merged = [...newItems, ...existingItems];
+  if (save) await saveRotationQueue(role, merged);
   return merged;
 }

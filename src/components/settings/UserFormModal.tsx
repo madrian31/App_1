@@ -23,7 +23,7 @@ interface UserFormModalProps {
 }
 
 const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  user: "Home, Calendar, Program Line-up and Praise & Worship only.",
+  user: "Can view Home, Calendar, Program Line-up and Praise & Worship only — no changes.",
   admin: "Every page and setting. Can manage User accounts.",
   superadmin: "Everything, including Admin and Super Admin accounts.",
 };

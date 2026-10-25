@@ -1,0 +1,270 @@
+/* =========================================================
+   Department Funds — reuses the Ledger form/modal styles (ledger.css)
+   and the Finance tables/cards (finance.css)
+   ========================================================= */
+
+.dept-fund-sub {
+    display: block;
+    margin-top: 2px;
+
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* ── Add Budget / liquidation modal ── */
+
+.modal-box.dept-fund-modal {
+    max-width: 600px;
+}
+
+.dept-fund-grid {
+    grid-template-columns: repeat(2, 1fr);
+    margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+    .dept-fund-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.dept-fund-grid select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+
+    background: var(--card);
+}
+
+.dept-fund-grid select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(83, 74, 183, 0.12);
+}
+
+.dept-fund-section {
+    margin: 8px 0 10px;
+    padding-top: 12px;
+
+    border-top: 1px solid var(--border);
+
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.dept-fund-section:first-of-type {
+    padding-top: 0;
+    border-top: none;
+}
+
+.dept-fund-section-hint {
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.dept-fund-hint {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.dept-fund-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    margin: 0 0 12px;
+    padding: 9px 12px;
+
+    border: 1px solid #fde68a;
+    border-radius: 9px;
+
+    font-size: 13.5px;
+    color: #b45309;
+    background: #fffbeb;
+}
+
+.dept-fund-warning i {
+    margin-top: 2px;
+}
+
+.dept-fund-balance {
+    margin: 0 0 14px;
+
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.dept-fund-balance strong {
+    color: #b45309;
+}
+
+.dept-fund-balance.is-done {
+    font-weight: 600;
+    color: var(--success);
+}
+
+/* ── Activities (from the Calendar) ── */
+
+.dept-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dept-section-help {
+    margin: -4px 0 10px;
+
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-muted);
+}
+
+.dept-show-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 10px;
+
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+
+    cursor: pointer;
+}
+
+.dept-activities-table td {
+    vertical-align: middle;
+}
+
+.dept-activity-select {
+    width: 100%;
+    min-width: 150px;
+    box-sizing: border-box;
+    padding: 6px 8px;
+
+    border: 1px solid var(--border);
+    border-radius: 6px;
+
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--text);
+
+    background: var(--card);
+}
+
+.dept-activity-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 91, 253, 0.12);
+}
+
+.dept-activity-select.needs-department {
+    border-color: #d97706;
+    background: #fffbeb;
+}
+
+.dept-activities-table .dept-input--amount {
+    min-width: 110px;
+    margin-left: auto;
+}
+
+.dept-activity-add {
+    padding: 5px 10px;
+    font-size: 12.5px;
+    white-space: nowrap;
+}
+
+/* Always show the budget field's border here, so it's clear it can be typed in. */
+.dept-activities-table .dept-input {
+    border-color: var(--border);
+    background: var(--card);
+}
+
+/* ── The chosen activity's budget, inside the Add Budget modal ── */
+
+.dept-fund-activity {
+    padding: 10px 14px;
+
+    border: 1px solid #dbe0ff;
+    border-radius: 9px;
+
+    background: #f5f7ff;
+}
+
+.dept-fund-activity-title {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.dept-fund-activity-title i {
+    color: var(--primary);
+}
+
+.dept-fund-activity-title span {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-muted);
+}
+
+.dept-fund-activity-figures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+
+    margin: 8px 0 0;
+}
+
+.dept-fund-activity-figures dt {
+    font-size: 11.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--text-muted);
+}
+
+.dept-fund-activity-figures dd {
+    margin: 2px 0 0;
+
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.dept-fund-activity-none {
+    margin: 6px 0 0;
+
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+@media (max-width: 480px) {
+    .dept-fund-activity-figures {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Whole Year / Month / Custom for the activities list (reuses the Finance Report's period styles). */
+.dept-activity-period {
+    margin-bottom: 12px;
+}
+
+.dept-activity-period .dept-show-all {
+    margin: 0 0 0 auto;
+}

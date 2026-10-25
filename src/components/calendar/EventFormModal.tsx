@@ -12,6 +12,7 @@ interface Props {
   onDelete: () => void;
   onClose: () => void;
   onManageCategories: () => void;
+  readOnly?: boolean; // view-only accounts: the event's details, nothing to change
 }
 
 export default function EventFormModal({
@@ -24,6 +25,7 @@ export default function EventFormModal({
   onDelete,
   onClose,
   onManageCategories,
+  readOnly = false,
 }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -48,14 +50,16 @@ export default function EventFormModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave();
+    if (!readOnly) onSave();
   }
 
   return (
     <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <h2>{isEditing ? "Edit Event" : "New Event"}</h2>
+        <h2>{readOnly ? "Event Details" : isEditing ? "Edit Event" : "New Event"}</h2>
         <form onSubmit={handleSubmit}>
+          {/* A disabled fieldset turns every field inside it read-only at once. */}
+          <fieldset className="event-fieldset" disabled={readOnly}>
           <div className="field">
             <label htmlFor="f-title">Title</label>
             <input
@@ -65,7 +69,7 @@ export default function EventFormModal({
               placeholder="e.g. Team Standup"
               value={form.title}
               onChange={(e) => onChange("title", e.target.value)}
-              autoFocus
+              autoFocus={!readOnly}
             />
           </div>
 
@@ -84,9 +88,11 @@ export default function EventFormModal({
                   </option>
                 ))}
               </select>
-              <button type="button" className="manage-categories-link" onClick={onManageCategories}>
-                + Manage categories
-              </button>
+              {!readOnly && (
+                <button type="button" className="manage-categories-link" onClick={onManageCategories}>
+                  + Manage categories
+                </button>
+              )}
             </div>
           </div>
 
@@ -107,7 +113,15 @@ export default function EventFormModal({
               </div>
             </div>
           )}
+          </fieldset>
 
+          {readOnly ? (
+            <div className="modal-actions">
+              <button type="button" className="btn-primary" onClick={onClose}>
+                Close
+              </button>
+            </div>
+          ) : (
           <div className="modal-actions">
             {isEditing && (
               <button
@@ -127,6 +141,7 @@ export default function EventFormModal({
               {saving ? "Saving…" : "Save"}
             </button>
           </div>
+          )}
         </form>
       </div>
     </div>

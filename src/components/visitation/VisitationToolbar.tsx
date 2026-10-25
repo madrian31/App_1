@@ -6,7 +6,7 @@ interface VisitationToolbarProps {
 
   department: string;
   onDepartmentChange: (value: string) => void;
-  departments?: string[];
+  departments: string[];
 
   quickRange: QuickRange;
   onQuickRangeChange: (range: QuickRange) => void;
@@ -28,14 +28,12 @@ const QUICK_RANGES: { value: QuickRange; label: string }[] = [
   { value: "custom", label: "Custom Range" },
 ];
 
-const DEFAULT_DEPARTMENTS = ["Men's Dept.", "Women's Dept.", "Youth Dept."];
-
 export default function VisitationToolbar({
   search,
   onSearchChange,
   department,
   onDepartmentChange,
-  departments = DEFAULT_DEPARTMENTS,
+  departments,
   quickRange,
   onQuickRangeChange,
   dateFrom,

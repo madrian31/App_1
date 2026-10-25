@@ -18,6 +18,8 @@ import VisitationReports from "../pages/Visitation/VisitationReports";
 import ManageLists from "../pages/Settings/ManageLists";
 import GeneralSettings from "../pages/Settings/GeneralSettings";
 import UsersPage from "../pages/Settings/Users";
+import DepartmentsSettings from "../pages/Settings/Departments";
+import DepartmentFunds from "../pages/DepartmentFunds/DepartmentFunds";
 import PledgesReport from "../pages/Pledges/PledgesReport";
 import Ledger from "../pages/Ledger/Ledger";
 import ProgramLineUp from "../pages/ProgramLineUp/ProgramLineUp";
@@ -78,6 +80,7 @@ export default function AppRoutes() {
 
           <Route path="/Settings/ManageLists" element={<ManageLists />} />
           <Route path="/Settings/Users" element={<UsersPage />} />
+          <Route path="/Settings/Departments" element={<DepartmentsSettings />} />
 
           {/* Menu items without a page yet */}
           <Route path="/Roles" element={<ComingSoon title="Roles" />} />
@@ -89,6 +92,7 @@ export default function AppRoutes() {
           <Route path="/Finance/Expenses" element={<Expenses />} />
           {/* Old per-utility pages were merged into Expenses — keep bookmarks working. */}
           <Route path="/Finance/Expenses/*" element={<Navigate to="/Finance/Expenses" replace />} />
+          <Route path="/Finance/DepartmentFunds" element={<DepartmentFunds />} />
           <Route path="/Finance/Report" element={<FinanceReport />} />
 
           <Route path="/ledger/:department" element={<Ledger />} />

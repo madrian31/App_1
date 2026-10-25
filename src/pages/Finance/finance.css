@@ -581,3 +581,14 @@
     outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
+
+/* Small note under a report table (e.g. where to find more detail). */
+.finance-table-note {
+    margin: 0;
+    padding: 10px 16px 12px;
+
+    border-top: 1px solid var(--border);
+
+    font-size: 12.5px;
+    color: var(--text-muted);
+}

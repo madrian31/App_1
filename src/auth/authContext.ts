@@ -1,5 +1,5 @@
 import { createContext, useContext } from "react";
-import type { AppUser } from "../types/auth";
+import { isStaff, type AppUser } from "../types/auth";
 
 export interface AuthState {
   /** "loading" until Firebase says whether someone is signed in. */
@@ -24,4 +24,12 @@ export function useAuth(): AuthState {
 export function useCurrentUserName(): string {
   const { user } = useAuth();
   return user?.displayName || user?.username || "Unknown";
+}
+
+/** Whether the signed-in account may change data. Super Admins and Admins can; Users only
+ *  view the pages they're allowed (Home, Calendar, Program Line-up, Praise & Worship).
+ *  firestore.rules enforces the same, so hiding a button is never the only guard. */
+export function useCanEdit(): boolean {
+  const { user } = useAuth();
+  return isStaff(user?.role);
 }

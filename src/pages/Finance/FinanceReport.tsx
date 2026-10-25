@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useFinanceReport, { FINANCE_PERIOD_MODES } from "../../hooks/useFinanceReport";
 import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
+import FinanceDepartmentTable from "../../components/finance/FinanceDepartmentTable";
 import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
 import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
@@ -30,11 +31,14 @@ export default function FinanceReport() {
     error,
     fundBalance,
     startingBalanceSet,
+    hasDepartmentFunds,
     periodLabel,
     periodTithes,
     periodOfferings,
     periodIncome,
     periodExpenses,
+    periodDeptGiven,
+    periodDeptReturned,
     changePct,
     ytdIncome,
     ytdYear,
@@ -44,6 +48,7 @@ export default function FinanceReport() {
     selectedMonthKey,
     services,
     expenseCategories,
+    departmentRows,
   } = useFinanceReport();
 
   const [exporting, setExporting] = useState(false);
@@ -61,6 +66,9 @@ export default function FinanceReport() {
         periodOfferings,
         periodIncome,
         periodExpenses,
+        periodDeptGiven,
+        periodDeptReturned,
+        hasDepartmentFunds,
         ytdIncome,
         ytdYear,
         startBalance,
@@ -68,6 +76,7 @@ export default function FinanceReport() {
         months,
         services,
         expenseCategories,
+        departmentRows,
       });
     } catch (err) {
       console.error("Failed to export finance report:", err);
@@ -173,6 +182,7 @@ export default function FinanceReport() {
             ytdIncome={ytdIncome}
             ytdYear={ytdYear}
             periodExpenses={periodExpenses}
+            periodDeptGiven={periodDeptGiven}
           />
 
           <section className="report-section">
@@ -183,6 +193,8 @@ export default function FinanceReport() {
               periodTithes={periodTithes}
               periodOfferings={periodOfferings}
               periodExpenses={periodExpenses}
+              periodDeptGiven={periodDeptGiven}
+              periodDeptReturned={periodDeptReturned}
               endBalance={endBalance}
             />
           </section>
@@ -203,6 +215,7 @@ export default function FinanceReport() {
                 months={months}
                 loading={loading}
                 selectedKey={selectedMonthKey}
+                showDepartments={hasDepartmentFunds}
                 onSelectMonth={selectMonth}
               />
             </section>
@@ -221,6 +234,13 @@ export default function FinanceReport() {
                 monthExpenses={periodExpenses}
               />
             </section>
+
+            {hasDepartmentFunds && (
+              <section className="report-section">
+                <h2 className="report-section-title">Budget Given to Departments — {periodLabel}</h2>
+                <FinanceDepartmentTable rows={departmentRows} loading={loading} periodLabel={periodLabel} />
+              </section>
+            )}
           </div>
 
         </div>

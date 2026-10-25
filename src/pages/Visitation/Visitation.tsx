@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useVisitation from "../../hooks/useVisitation";
+import useDepartmentNames from "../../hooks/useDepartmentNames";
 import PageHeader from "../../components/members/PageHeader";
 import Pagination from "../../components/members/Pagination";
 import Toast from "../../components/members/Toast";
@@ -15,6 +16,7 @@ import "./visitation.css";
 export default function Visitation() {
   const navigate = useNavigate();
   const [viewingVisit, setViewingVisit] = useState<Visit | null>(null);
+  const departmentNames = useDepartmentNames();
 
   const {
     loading,
@@ -26,6 +28,7 @@ export default function Visitation() {
     onSearchChange,
     department,
     onDepartmentChange,
+    departmentsInVisits,
     quickRange,
     onQuickRangeChange,
     dateFrom,
@@ -78,6 +81,10 @@ export default function Visitation() {
             onSearchChange={onSearchChange}
             department={department}
             onDepartmentChange={onDepartmentChange}
+            departments={[
+              ...departmentNames.all,
+              ...departmentsInVisits.filter((d) => !departmentNames.all.includes(d)),
+            ]}
             quickRange={quickRange}
             onQuickRangeChange={onQuickRangeChange}
             dateFrom={dateFrom}

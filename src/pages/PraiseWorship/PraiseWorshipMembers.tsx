@@ -7,6 +7,7 @@ import PraiseWorshipMembersTable from "../../components/praiseWorship/PraiseWors
 import AddPraiseWorshipMembersModal from "../../components/praiseWorship/AddPraiseWorshipMembersModal";
 import EditPositionsModal from "../../components/praiseWorship/EditPositionsModal";
 import Toast from "../../components/members/Toast";
+import { useCanEdit } from "../../auth/authContext";
 import { PW_SKILLS } from "../../types/praiseWorship";
 import "../SundaySchool/sundaySchool.css"; // shared modal + checklist styles
 import "./praiseWorship.css";
@@ -15,6 +16,7 @@ export default function PraiseWorshipMembers() {
   // null = Add Members is closed; a string = open, starting with that search.
   const [addSearch, setAddSearch] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const canEdit = useCanEdit(); // Users only view the team
   const {
     loading,
     allMembers,
@@ -46,12 +48,14 @@ export default function PraiseWorshipMembers() {
             <div className="page-header-actions">
               <Link to="/PraiseWorship/LineUp" className="btn-secondary">
                 <i className="fa-solid fa-list-ol" aria-hidden="true" />
-                Set Line-up
+                {canEdit ? "Set Line-up" : "View Line-up"}
               </Link>
-              <button className="btn-add" onClick={() => setAddSearch("")}>
-                <i className="fa-solid fa-user-plus" aria-hidden="true" />
-                Add Members
-              </button>
+              {canEdit && (
+                <button className="btn-add" onClick={() => setAddSearch("")}>
+                  <i className="fa-solid fa-user-plus" aria-hidden="true" />
+                  Add Members
+                </button>
+              )}
             </div>
           </div>
 
@@ -88,6 +92,7 @@ export default function PraiseWorshipMembers() {
               onEditPositions={setEditingId}
               onRemove={(id) => setOnTeam(id, false)}
               onSearchAllMembers={() => setAddSearch(search.trim())}
+              canEdit={canEdit}
             />
           </div>
 

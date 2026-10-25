@@ -8,6 +8,8 @@ interface FinanceMonthFlowProps {
   periodTithes: number;
   periodOfferings: number;
   periodExpenses: number;
+  periodDeptGiven: number; // budget given to departments in the period
+  periodDeptReturned: number; // unused budget departments returned in the period
   endBalance: number;
 }
 
@@ -24,19 +26,25 @@ export default function FinanceMonthFlow({
   periodTithes,
   periodOfferings,
   periodExpenses,
+  periodDeptGiven,
+  periodDeptReturned,
   endBalance,
 }: FinanceMonthFlowProps) {
   const periodIncome = periodTithes + periodOfferings;
-  const hasActivity = periodIncome > 0 || periodExpenses > 0;
+  // Department lines only appear in periods where departments were given or returned budget.
+  const withDepartments = periodDeptGiven > 0 || periodDeptReturned > 0;
+  const periodOut = periodExpenses + periodDeptGiven - periodDeptReturned;
+  const outLabel = withDepartments ? "expenses and department funds" : "expenses";
+  const hasActivity = periodIncome > 0 || periodExpenses > 0 || withDepartments;
 
   // Every line names its period, so "tithes received" is never ambiguous.
   const inPeriod = periodLabel.includes("–") ? `(${periodLabel})` : `in ${periodLabel}`;
 
-  const m = getFinanceStatus(periodIncome, periodExpenses, endBalance, inPeriod, fmtPeso);
+  const m = getFinanceStatus(periodIncome, periodOut, endBalance, inPeriod, fmtPeso, outLabel);
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
   // Both bars share one scale so their lengths can be compared directly.
-  const scale = Math.max(periodIncome, periodExpenses, 1);
+  const scale = Math.max(periodIncome, periodOut, 1);
   const barPct = (n: number) => (n > 0 ? Math.max((n / scale) * 100, 2) : 0);
 
   return (
@@ -76,7 +84,7 @@ export default function FinanceMonthFlow({
           <div
             className="finance-compare"
             role="img"
-            aria-label={`Tithes and offerings ${v(periodIncome)}, expenses ${v(periodExpenses)} ${inPeriod}`}
+            aria-label={`Tithes and offerings ${v(periodIncome)}, ${outLabel} ${v(periodOut)} ${inPeriod}`}
           >
             <div className="finance-compare-row">
               <span className="finance-compare-label">Tithes &amp; Offerings</span>
@@ -86,11 +94,13 @@ export default function FinanceMonthFlow({
               <span className="finance-compare-value">{v(periodIncome)}</span>
             </div>
             <div className="finance-compare-row">
-              <span className="finance-compare-label">Expenses</span>
+              <span className="finance-compare-label">
+                {withDepartments ? "Expenses & Department Funds" : "Expenses"}
+              </span>
               <div className="finance-compare-track">
-                <div className="finance-compare-bar is-out" style={{ width: `${barPct(periodExpenses)}%` }} />
+                <div className="finance-compare-bar is-out" style={{ width: `${barPct(periodOut)}%` }} />
               </div>
-              <span className="finance-compare-value">{v(periodExpenses)}</span>
+              <span className="finance-compare-value">{v(periodOut)}</span>
             </div>
           </div>
         ) : (
@@ -117,6 +127,18 @@ export default function FinanceMonthFlow({
             <dt>Minus expenses {inPeriod}</dt>
             <dd className="finance-down">− {v(periodExpenses)}</dd>
           </div>
+          {periodDeptGiven > 0 && (
+            <div>
+              <dt>Minus budget given to departments {inPeriod}</dt>
+              <dd className="finance-down">− {v(periodDeptGiven)}</dd>
+            </div>
+          )}
+          {periodDeptReturned > 0 && (
+            <div>
+              <dt>Plus unused budget returned by departments {inPeriod}</dt>
+              <dd className="finance-up">+ {v(periodDeptReturned)}</dd>
+            </div>
+          )}
           <div className="finance-receipt-total">
             <dt>Remaining Balance</dt>
             <dd>{v(endBalance)}</dd>

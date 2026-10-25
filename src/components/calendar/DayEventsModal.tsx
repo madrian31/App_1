@@ -6,7 +6,7 @@ interface Props {
   events: CalendarEvent[];
   categories: CalendarCategoryItem[];
   onOpenEvent: (id: string) => void;
-  onAddOnThisDay: () => void;
+  onAddOnThisDay?: () => void; // left out for view-only accounts
   onClose: () => void;
 }
 
@@ -44,11 +44,13 @@ export default function DayEventsModal({ dateIso, events, categories, onOpenEven
             })
           )}
         </div>
-        <div className="day-modal-footer">
-          <button type="button" className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={onAddOnThisDay}>
-            <i className="fa-solid fa-plus" aria-hidden="true" /> Add event on this day
-          </button>
-        </div>
+        {onAddOnThisDay && (
+          <div className="day-modal-footer">
+            <button type="button" className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={onAddOnThisDay}>
+              <i className="fa-solid fa-plus" aria-hidden="true" /> Add event on this day
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

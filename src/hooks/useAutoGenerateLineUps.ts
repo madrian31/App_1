@@ -83,7 +83,6 @@ export default function useAutoGenerateLineUps(currentUser: string) {
         dateFrom,
         dateTo,
         members,
-        categoryOptions,
         startingQueues,
         existingDates,
         currentUser,

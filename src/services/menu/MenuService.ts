@@ -62,6 +62,7 @@ export class MenuService implements IMenuService {
                 { sortOrder: 57, name: 'Tithes', iconClass: 'fa-solid fa-hand-holding-dollar', path: '/Finance/Tithes' },
                 { sortOrder: 58, name: 'Offerings', iconClass: 'fa-solid fa-gift', path: '/Finance/Offerings' },
                 { sortOrder: 59, name: 'Expenses', iconClass: 'fa-solid fa-receipt', path: '/Finance/Expenses' },
+                { sortOrder: 593, name: 'Department Funds', iconClass: 'fa-solid fa-sack-dollar', path: '/Finance/DepartmentFunds' },
                 { sortOrder: 594, name: 'Report', iconClass: 'fa-solid fa-chart-bar', path: '/Finance/Report' },
             ]
         },
@@ -82,6 +83,7 @@ export class MenuService implements IMenuService {
             subMenuItems: [
                 { sortOrder: 71, name: 'General', iconClass: 'fa-solid fa-gear', path: '/settings' },
                 { sortOrder: 72, name: 'Manage Lists', iconClass: 'fa-solid fa-list-check', path: '/Settings/ManageLists' },
+                { sortOrder: 74, name: 'Departments', iconClass: 'fa-solid fa-sitemap', path: '/Settings/Departments' },
                 { sortOrder: 73, name: 'Users', iconClass: 'fa-solid fa-user-gear', path: '/Settings/Users' }
             ]
         }

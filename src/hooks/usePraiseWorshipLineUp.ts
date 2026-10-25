@@ -88,7 +88,8 @@ export interface SlotOptions {
   others: RoleAssignment[]; // the rest of the team, as a fallback
 }
 
-export default function usePraiseWorshipLineUp(currentUser: string, initialDate?: string) {
+/** `canEdit: false` (view-only accounts) loads the line-up but never saves. */
+export default function usePraiseWorshipLineUp(currentUser: string, initialDate?: string, canEdit = true) {
   const [date, setDate] = useState(initialDate || nextSunday());
 
   const [members, setMembers] = useState<Member[]>([]);
@@ -245,7 +246,7 @@ export default function usePraiseWorshipLineUp(currentUser: string, initialDate?
   );
   // Only once this date's saved line-up is in the form — before that, the
   // form still holds the previous date and must never be written over this one.
-  const isDirty = loadedDate === date && savedSnapshot !== null && currentSnapshot !== savedSnapshot;
+  const isDirty = canEdit && loadedDate === date && savedSnapshot !== null && currentSnapshot !== savedSnapshot;
 
   const persist = useCallback(async ({ entry, snapshot }: PendingSave) => {
     setSavesInFlight((n) => n + 1);

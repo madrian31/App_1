@@ -565,6 +565,11 @@
     margin-bottom: 0;
 }
 
+.filters-panel-links {
+    display: flex;
+    gap: 12px;
+}
+
 .manage-categories-link {
     border: none;
     background: none;
@@ -1350,4 +1355,12 @@
         max-width: none;
         max-height: 90vh;
     }
+}
+
+/* Event modal: the fieldset only groups the fields so view-only accounts can't change them. */
+.event-fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
 }

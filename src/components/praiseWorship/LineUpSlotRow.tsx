@@ -8,11 +8,35 @@ interface LineUpSlotRowProps {
   people: RoleAssignment[]; // who's assigned now
   options: SlotOptions;
   disabled?: boolean;
+  readOnly?: boolean; // view-only accounts: names only, nothing to pick
   onChange: (people: RoleAssignment[]) => void;
 }
 
-export default function LineUpSlotRow({ slot, people, options, disabled, onChange }: LineUpSlotRowProps) {
+export default function LineUpSlotRow({ slot, people, options, disabled, readOnly, onChange }: LineUpSlotRowProps) {
   const { qualified, others } = options;
+
+  // View-only accounts just see who's assigned.
+  if (readOnly) {
+    return (
+      <div className="lineup-row">
+        <div className="role-label">{slot.label}</div>
+        <div className="pw-slot-control">
+          {people.length > 0 ? (
+            <div className="pw-chip-list">
+              {people.map((p) => (
+                <span key={p.id} className="pw-chip">
+                  {p.name}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span className="date-text">Not assigned</span>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   const hint = qualified.length > 0 ? `${qualified.length} member${qualified.length !== 1 ? "s" : ""}` : "No members yet";
 
   function find(id: string): RoleAssignment | undefined {

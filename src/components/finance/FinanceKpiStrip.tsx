@@ -13,6 +13,7 @@ interface FinanceKpiStripProps {
   ytdIncome: number;
   ytdYear: number;
   periodExpenses: number;
+  periodDeptGiven: number; // budget given to departments in the period — shown under Expenses when there is any
 }
 
 function ChangeBadge({ pct }: { pct: number | null }) {
@@ -39,6 +40,7 @@ export default function FinanceKpiStrip({
   ytdIncome,
   ytdYear,
   periodExpenses,
+  periodDeptGiven,
 }: FinanceKpiStripProps) {
   const v = (n: number) => (loading ? "…" : fmtPeso(n));
 
@@ -81,6 +83,11 @@ export default function FinanceKpiStrip({
         <Link to="/Finance/Expenses" className="finance-kpi-sub finance-kpi-link">
           View / add expenses →
         </Link>
+        {!loading && periodDeptGiven > 0 && (
+          <Link to="/Finance/DepartmentFunds" className="finance-kpi-sub finance-kpi-link">
+            Plus {fmtPeso(periodDeptGiven)} budget given to departments →
+          </Link>
+        )}
       </div>
     </div>
   );

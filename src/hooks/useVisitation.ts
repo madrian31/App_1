@@ -120,6 +120,12 @@ export default function useVisitation() {
     });
   }, [visits, search, appliedDepartment, appliedDateFrom, appliedDateTo]);
 
+  // Every department already on a visit — so old visits stay filterable even after a department is renamed.
+  const departmentsInVisits = useMemo(
+    () => [...new Set(visits.map((v) => v.department).filter(Boolean))].sort(),
+    [visits]
+  );
+
   // Summary cards — computed from the same filtered set.
   const totalVisits = filteredVisits.length;
   const uniqueMembers = useMemo(
@@ -175,6 +181,7 @@ export default function useVisitation() {
 
     department,
     onDepartmentChange: setDepartment,
+    departmentsInVisits,
 
     quickRange,
     onQuickRangeChange,

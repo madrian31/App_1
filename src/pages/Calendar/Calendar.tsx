@@ -11,6 +11,7 @@ import EventFormModal from "../../components/calendar/EventFormModal";
 import DayEventsModal from "../../components/calendar/DayEventsModal";
 import CategoryManagerModal from "../../components/calendar/CategoryManagerModal";
 import CalendarImportPreviewModal from "../../components/calendar/CalendarImportPreviewModal";
+import { useCanEdit } from "../../auth/authContext";
 import "./calendar.css";
 
 const VIEW_OPTIONS: { key: CalendarView; label: string }[] = [
@@ -43,6 +44,7 @@ function isExcelFile(file: File): boolean {
 export default function CalendarPage() {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [showCalendarImportModal, setShowCalendarImportModal] = useState(false);
+  const canEdit = useCanEdit(); // Users only view the calendar
 
   const {
     today,
@@ -101,7 +103,7 @@ export default function CalendarPage() {
     agendaEntries,
 
     toast,
-  } = useCalendar();
+  } = useCalendar(canEdit);
 
   const calendarImport = useCalendarImport();
 
@@ -131,23 +133,25 @@ export default function CalendarPage() {
               <h1>Calendar</h1>
               <p>Events, activities, birthdays, and more — all in one place.</p>
             </div>
-            <div className="page-header-actions">
-              <button className="btn-secondary" onClick={handleImportClick} title="Import a .ics calendar file, or the Calendar of Activities .xlsx">
-                <i className="fa-solid fa-file-import" aria-hidden="true" />
-                <span className="label">Import</span>
-              </button>
-              <input
-                ref={importInputRef}
-                type="file"
-                accept=".ics,text/calendar,.xlsx,.xls"
-                style={{ display: "none" }}
-                onChange={handleImportChange}
-              />
-              <button className="btn-add" onClick={() => openCreateModal()}>
-                <i className="fa-solid fa-plus" aria-hidden="true" />
-                <span className="label">New Event</span>
-              </button>
-            </div>
+            {canEdit && (
+              <div className="page-header-actions">
+                <button className="btn-secondary" onClick={handleImportClick} title="Import a .ics calendar file, or the Calendar of Activities .xlsx">
+                  <i className="fa-solid fa-file-import" aria-hidden="true" />
+                  <span className="label">Import</span>
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".ics,text/calendar,.xlsx,.xls"
+                  style={{ display: "none" }}
+                  onChange={handleImportChange}
+                />
+                <button className="btn-add" onClick={() => openCreateModal()}>
+                  <i className="fa-solid fa-plus" aria-hidden="true" />
+                  <span className="label">New Event</span>
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="calendar-nav-row">
@@ -189,7 +193,7 @@ export default function CalendarPage() {
             chips={chips}
             onRemoveChip={removeChip}
             onResetAll={resetAllFilters}
-            onManageCategories={() => setShowCategoryManager(true)}
+            onManageCategories={canEdit ? () => setShowCategoryManager(true) : undefined}
           />
 
           {error && (
@@ -244,6 +248,7 @@ export default function CalendarPage() {
               onDelete={() => editingId && deleteEvent(editingId)}
               onClose={closeEventModal}
               onManageCategories={() => setShowCategoryManager(true)}
+              readOnly={!canEdit}
             />
           )}
 
@@ -253,16 +258,20 @@ export default function CalendarPage() {
               events={eventsForDay(new Date(`${dayModalDate}T00:00:00`))}
               categories={categories}
               onOpenEvent={openEditModal}
-              onAddOnThisDay={() => {
-                const d = dayModalDate;
-                closeDayModal();
-                openCreateModal(d);
-              }}
+              onAddOnThisDay={
+                canEdit
+                  ? () => {
+                      const d = dayModalDate;
+                      closeDayModal();
+                      openCreateModal(d);
+                    }
+                  : undefined
+              }
               onClose={closeDayModal}
             />
           )}
 
-          {showCategoryManager && (
+          {canEdit && showCategoryManager && (
             <CategoryManagerModal
               categories={categories}
               saving={savingCategory}

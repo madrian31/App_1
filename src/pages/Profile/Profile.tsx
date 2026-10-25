@@ -179,6 +179,11 @@ export default function Profile() {
           addedBy: currentUser,
           dateAdded: toLocalISODate(new Date()),
           isArchived: false,
+          // Set from their own pages (Sunday School, Program Line-up), not this form.
+          isSundaySchoolTeacher: false,
+          isSundaySchoolAssistantTeacher: false,
+          isCouncilMember: false,
+          isWorker: false,
         });
       } else {
         if (!id) return;

@@ -47,7 +47,9 @@ function nextServiceDate(): string {
   return toLocalISODate(d);
 }
 
-export default function useProgramLineUp(currentUser: string, initialDate?: string) {
+/** `canEdit: false` (view-only accounts) loads the same line-up without writing anything —
+ *  no list seeding or queue clean-up, which those accounts aren't allowed to save. */
+export default function useProgramLineUp(currentUser: string, initialDate?: string, canEdit = true) {
   const [date, setDate] = useState(initialDate || nextServiceDate());
   const programType: ProgramType = resolveProgramType(date);
 
@@ -78,6 +80,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
   const [announcements, setAnnouncements] = useState("");
 
   const [loadingEntry, setLoadingEntry] = useState(false);
+  const [hasSavedEntry, setHasSavedEntry] = useState(false); // false = names shown are just who's next in rotation
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -91,12 +94,12 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
 
   useEffect(() => {
     setLoadingCategories(true);
-    seedLookupListIfEmpty("category", DEFAULT_CATEGORIES)
+    (canEdit ? seedLookupListIfEmpty("category", DEFAULT_CATEGORIES) : Promise.resolve())
       .then(() => getLookupList("category"))
       .then(setCategoryOptions)
       .catch((err) => console.error("Failed to load category list:", err))
       .finally(() => setLoadingCategories(false));
-  }, []);
+  }, [canEdit]);
 
   useEffect(() => {
     setLoadingThemePresets(true);
@@ -129,14 +132,14 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     poolItems: string[],
     resolveName: (id: string) => string
   ): Promise<RoleState> {
-    const items = await reconcileRotationQueue(role, poolItems);
+    const items = await reconcileRotationQueue(role, poolItems, { save: canEdit });
     return buildRoleState(items, resolveName);
   }
 
   /** Flower Family has no pool to reconcile against (names are typed in by
    *  hand), so it's only ever seeded empty and then read as-is. */
   async function loadFlowerFamily(): Promise<RoleState> {
-    await seedRotationQueueIfEmpty("flowerFamily", []);
+    if (canEdit) await seedRotationQueueIfEmpty("flowerFamily", []);
     const q = await getRotationQueue("flowerFamily");
     return buildRoleState(q?.items ?? [], (id) => id);
   }
@@ -145,7 +148,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
    *  gain new entries AFTER the queue doc already exists — syncs any new
    *  ids onto the back instead of only seeding once on an empty doc. */
   async function syncThemePresetQueue(validIds: string[]): Promise<RoleState> {
-    const items = await syncRotationQueueItems("themePreset", validIds);
+    const items = await syncRotationQueueItems("themePreset", validIds, { save: canEdit });
     return buildRoleState(items, (id) => id); // resolver unused — title/verse resolved separately below
   }
 
@@ -177,6 +180,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
       ]);
 
       if (cancelled) return;
+      setHasSavedEntry(Boolean(existing));
 
       if (programType === "prayerMeeting") {
         // Wednesday: Presider <- wedPresiderPool (Youth/Council, not Worker).
@@ -236,7 +240,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     return () => {
       cancelled = true;
     };
-  }, [date, programType, loadingMembers, loadingCategories, loadingThemePresets, members, categoryOptions, themePresets]);
+  }, [date, programType, loadingMembers, loadingCategories, loadingThemePresets, members, categoryOptions, themePresets, canEdit]);
 
   // Auto-computed, not stored per lineup — re-runs whenever the viewed
   // date's month changes, so it's always "whoever has a birthday/anniversary
@@ -349,6 +353,7 @@ export default function useProgramLineUp(currentUser: string, initialDate?: stri
     setDate,
     programType,
     loading: loadingMembers || loadingCategories || loadingThemePresets || loadingEntry,
+    hasSavedEntry,
     saving,
     toast,
 

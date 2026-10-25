@@ -9,7 +9,8 @@ rules_version = '2';
 // Roles (same split as the app — see UserRole in src/types/auth.ts):
 //   superadmin  everything, including Admin and Super Admin accounts
 //   admin       all church data and settings; manages User accounts only
-//   user        Home, Calendar, Program Line-up and Praise & Worship only
+//   user        Home, Calendar, Program Line-up and Praise & Worship only —
+//               view only; they change nothing but their own account
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -91,21 +92,23 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── What Users' pages need (Home, Calendar, Program Line-up, P&W).
+    // ── What Users' pages show (Home, Calendar, Program Line-up, P&W) —
+    // read only. Changes to these are made by Super Admins and Admins, through
+    // the rule below.
     match /calendarEvents/{id} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
     }
     match /calendarCategories/{id} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
     }
     match /programLineUp/{id} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
     }
     match /rotationQueues/{id} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
     }
     match /praiseWorshipLineUp/{id} {
-      allow read, write: if isActiveUser();
+      allow read: if isActiveUser();
     }
     match /themePresets/{id} {
       allow read: if isActiveUser();
@@ -116,10 +119,6 @@ service cloud.firestore {
     match /members/{id} {
       // Names for line-ups, the P&W team and birthdays.
       allow read: if isActiveUser();
-      // Only what the line-up and P&W pages change.
-      allow update: if isActiveUser()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['ministry', 'praiseWorshipSkills', 'excludeFromAutoLineUp']);
     }
 
     // ── Everything else (finance, attendance, visitation, pledges, Sunday

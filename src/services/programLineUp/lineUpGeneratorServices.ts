@@ -59,7 +59,6 @@ export function generateLineUpBatch(
   dateFrom: string,
   dateTo: string,
   members: Member[],
-  categoryOptions: string[],
   startingQueues: QueueSnapshot,
   existingDates: Set<string>,
   currentUser: string,

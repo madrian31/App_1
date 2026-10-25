@@ -22,6 +22,14 @@ export interface CalendarEvent {
    */
   inCharge?: string;
   budget?: string;
+  /**
+   * Set in Finance → Department Funds (see departmentActivities.ts). `departmentId` "" means
+   * "no department" on purpose; left out, the department is matched from `inCharge`.
+   * `allocatedBudget` replaces the spreadsheet's `budget` text once a number is typed in.
+   * A multi-day activity is one event per day, and every day carries the same values.
+   */
+  departmentId?: string;
+  allocatedBudget?: number;
 }
 
 export type CalendarView = "month" | "week" | "day" | "agenda";

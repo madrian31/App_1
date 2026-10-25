@@ -3,6 +3,10 @@ import { getGeneralFundSettings } from "../services/finance/financeSettingsServi
 import { getTithes } from "../services/tithes/tithesService";
 import { getExpenses } from "../services/expenses/expensesService";
 import { getOfferings } from "../services/offerings/offeringsService";
+import { getDepartmentFunds } from "../services/departments/departmentFundsService";
+import { getDepartments } from "../services/departments/departmentsService";
+import type { Department } from "../types/department";
+import type { DepartmentFund } from "../types/departmentFund";
 import type { Expense } from "../types/expense";
 import type { GeneralFundSettings } from "../types/finance";
 import type { Offering } from "../types/offering";
@@ -32,7 +36,9 @@ export interface FinanceMonthRow {
   tithes: number;
   offerings: number;
   expenses: number;
-  net: number; // tithes + offerings − expenses
+  /** Cash given to departments minus the unused cash they returned, this month. */
+  departmentFunds: number;
+  net: number; // tithes + offerings − expenses − department funds
   /** General Fund balance at the end of this month; null for months still in the future. */
   balance: number | null;
 }
@@ -44,6 +50,15 @@ export interface FinanceServiceRow {
   tithes: number;
   offerings: number;
   total: number;
+}
+
+/** One department's cash for the period: what it was given and what it returned. */
+export interface FinanceDepartmentRow {
+  departmentId: string;
+  name: string;
+  given: number;
+  returned: number;
+  net: number; // given − returned: what the General Fund lost to this department
 }
 
 export interface FinanceCategoryRow {
@@ -99,9 +114,10 @@ function describePeriod(from: string, to: string): string {
 
 /**
  * Drives the Finance Report for any period (a month, a year, or custom From/To): the General Fund
- * balance (starting balance + tithes + offerings − expenses), period KPIs, a month-by-month
- * breakdown, per-service totals and expenses by category. Totals only — no per-member
- * amounts, since individual giving is private.
+ * balance (starting balance + tithes + offerings − expenses − cash given to departments + unused
+ * cash they returned), period KPIs, a month-by-month breakdown, per-service totals, expenses by
+ * category and cash per department. Totals only — no per-member amounts, since individual giving
+ * is private.
  */
 export default function useFinanceReport() {
   const now = new Date();
@@ -114,25 +130,31 @@ export default function useFinanceReport() {
   const [tithes, setTithes] = useState<Tithe[]>([]);
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [deptFunds, setDeptFunds] = useState<DepartmentFund[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [settings, setSettings] = useState<GeneralFundSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Everything is computed client-side from one fetch: a church's records are small,
-  // and the running balance needs every tithe, offering and expense ever recorded anyway.
+  // and the running balance needs every tithe, offering, expense and department cash ever recorded anyway.
   useEffect(() => {
     let cancelled = false;
     Promise.all([
       getTithes("0000-01-01", "9999-12-31"),
       getOfferings("0000-01-01", "9999-12-31"),
       getExpenses("0000-01-01", "9999-12-31"),
+      getDepartmentFunds("0000-01-01", "9999-12-31"),
+      getDepartments(),
       getGeneralFundSettings(),
     ])
-      .then(([tithesList, offeringsList, expensesList, s]) => {
+      .then(([tithesList, offeringsList, expensesList, fundsList, departmentList, s]) => {
         if (cancelled) return;
         setTithes(tithesList);
         setOfferings(offeringsList);
         setExpenses(expensesList);
+        setDeptFunds(fundsList);
+        setDepartments(departmentList);
         setSettings(s);
       })
       .catch((err) => {
@@ -207,15 +229,34 @@ export default function useFinanceReport() {
   // Saved at least once (even as ₱0) — dateModified is only written by saveGeneralFundSettings.
   const startingBalanceSet = Boolean(settings?.dateModified);
 
+  /** Cash given to departments within [from, to] — it leaves the fund on the day it's given. */
+  const deptGivenIn = useMemo(
+    () => (from: string, to: string) =>
+      deptFunds.reduce((s, f) => (f.dateGiven >= from && f.dateGiven <= to ? s + (f.amountGiven || 0) : s), 0),
+    [deptFunds]
+  );
+  /** Unused cash departments returned within [from, to] — it comes back on the day it's returned. */
+  const deptReturnedIn = useMemo(
+    () => (from: string, to: string) =>
+      deptFunds.reduce(
+        (s, f) => (f.dateReturned && f.dateReturned >= from && f.dateReturned <= to ? s + (f.amountReturned || 0) : s),
+        0
+      ),
+    [deptFunds]
+  );
+
   /** General Fund balance as of the end of `asOf` (inclusive): starting balance
-   *  + every tithe and offering so far − every expense so far. */
+   *  + every tithe and offering so far − every expense so far − cash given to departments
+   *  so far + unused cash they returned so far. */
   const balanceAsOf = useMemo(
     () => (asOf: string) =>
       startingBalance +
       sumAmounts(tithes.filter((t) => t.date <= asOf)) +
       sumAmounts(offerings.filter((o) => o.date <= asOf)) -
-      sumAmounts(expenses.filter((e) => e.date <= asOf)),
-    [tithes, offerings, expenses, startingBalance]
+      sumAmounts(expenses.filter((e) => e.date <= asOf)) -
+      deptGivenIn("0000-01-01", asOf) +
+      deptReturnedIn("0000-01-01", asOf),
+    [tithes, offerings, expenses, startingBalance, deptGivenIn, deptReturnedIn]
   );
 
   const report = useMemo(() => {
@@ -229,6 +270,8 @@ export default function useFinanceReport() {
     const periodOfferings = sumAmounts(offeringsIn(dateFrom, dateTo));
     const periodIncome = periodTithes + periodOfferings;
     const periodExpenses = sumAmounts(expensesIn(dateFrom, dateTo));
+    const periodDeptGiven = deptGivenIn(dateFrom, dateTo);
+    const periodDeptReturned = deptReturnedIn(dateFrom, dateTo);
 
     // Compare with the period of the same length right before this one.
     const lengthDays = Math.round((parseISO(dateTo).getTime() - parseISO(dateFrom).getTime()) / 86_400_000);
@@ -259,6 +302,7 @@ export default function useFinanceReport() {
       const monthTithes = sumAmounts(tithesIn(from, to));
       const monthOfferings = sumAmounts(offeringsIn(from, to));
       const monthExpenses = sumAmounts(expensesIn(from, to));
+      const monthDeptFunds = deptGivenIn(from, to) - deptReturnedIn(from, to);
       const inFuture = from > todayISO;
       months.push({
         key: `${year}-${month}`,
@@ -268,7 +312,8 @@ export default function useFinanceReport() {
         tithes: monthTithes,
         offerings: monthOfferings,
         expenses: monthExpenses,
-        net: monthTithes + monthOfferings - monthExpenses,
+        departmentFunds: monthDeptFunds,
+        net: monthTithes + monthOfferings - monthExpenses - monthDeptFunds,
         balance: inFuture ? null : balanceAsOf(to < todayISO ? to : todayISO),
       });
     }
@@ -305,6 +350,30 @@ export default function useFinanceReport() {
       }))
       .sort((a, b) => b.total - a.total);
 
+    // Cash per department: given in the period, and unused cash returned in the period.
+    const departmentNames = new Map(departments.map((d) => [d.id, d.name]));
+    const byDepartment = new Map<string, { given: number; returned: number }>();
+    const deptTotals = (id: string) => {
+      let row = byDepartment.get(id);
+      if (!row) byDepartment.set(id, (row = { given: 0, returned: 0 }));
+      return row;
+    };
+    deptFunds.forEach((f) => {
+      if (f.dateGiven >= dateFrom && f.dateGiven <= dateTo) deptTotals(f.departmentId).given += f.amountGiven || 0;
+      if (f.dateReturned && f.dateReturned >= dateFrom && f.dateReturned <= dateTo) {
+        deptTotals(f.departmentId).returned += f.amountReturned || 0;
+      }
+    });
+    const departmentRows: FinanceDepartmentRow[] = [...byDepartment.entries()]
+      .map(([departmentId, { given, returned }]) => ({
+        departmentId,
+        name: departmentNames.get(departmentId) ?? "Unknown department",
+        given,
+        returned,
+        net: given - returned,
+      }))
+      .sort((a, b) => b.net - a.net);
+
     return {
       periodLabel: describePeriod(dateFrom, dateTo),
       ytdYear: toDate.getFullYear(),
@@ -312,18 +381,22 @@ export default function useFinanceReport() {
       periodOfferings,
       periodIncome,
       periodExpenses,
+      periodDeptGiven,
+      periodDeptReturned,
       changePct,
       ytdIncome,
       // Fund on hand going into the period (what earlier months left over), and what's
-      // left once all of the period's tithes and offerings are in and its bills are paid.
+      // left once all of the period's tithes and offerings are in, its bills are paid and
+      // its department cash is given out (less what came back).
       startBalance: balanceAsOf(addDays(dateFrom, -1)),
       endBalance: balanceAsOf(dateTo),
       months,
       selectedMonthKey: singleMonth ? `${fromDate.getFullYear()}-${fromDate.getMonth()}` : null,
       services,
       expenseCategories,
+      departmentRows,
     };
-  }, [tithes, offerings, expenses, dateFrom, dateTo, todayISO, balanceAsOf]);
+  }, [tithes, offerings, expenses, deptFunds, departments, dateFrom, dateTo, todayISO, balanceAsOf, deptGivenIn, deptReturnedIn]);
 
 
   return {
@@ -343,6 +416,8 @@ export default function useFinanceReport() {
 
     fundBalance: balanceAsOf(todayISO),
     startingBalanceSet,
+    // Department lines stay hidden for a church that has never given cash to a department.
+    hasDepartmentFunds: deptFunds.length > 0,
 
     ...report,
   };

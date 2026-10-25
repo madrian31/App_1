@@ -9,7 +9,7 @@ import MonthlyCelebrants from "../../components/programLineUp/MonthlyCelebrants"
 import AutoGenerateModal from "../../components/programLineUp/AutoGenerateModal";
 import type { RoleAssignment, ProgramType } from "../../types/programLineUp";
 import { sundayOccurrenceInMonth } from "../../types/programLineUp";
-import { useCurrentUserName } from "../../auth/authContext";
+import { useCanEdit, useCurrentUserName } from "../../auth/authContext";
 import "./programLineUp.css";
 
 const PROGRAM_TYPE_LABELS: Record<ProgramType, string> = {
@@ -28,6 +28,7 @@ type ActiveReassign = "presider" | "speaker" | "specialNumber" | "usher" | "flow
 
 export default function ProgramLineUp() {
   const currentUser = useCurrentUserName();
+  const canEdit = useCanEdit(); // Users only view the line-up
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const urlDate = searchParams.get("date") ?? undefined;
@@ -37,6 +38,7 @@ export default function ProgramLineUp() {
     setDate,
     programType,
     loading,
+    hasSavedEntry,
     saving,
     toast,
 
@@ -67,7 +69,7 @@ export default function ProgramLineUp() {
     reassignFlowerFamily,
 
     submit,
-  } = useProgramLineUp(currentUser, urlDate);
+  } = useProgramLineUp(currentUser, urlDate, canEdit);
 
   const { generate, generating } = useAutoGenerateLineUps(currentUser);
   const [showAutoGenerate, setShowAutoGenerate] = useState(false);
@@ -105,7 +107,11 @@ export default function ProgramLineUp() {
           <div className="page-header">
             <div className="page-header-left">
               <h1>Program Line-up</h1>
-              <p>Auto-generated from the rotation for the selected service date.</p>
+              <p>
+                {canEdit
+                  ? "Auto-generated from the rotation for the selected service date."
+                  : "Who serves on the selected service date."}
+              </p>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <Link to="/ProgramLineUpSchedule" className="btn-secondary">
@@ -124,14 +130,18 @@ export default function ProgramLineUp() {
               <i className="fa-regular fa-calendar" aria-hidden="true" />
               <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={{ border: "none", background: "transparent" }} />
             </div>
-            <button className="btn-secondary" onClick={() => setShowAutoGenerate(true)}>
-              <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
-              Auto-Generate
-            </button>
-            <button className="btn-add" onClick={submit} disabled={saving || loading}>
-              <i className="fa-solid fa-floppy-disk" aria-hidden="true" />
-              {saving ? "Saving…" : "Save Line-up"}
-            </button>
+            {canEdit && (
+              <>
+                <button className="btn-secondary" onClick={() => setShowAutoGenerate(true)}>
+                  <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true" />
+                  Auto-Generate
+                </button>
+                <button className="btn-add" onClick={submit} disabled={saving || loading}>
+                  <i className="fa-solid fa-floppy-disk" aria-hidden="true" />
+                  {saving ? "Saving…" : "Save Line-up"}
+                </button>
+              </>
+            )}
           </div>
 
           {toast && (
@@ -141,6 +151,13 @@ export default function ProgramLineUp() {
             </div>
           )}
 
+          {!canEdit && !loading && !hasSavedEntry && (
+            <p className="lineup-preview-note">
+              <i className="fa-solid fa-circle-info" aria-hidden="true" /> The line-up for this date isn't final yet.
+              The names below are who is next in the rotation and may still change.
+            </p>
+          )}
+
           <div className="lineup-card">
             <LineUpRoleRow
               label="Presider"
@@ -148,6 +165,7 @@ export default function ProgramLineUp() {
               current={presider.current}
               upNext={presider.upNext}
               onReassign={() => setActiveReassign("presider")}
+              readOnly={!canEdit}
             />
             <LineUpRoleRow
               label="Speaker"
@@ -155,6 +173,7 @@ export default function ProgramLineUp() {
               current={speaker.current}
               upNext={speaker.upNext}
               onReassign={() => setActiveReassign("speaker")}
+              readOnly={!canEdit}
             />
 
             {isSunday && (
@@ -165,6 +184,7 @@ export default function ProgramLineUp() {
                   current={specialNumber.current}
                   upNext={specialNumber.upNext}
                   onReassign={() => setActiveReassign("specialNumber")}
+                  readOnly={!canEdit}
                 />
                 <LineUpRoleRow
                   label="Usher"
@@ -172,6 +192,7 @@ export default function ProgramLineUp() {
                   current={usher.current}
                   upNext={usher.upNext}
                   onReassign={() => setActiveReassign("usher")}
+                  readOnly={!canEdit}
                 />
                 <LineUpRoleRow
                   label="Flower Family"
@@ -179,6 +200,7 @@ export default function ProgramLineUp() {
                   current={flowerFamily.current}
                   upNext={flowerFamily.upNext}
                   onReassign={() => setActiveReassign("flowerFamily")}
+                  readOnly={!canEdit}
                 />
                 {isSecondSunday && (
                   <LineUpRoleRow
@@ -198,8 +220,9 @@ export default function ProgramLineUp() {
                 <label>Theme Title</label>
                 <input
                   type="text"
-                  placeholder="e.g. Guided by God's Wisdom"
+                  placeholder={canEdit ? "e.g. Guided by God's Wisdom" : "—"}
                   value={themeTitle}
+                  readOnly={!canEdit}
                   onChange={(e) => setThemeTitle(e.target.value)}
                 />
               </div>
@@ -207,8 +230,9 @@ export default function ProgramLineUp() {
                 <label>Theme Verse</label>
                 <input
                   type="text"
-                  placeholder="e.g. Psalms 25:4-5"
+                  placeholder={canEdit ? "e.g. Psalms 25:4-5" : "—"}
                   value={themeVerse}
+                  readOnly={!canEdit}
                   onChange={(e) => setThemeVerse(e.target.value)}
                 />
               </div>
@@ -216,8 +240,9 @@ export default function ProgramLineUp() {
             <div className="ledger-field">
               <label>Announcements</label>
               <textarea
-                placeholder="Flower family thank-you, visitor greetings, other notes…"
+                placeholder={canEdit ? "Flower family thank-you, visitor greetings, other notes…" : "No announcements."}
                 value={announcements}
+                readOnly={!canEdit}
                 onChange={(e) => setAnnouncements(e.target.value)}
               />
             </div>

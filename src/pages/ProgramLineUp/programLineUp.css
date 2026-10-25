@@ -372,3 +372,24 @@
 .modal-actions.pledger-checklist-footer {
   margin-top: 14px;
 }
+
+/* View-only accounts: says when the names shown are only the rotation's next picks. */
+.lineup-preview-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    margin: 0 0 12px;
+    padding: 9px 12px;
+
+    border: 1px solid #dbe0ff;
+    border-radius: 9px;
+
+    font-size: 13.5px;
+    color: var(--primary);
+    background: #eef1ff;
+}
+
+.lineup-preview-note i {
+    margin-top: 2px;
+}

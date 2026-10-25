@@ -6,6 +6,7 @@ import { getLineUpForDate } from "../services/programLineUp/programLineUpService
 import { getPraiseWorshipLineUp } from "../services/praiseWorship/praiseWorshipLineUpService";
 import { getAllEvents } from "../services/calendar/calendarEventsService";
 import { getAllCategories } from "../services/calendar/calendarCategoriesService";
+import { phHolidaysExcept } from "../data/phHolidays";
 import { getMonthlyCelebrants, type Member, type MonthlyCelebrant } from "../types/member";
 import type { ProgramLineUpEntry, RoleAssignment } from "../types/programLineUp";
 import type { PraiseWorshipLineUpEntry } from "../types/praiseWorship";
@@ -366,7 +367,7 @@ export default function useDashboard(includeAttendance = true) {
       try {
         const [allEvents, allCategories] = await Promise.all([getAllEvents(), getAllCategories()]);
         if (!cancelled) {
-          setEvents(allEvents);
+          setEvents([...allEvents, ...phHolidaysExcept(allEvents)]);
           setCategories(allCategories);
         }
       } catch (err) {

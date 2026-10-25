@@ -1,4 +1,4 @@
-import { collection, doc, getDocs, addDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import { DEFAULT_CATEGORIES, type CalendarCategoryItem } from "../../types/calendarEvent";
 
@@ -44,4 +44,13 @@ export async function seedCategoriesIfEmpty(): Promise<void> {
     batch.set(doc(db, COLLECTION, id), rest);
   });
   await batch.commit();
+}
+
+/** Writes one of the default categories back under its original doc id, e.g. after it was deleted. */
+export async function restoreDefaultCategory(id: string): Promise<CalendarCategoryItem | null> {
+  const seed = DEFAULT_CATEGORIES.find((c) => c.id === id);
+  if (!seed) return null;
+  const { label, icon, color } = seed;
+  await setDoc(doc(db, COLLECTION, id), { label, icon, color });
+  return seed;
 }

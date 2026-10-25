@@ -167,7 +167,7 @@ export default function UsersPage() {
               <p>
                 <strong>Super Admin</strong> — everything, including Admin and Super Admin accounts.{" "}
                 <strong>Admin</strong> — every page and setting, and User accounts.{" "}
-                <strong>User</strong> — Home, Calendar, Program Line-up and Praise &amp; Worship only.
+                <strong>User</strong> — can view Home, Calendar, Program Line-up and Praise &amp; Worship only, without making changes.
               </p>
               <p>
                 People with an email can reset a forgotten password from the sign-in page. For everyone else, use the

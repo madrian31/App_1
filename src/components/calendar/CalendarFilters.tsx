@@ -29,7 +29,7 @@ interface Props {
   chips: FilterChip[];
   onRemoveChip: (chip: FilterChip) => void;
   onResetAll: () => void;
-  onManageCategories: () => void;
+  onManageCategories?: () => void; // left out for view-only accounts
 }
 
 export default function CalendarFilters({
@@ -73,6 +73,14 @@ export default function CalendarFilters({
       else next.add(id);
       return next;
     });
+  }
+
+  const allDraftCatsChecked = categories.length > 0 && categories.every((c) => draftCats.has(c.id));
+
+  // Lets someone start from nothing and tick just the one or two they want,
+  // instead of unticking every other category by hand.
+  function toggleAllDraftCats() {
+    setDraftCats(allDraftCatsChecked ? new Set() : new Set(categories.map((c) => c.id)));
   }
 
   function apply() {
@@ -140,16 +148,25 @@ export default function CalendarFilters({
                   <div className="filters-panel-title">
                     <i className="fa-solid fa-tag" aria-hidden="true" /> Category
                   </div>
-                  <button
-                    type="button"
-                    className="manage-categories-link"
-                    onClick={() => {
-                      setOpen(false);
-                      onManageCategories();
-                    }}
-                  >
-                    Manage
-                  </button>
+                  <div className="filters-panel-links">
+                    {categories.length > 0 && (
+                      <button type="button" className="manage-categories-link" onClick={toggleAllDraftCats}>
+                        {allDraftCatsChecked ? "Uncheck all" : "Check all"}
+                      </button>
+                    )}
+                    {onManageCategories && (
+                      <button
+                        type="button"
+                        className="manage-categories-link"
+                        onClick={() => {
+                          setOpen(false);
+                          onManageCategories();
+                        }}
+                      >
+                        Manage
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {categories.length === 0 && <p className="cat-empty-hint">No categories yet.</p>}
                 {categories.map((cat) => (

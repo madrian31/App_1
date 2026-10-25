@@ -540,3 +540,9 @@
         width: auto;
     }
 }
+
+/* View-only song list (no inputs or buttons). */
+.pw-song-row--view {
+    align-items: center;
+    font-size: 14px;
+}

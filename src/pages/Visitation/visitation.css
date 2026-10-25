@@ -449,3 +449,11 @@
         flex: 1;
     }
 }
+/* Small note under a form field (e.g. where to add missing options). */
+.visit-form-hint {
+    display: block;
+    margin-top: 6px;
+
+    font-size: 12.5px;
+    color: var(--text-muted);
+}

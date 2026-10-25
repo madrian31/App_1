@@ -3,7 +3,7 @@ export type FormStatus = "idle" | "loading" | "success" | "error";
 /**
  * - superadmin: everything, including Admin and Super Admin accounts.
  * - admin: every page and setting; manages User accounts only.
- * - user: Home, Calendar, Program Line-up and Praise & Worship only.
+ * - user: views Home, Calendar, Program Line-up and Praise & Worship only — changes nothing.
  * The Firestore rules (firestore.rules) enforce the same split.
  */
 export type UserRole = "superadmin" | "admin" | "user";

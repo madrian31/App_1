@@ -1,13 +1,13 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useVisitForm from "../../hooks/useVisitForm";
 import MemberSearchSelect from "../../components/visitation/MemberSearchSelect";
 import LeaderPicker from "../../components/visitation/LeaderPicker";
 import ParticipantPicker from "../../components/visitation/ParticipantPicker";
 import { useCurrentUserName } from "../../auth/authContext";
+import useDepartmentNames from "../../hooks/useDepartmentNames";
 import "./visitation.css";
 
-const DEPARTMENTS = ["Men's Dept.", "Women's Dept.", "Youth Dept."];
 const PURPOSE_OPTIONS = ["Follow-up", "Encouragement", "Home Visit", "Prayer", "Outreach"];
 
 export default function VisitForm() {
@@ -26,6 +26,12 @@ export default function VisitForm() {
     removeParticipant,
     submit,
   } = useVisitForm(id, currentUser);
+  const departmentNames = useDepartmentNames();
+  // Keep an older visit's department selectable even if it was renamed or made inactive later.
+  const departments =
+    form.department && !departmentNames.active.includes(form.department)
+      ? [...departmentNames.active, form.department]
+      : departmentNames.active;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,14 +96,25 @@ export default function VisitForm() {
                 <label>Department</label>
                 <div className="filter-select-wrap">
                   <select value={form.department} onChange={(e) => update("department", e.target.value)}>
-                    <option value="">Select department…</option>
-                    {DEPARTMENTS.map((d) => (
+                    <option value="">{departmentNames.loading ? "Loading departments…" : "Select department…"}</option>
+                    {departments.map((d) => (
                       <option key={d} value={d}>
                         {d}
                       </option>
                     ))}
                   </select>
                 </div>
+                {!departmentNames.loading && departmentNames.active.length === 0 && (
+                  <small className="visit-form-hint">
+                    {departmentNames.error ? (
+                      "Departments could not be loaded. Please refresh the page."
+                    ) : (
+                      <>
+                        No departments yet. Add them in <Link to="/Settings/Departments">Settings → Departments</Link>.
+                      </>
+                    )}
+                  </small>
+                )}
               </div>
             </div>
 
