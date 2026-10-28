@@ -3,7 +3,7 @@ import { Sidebar } from "../../components/sidebar/Sidebar";
 import useFinanceReport, { FINANCE_PERIOD_MODES } from "../../hooks/useFinanceReport";
 import FinanceCategoryTable from "../../components/finance/FinanceCategoryTable";
 import FinanceDepartmentTable from "../../components/finance/FinanceDepartmentTable";
-import FinanceKpiStrip from "../../components/finance/FinanceKpiStrip";
+import FinanceGlance from "../../components/finance/FinanceGlance";
 import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
@@ -57,6 +57,7 @@ export default function FinanceReport() {
 
   const [exporting, setExporting] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showUpcoming, setShowUpcoming] = useState(false);
   // A period inside one month charts that month's whole year for context.
   const chartTitle = selectedMonthKey ? String(months[0]?.year ?? "") : periodLabel;
 
@@ -176,46 +177,37 @@ export default function FinanceReport() {
             </div>
           )}
 
-          <FinanceKpiStrip
-            loading={loading}
-            fundBalance={fundBalance}
-            startingBalanceSet={startingBalanceSet}
-            periodLabel={periodLabel}
-            periodTithes={periodTithes}
-            periodOfferings={periodOfferings}
-            periodIncome={periodIncome}
-            changePct={changePct}
-            ytdIncome={ytdIncome}
-            ytdYear={ytdYear}
-            periodExpenses={periodExpenses}
-            periodDeptGiven={periodDeptGiven}
-          />
-
+          {/* One card that can be read at a glance; everything else is opened on request. */}
           <section className="report-section">
-            <FinanceMonthFlow
+            <FinanceGlance
               loading={loading}
               periodLabel={periodLabel}
-              startBalance={startBalance}
+              currentPeriod={currentPeriod}
+              endBalance={endBalance}
+              fundBalance={fundBalance}
+              startingBalanceSet={startingBalanceSet}
               periodTithes={periodTithes}
               periodOfferings={periodOfferings}
               periodExpenses={periodExpenses}
               periodDeptGiven={periodDeptGiven}
               periodDeptReturned={periodDeptReturned}
-              endBalance={endBalance}
-            />
-          </section>
-
-          <section className="report-section">
-            <FinanceUpcomingActivities
               upcoming={upcoming}
-              fundBalance={fundBalance}
-              loading={loading}
-              lookAhead={upcomingWindow}
-              onLookAheadChange={setUpcomingWindow}
+              showUpcoming={showUpcoming}
+              onToggleUpcoming={() => setShowUpcoming((v) => !v)}
             />
           </section>
 
-          {/* The day-to-day picture stays above; the chart and tables are for whoever wants to dig in. */}
+          {showUpcoming && (
+            <section className="report-section" id="finance-upcoming">
+              <FinanceUpcomingActivities
+                upcoming={upcoming}
+                loading={loading}
+                lookAhead={upcomingWindow}
+                onLookAheadChange={setUpcomingWindow}
+              />
+            </section>
+          )}
+
           <button
             type="button"
             className="finance-details-toggle"
@@ -224,11 +216,29 @@ export default function FinanceReport() {
           >
             <i className={`fa-solid ${showDetails ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" />
             {showDetails ? "Hide full details" : "Show full details"}
-            <span>Chart, monthly breakdown, collections, expenses and department budget</span>
+            <span>Step-by-step totals, chart, monthly breakdown, collections, expenses and department budget</span>
           </button>
 
           {showDetails && (
             <>
+              <section className="report-section">
+                <h2 className="report-section-title">How We Got Here — {periodLabel}</h2>
+                <FinanceMonthFlow
+                  loading={loading}
+                  periodLabel={periodLabel}
+                  startBalance={startBalance}
+                  periodTithes={periodTithes}
+                  periodOfferings={periodOfferings}
+                  periodExpenses={periodExpenses}
+                  periodDeptGiven={periodDeptGiven}
+                  periodDeptReturned={periodDeptReturned}
+                  endBalance={endBalance}
+                  changePct={changePct}
+                  ytdIncome={ytdIncome}
+                  ytdYear={ytdYear}
+                />
+              </section>
+
               <section className="report-section">
                 <FinanceTrendChart
                   months={months}

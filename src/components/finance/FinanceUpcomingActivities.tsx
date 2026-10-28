@@ -13,7 +13,6 @@ import { fmtPeso, whenLabel } from "./financeFormat";
 
 interface FinanceUpcomingActivitiesProps {
   upcoming: FinanceUpcoming;
-  fundBalance: number;
   loading: boolean;
   lookAhead: UpcomingWindow;
   onLookAheadChange: (lookAhead: UpcomingWindow) => void;
@@ -44,14 +43,11 @@ function StillNeeded({ row }: { row: UpcomingActivityRow }) {
  *  Nothing here is taken from the fund until it's given on the Department Funds page. */
 export default function FinanceUpcomingActivities({
   upcoming,
-  fundBalance,
   loading,
   lookAhead,
   onLookAheadChange,
 }: FinanceUpcomingActivitiesProps) {
-  const { months, count, totalStillNeeded, noBudgetCount, fundAfter, untilLabel } = upcoming;
-  const short = fundAfter < 0;
-  const activities = `${count} ${count === 1 ? "activity" : "activities"}`;
+  const { months, count, noBudgetCount, untilLabel } = upcoming;
   const [selected, setSelected] = useState<UpcomingActivityRow | null>(null);
 
   return (
@@ -76,31 +72,8 @@ export default function FinanceUpcomingActivities({
         </div>
       </div>
 
+      {/* The "how much to prepare" sentence lives on the summary card above this list. */}
       <div className="members-card">
-        {!loading && count > 0 && (
-          <div className={`upcoming-summary ${totalStillNeeded <= 0 ? "is-ready" : short ? "is-short" : "is-enough"}`}>
-            <i
-              className={`fa-solid ${short ? "fa-triangle-exclamation" : "fa-circle-check"}`}
-              aria-hidden="true"
-            />
-            {totalStillNeeded <= 0 ? (
-              <p>All {activities} until {untilLabel} already have their budget given.</p>
-            ) : (
-              <p>
-                <strong>{fmtPeso(totalStillNeeded)}</strong> needs to be prepared for {activities} until {untilLabel}.{" "}
-                {short ? (
-                  <>
-                    The General Fund has {fmtPeso(fundBalance)} today, so it is{" "}
-                    <strong>short by {fmtPeso(-fundAfter)}</strong>.
-                  </>
-                ) : (
-                  <>The General Fund has enough ({fmtPeso(fundBalance)} today).</>
-                )}
-              </p>
-            )}
-          </div>
-        )}
-
         <div className="table-scroll">
           <table className="members-table finance-table upcoming-table">
             <thead>
