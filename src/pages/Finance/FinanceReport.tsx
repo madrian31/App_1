@@ -8,6 +8,7 @@ import FinanceMonthFlow from "../../components/finance/FinanceMonthFlow";
 import FinanceTrendChart from "../../components/finance/FinanceTrendChart";
 import FinanceMonthlyTable from "../../components/finance/FinanceMonthlyTable";
 import FinanceServiceTable from "../../components/finance/FinanceServiceTable";
+import FinanceUpcomingActivities from "../../components/finance/FinanceUpcomingActivities";
 import { exportFinanceReportPdf } from "../../services/finance/financeReportPdf";
 import "../Ledger/ledger.css";
 import "../Pledges/pledgesMembers.css";
@@ -49,9 +50,13 @@ export default function FinanceReport() {
     services,
     expenseCategories,
     departmentRows,
+    upcoming,
+    upcomingWindow,
+    setUpcomingWindow,
   } = useFinanceReport();
 
   const [exporting, setExporting] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   // A period inside one month charts that month's whole year for context.
   const chartTitle = selectedMonthKey ? String(months[0]?.year ?? "") : periodLabel;
 
@@ -77,6 +82,7 @@ export default function FinanceReport() {
         services,
         expenseCategories,
         departmentRows,
+        upcoming,
       });
     } catch (err) {
       console.error("Failed to export finance report:", err);
@@ -200,48 +206,74 @@ export default function FinanceReport() {
           </section>
 
           <section className="report-section">
-            <FinanceTrendChart
-              months={months}
-              title={chartTitle}
-              selectedKey={selectedMonthKey}
-              onSelectMonth={selectMonth}
+            <FinanceUpcomingActivities
+              upcoming={upcoming}
+              fundBalance={fundBalance}
+              loading={loading}
+              lookAhead={upcomingWindow}
+              onLookAheadChange={setUpcomingWindow}
             />
           </section>
 
-          <div className="finance-report-grid">
-            <section className="report-section">
-              <h2 className="report-section-title">Monthly Breakdown — {chartTitle}</h2>
-              <FinanceMonthlyTable
-                months={months}
-                loading={loading}
-                selectedKey={selectedMonthKey}
-                showDepartments={hasDepartmentFunds}
-                onSelectMonth={selectMonth}
-              />
-            </section>
+          {/* The day-to-day picture stays above; the chart and tables are for whoever wants to dig in. */}
+          <button
+            type="button"
+            className="finance-details-toggle"
+            aria-expanded={showDetails}
+            onClick={() => setShowDetails((v) => !v)}
+          >
+            <i className={`fa-solid ${showDetails ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" />
+            {showDetails ? "Hide full details" : "Show full details"}
+            <span>Chart, monthly breakdown, collections, expenses and department budget</span>
+          </button>
 
-            <section className="report-section">
-              <h2 className="report-section-title">Collections per Service — {periodLabel}</h2>
-              <FinanceServiceTable services={services} loading={loading} periodLabel={periodLabel} />
-            </section>
-
-            <section className="report-section">
-              <h2 className="report-section-title">Expenses by Category — {periodLabel}</h2>
-              <FinanceCategoryTable
-                categories={expenseCategories}
-                loading={loading}
-                monthLabel={periodLabel}
-                monthExpenses={periodExpenses}
-              />
-            </section>
-
-            {hasDepartmentFunds && (
+          {showDetails && (
+            <>
               <section className="report-section">
-                <h2 className="report-section-title">Budget Given to Departments — {periodLabel}</h2>
-                <FinanceDepartmentTable rows={departmentRows} loading={loading} periodLabel={periodLabel} />
+                <FinanceTrendChart
+                  months={months}
+                  title={chartTitle}
+                  selectedKey={selectedMonthKey}
+                  onSelectMonth={selectMonth}
+                />
               </section>
-            )}
-          </div>
+
+              <div className="finance-report-grid">
+                <section className="report-section">
+                  <h2 className="report-section-title">Monthly Breakdown — {chartTitle}</h2>
+                  <FinanceMonthlyTable
+                    months={months}
+                    loading={loading}
+                    selectedKey={selectedMonthKey}
+                    showDepartments={hasDepartmentFunds}
+                    onSelectMonth={selectMonth}
+                  />
+                </section>
+
+                <section className="report-section">
+                  <h2 className="report-section-title">Collections per Service — {periodLabel}</h2>
+                  <FinanceServiceTable services={services} loading={loading} periodLabel={periodLabel} />
+                </section>
+
+                <section className="report-section">
+                  <h2 className="report-section-title">Expenses by Category — {periodLabel}</h2>
+                  <FinanceCategoryTable
+                    categories={expenseCategories}
+                    loading={loading}
+                    monthLabel={periodLabel}
+                    monthExpenses={periodExpenses}
+                  />
+                </section>
+
+                {hasDepartmentFunds && (
+                  <section className="report-section">
+                    <h2 className="report-section-title">Budget Given to Departments — {periodLabel}</h2>
+                    <FinanceDepartmentTable rows={departmentRows} loading={loading} periodLabel={periodLabel} />
+                  </section>
+                )}
+              </div>
+            </>
+          )}
 
         </div>
       </main>

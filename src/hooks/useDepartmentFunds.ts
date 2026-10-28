@@ -18,7 +18,7 @@ import {
   type NewDepartmentFund,
 } from "../types/departmentFund";
 import { MONTHS } from "../types/calendarEvent";
-import { groupActivities, type DepartmentActivity } from "../utils/departmentActivities";
+import { fundsByActivity, groupActivities, type DepartmentActivity } from "../utils/departmentActivities";
 import { formatDisplayDate, toLocalISODate } from "../utils/date";
 import { fmtPeso } from "../components/finance/financeFormat";
 import useAutoSave from "./useAutoSave";
@@ -89,6 +89,39 @@ function emptyForm(departmentId = ""): DepartmentFundForm {
   };
 }
 
+/** Whether an activity is listed under these filters. By default only what concerns a department:
+ *  it has one, a budget, or budget given. */
+function activityMatches(
+  a: Pick<ActivityRow, "departmentId" | "budget" | "fundCount" | "title" | "inCharge" | "location">,
+  showAll: boolean,
+  departmentId: string,
+  search: string
+): boolean {
+  const q = search.trim().toLowerCase();
+  return (
+    (showAll || Boolean(a.departmentId) || a.budget !== null || a.fundCount > 0) &&
+    (!departmentId || a.departmentId === departmentId) &&
+    (!q || [a.title, a.inCharge, a.location].some((t) => t.toLowerCase().includes(q)))
+  );
+}
+
+/** How to show one activity: its year, searched by its title (which also narrows Budget Given to it),
+ *  on the page of the list it's on. null when no activity has that event. */
+function findActivityView(key: string, list: DepartmentActivity[], fundList: DepartmentFund[]) {
+  const target = list.find((a) => a.eventIds.includes(key));
+  if (!target) return null;
+  const linked = fundsByActivity(list, fundList);
+  const withCount = (a: DepartmentActivity) => ({ ...a, fundCount: linked.get(a.key)?.length ?? 0 });
+  const year = Number(target.dateFrom.slice(0, 4));
+  // An activity no department cares about yet is only listed with "Show all calendar activities".
+  const showAll = !activityMatches(withCount(target), false, ALL_DEPARTMENTS, "");
+  const listed = list.filter(
+    (a) => a.dateFrom.startsWith(String(year)) && activityMatches(withCount(a), showAll, ALL_DEPARTMENTS, target.title)
+  );
+  const index = Math.max(listed.findIndex((a) => a.key === target.key), 0);
+  return { key: target.key, year, search: target.title, showAll, page: Math.floor(index / ACTIVITIES_PER_PAGE) + 1 };
+}
+
 const num = (s: string) => parseFloat(s) || 0;
 const yearOf = (iso: string) => Number(iso.slice(0, 4));
 const monthStart = (y: number, m: number) => toLocalISODate(new Date(y, m, 1));
@@ -103,12 +136,21 @@ const net = (f: Pick<DepartmentFund, "amountGiven" | "amountReturned">) => f.amo
  * Budget given for an activity belongs to the activity's year, even when it was handed out the
  * December before; budget given for nothing in the Calendar belongs to the year it was given.
  */
-export default function useDepartmentFunds(currentUser: string) {
+export interface UseDepartmentFundsOptions {
+  /** Open on this activity (any of its days' event ids) — e.g. from the Finance Report's activity details. */
+  focusActivityKey?: string | null;
+}
+
+export default function useDepartmentFunds(currentUser: string, options: UseDepartmentFundsOptions = {}) {
+  const { focusActivityKey = null } = options;
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [departmentFilter, setDepartmentFilter] = useState(ALL_DEPARTMENTS);
   const [search, setSearch] = useState("");
   const [showAllActivities, setShowAllActivities] = useState(false);
+  const [activityPage, setActivityPage] = useState(1);
+  /** The activity a link opened the page on — highlighted until the list is changed. */
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
 
   const [departments, setDepartments] = useState<Department[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -133,12 +175,23 @@ export default function useDepartmentFunds(currentUser: string) {
         setDepartments(departmentList);
         setEvents(eventList);
         setFunds(fundList);
+        // Opened from a link to one activity: show it (its period stays the whole year).
+        const view = focusActivityKey ? findActivityView(focusActivityKey, groupActivities(eventList, departmentList), fundList) : null;
+        if (view) {
+          setYear(view.year);
+          setSearch(view.search);
+          setShowAllActivities(view.showAll);
+          setActivityPage(view.page);
+          setHighlightKey(view.key);
+        }
       })
       .catch((err) => {
         console.error("Failed to load department funds:", err);
         setError("Failed to load department funds.");
       })
       .finally(() => setLoading(false));
+    // Loaded once; a linked activity is only shown on arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function reloadFunds() {
@@ -177,13 +230,9 @@ export default function useDepartmentFunds(currentUser: string) {
 
   /** Every activity with the budget given for it so far. */
   const activityRows = useMemo<ActivityRow[]>(() => {
-    const fundsByActivity = new Map<string, DepartmentFund[]>();
-    funds.forEach((f) => {
-      const a = f.eventId ? activityOfEvent.get(f.eventId) : undefined;
-      if (a) fundsByActivity.set(a.key, [...(fundsByActivity.get(a.key) ?? []), f]);
-    });
+    const linkedFunds = fundsByActivity(activities, funds);
     return activities.map((a) => {
-      const linked = fundsByActivity.get(a.key) ?? [];
+      const linked = linkedFunds.get(a.key) ?? [];
       const allDone = linked.every((f) => liquidationStatus(f) === "done");
       const anyStarted = linked.some((f) => liquidationStatus(f) !== "pending");
       return {
@@ -195,7 +244,7 @@ export default function useDepartmentFunds(currentUser: string) {
         status: linked.length === 0 ? "none" : allDone ? "done" : anyStarted ? "partial" : "pending",
       };
     });
-  }, [activities, funds, activityOfEvent]);
+  }, [activities, funds]);
 
   // ── Which activities are listed: a period (the year, one month of it, or From/To), then 5 per page ──
 
@@ -203,7 +252,6 @@ export default function useDepartmentFunds(currentUser: string) {
   const [activityMonth, setActivityMonthState] = useState(now.getMonth());
   const [activityFrom, setActivityFromState] = useState(() => monthStart(now.getFullYear(), now.getMonth()));
   const [activityTo, setActivityToState] = useState(() => monthEnd(now.getFullYear(), now.getMonth()));
-  const [activityPage, setActivityPage] = useState(1);
 
   const periodRange =
     activityPeriod === "month"
@@ -233,25 +281,21 @@ export default function useDepartmentFunds(currentUser: string) {
     [activityRows, activityPeriod, year, periodRange.from, periodRange.to]
   );
 
-  const visibleActivities = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return periodRows.filter(
-      (a) =>
-        // By default only what concerns a department: it has one, a budget, or budget given.
-        (showAllActivities || a.departmentId || a.budget !== null || a.fundCount > 0) &&
-        (!departmentFilter || a.departmentId === departmentFilter) &&
-        (!q || [a.title, a.inCharge, a.location].some((t) => t.toLowerCase().includes(q)))
-    );
-  }, [periodRows, showAllActivities, departmentFilter, search]);
+  const visibleActivities = useMemo(
+    () => periodRows.filter((a) => activityMatches(a, showAllActivities, departmentFilter, search)),
+    [periodRows, showAllActivities, departmentFilter, search]
+  );
 
   const activityTotalPages = Math.max(1, Math.ceil(visibleActivities.length / ACTIVITIES_PER_PAGE));
   const activitySafePage = Math.min(activityPage, activityTotalPages);
   const activityStart = (activitySafePage - 1) * ACTIVITIES_PER_PAGE;
   const pagedActivities = visibleActivities.slice(activityStart, activityStart + ACTIVITIES_PER_PAGE);
 
-  // Any change to what's listed goes back to the first page.
-  const firstPage = () => setActivityPage(1);
-  function setActivityPeriod(next: ActivityPeriod) {
+  // Any change to what's listed goes back to the first page, and lets go of a linked activity.
+  const firstPage = () => {
+    setActivityPage(1);
+    setHighlightKey(null);
+  };  function setActivityPeriod(next: ActivityPeriod) {
     setActivityPeriodState(next);
     // A month view starts on this month in the current year, otherwise on January.
     if (next === "month") setActivityMonthState(year === now.getFullYear() ? now.getMonth() : 0);
@@ -645,6 +689,7 @@ export default function useDepartmentFunds(currentUser: string) {
     activityTotalPages,
     activityStart,
     goToActivityPage: (page: number) => setActivityPage(Math.min(Math.max(page, 1), activityTotalPages)),
+    highlightKey,
     unassignedBudgetCount,
     setActivityDepartment,
     setActivityBudget,

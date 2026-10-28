@@ -1,5 +1,6 @@
 import type { CalendarEvent } from "../types/calendarEvent";
 import type { Department } from "../types/department";
+import type { DepartmentFund } from "../types/departmentFund";
 import { toLocalISODate } from "./date";
 
 /** One activity from the Calendar, as Finance → Department Funds sees it. An activity that runs
@@ -112,4 +113,29 @@ export function groupActivities(events: CalendarEvent[], departments: Department
   }
 
   return activities;
+}
+
+/** Budget given for each activity, by activity key — a cash record can name any of its days. */
+export function fundsByActivity(activities: DepartmentActivity[], funds: DepartmentFund[]): Map<string, DepartmentFund[]> {
+  const activityOfEvent = new Map<string, DepartmentActivity>();
+  activities.forEach((a) => a.eventIds.forEach((id) => activityOfEvent.set(id, a)));
+  const byActivity = new Map<string, DepartmentFund[]>();
+  funds.forEach((f) => {
+    const a = f.eventId ? activityOfEvent.get(f.eventId) : undefined;
+    if (a) byActivity.set(a.key, [...(byActivity.get(a.key) ?? []), f]);
+  });
+  return byActivity;
+}
+
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "Nov 15, 2026", "Nov 15 – 16, 2026", "Nov 30 – Dec 1, 2026" or "Dec 30, 2026 – Jan 2, 2027". */
+export function activityDateLabel(from: string, to: string): string {
+  const f = new Date(`${from}T00:00:00`);
+  const t = new Date(`${to}T00:00:00`);
+  const day = (d: Date) => `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`;
+  if (from === to) return `${day(f)}, ${f.getFullYear()}`;
+  if (f.getFullYear() !== t.getFullYear()) return `${day(f)}, ${f.getFullYear()} – ${day(t)}, ${t.getFullYear()}`;
+  if (f.getMonth() === t.getMonth()) return `${day(f)} – ${t.getDate()}, ${t.getFullYear()}`;
+  return `${day(f)} – ${day(t)}, ${t.getFullYear()}`;
 }

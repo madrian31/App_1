@@ -268,3 +268,12 @@
 .dept-activity-period .dept-show-all {
     margin: 0 0 0 auto;
 }
+
+/* The activity a link opened the page on (e.g. from the Finance Report). */
+.dept-activities-table tr.dept-activity-highlight td {
+    background: #eef2ff;
+}
+
+.dept-activities-table tr.dept-activity-highlight td:first-child {
+    box-shadow: inset 4px 0 0 var(--primary);
+}

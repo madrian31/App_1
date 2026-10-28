@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import type { ActivityRow } from "../../hooks/useDepartmentFunds";
 import type { Department } from "../../types/department";
@@ -13,6 +14,8 @@ interface DepartmentActivitiesTableProps {
   periodLabel: string; // "2026", "October 2026", "Oct 1, 2026 – Oct 31, 2026"
   departments: Department[];
   showAll: boolean;
+  /** An activity a link opened the page on: highlighted and scrolled into view. */
+  highlightKey?: string | null;
   onDepartmentChange: (activity: DepartmentActivity, departmentId: string) => void;
   onBudgetCommit: (activity: DepartmentActivity, value: string) => boolean;
   onAddBudget: (activity: ActivityRow) => void;
@@ -36,11 +39,21 @@ export default function DepartmentActivitiesTable({
   periodLabel,
   departments,
   showAll,
+  highlightKey = null,
   onDepartmentChange,
   onBudgetCommit,
   onAddBudget,
 }: DepartmentActivitiesTableProps) {
   const colCount = 7;
+  const highlightRef = useRef<HTMLTableRowElement>(null);
+  const scrolledTo = useRef<string | null>(null);
+
+  // Scroll to the linked activity once, when its row first shows — not again on every edit.
+  useEffect(() => {
+    if (!highlightKey || scrolledTo.current === highlightKey || !highlightRef.current) return;
+    scrolledTo.current = highlightKey;
+    highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightKey, rows]);
 
   return (
     <div className="table-scroll">
@@ -90,7 +103,11 @@ export default function DepartmentActivitiesTable({
               const options = departments.filter((d) => d.isActive || d.id === a.departmentId);
               const needsDepartment = !a.departmentId && (a.budget ?? 0) > 0;
               return (
-                <tr key={a.key}>
+                <tr
+                  key={a.key}
+                  ref={a.key === highlightKey ? highlightRef : undefined}
+                  className={a.key === highlightKey ? "dept-activity-highlight" : undefined}
+                >
                   <td>
                     <span className="date-text">{dateRange(a.dateFrom, a.dateTo)}</span>
                   </td>

@@ -5,6 +5,9 @@ import { getExpenses } from "../services/expenses/expensesService";
 import { getOfferings } from "../services/offerings/offeringsService";
 import { getDepartmentFunds } from "../services/departments/departmentFundsService";
 import { getDepartments } from "../services/departments/departmentsService";
+import { getAllEvents } from "../services/calendar/calendarEventsService";
+import { getAllCategories } from "../services/calendar/calendarCategoriesService";
+import { findCategory, type CalendarCategoryItem, type CalendarEvent } from "../types/calendarEvent";
 import type { Department } from "../types/department";
 import type { DepartmentFund } from "../types/departmentFund";
 import type { Expense } from "../types/expense";
@@ -12,6 +15,8 @@ import type { GeneralFundSettings } from "../types/finance";
 import type { Offering } from "../types/offering";
 import type { Tithe } from "../types/tithe";
 import { formatDisplayDate, toLocalISODate } from "../utils/date";
+import { fundsByActivity, groupActivities } from "../utils/departmentActivities";
+import { fmtTime } from "./useCalendar";
 
 export const FINANCE_MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -59,6 +64,56 @@ export interface FinanceDepartmentRow {
   given: number;
   returned: number;
   net: number; // given − returned: what the General Fund lost to this department
+}
+
+/** How far ahead "Coming Up" looks: through the end of the month this many months from now. */
+export type UpcomingWindow = 1 | 3 | 6;
+export const UPCOMING_WINDOWS: { value: UpcomingWindow; label: string }[] = [
+  { value: 1, label: "Next month" },
+  { value: 3, label: "Next 3 months" },
+  { value: 6, label: "Next 6 months" },
+];
+
+/** "noBudget" = no allocated budget set yet, so nothing can be prepared for it. */
+export type UpcomingStatus = "noBudget" | "notGiven" | "partlyGiven" | "fullyGiven";
+
+/** A department activity that hasn't ended yet, with the budget still to be given for it. */
+export interface UpcomingActivityRow {
+  key: string;
+  title: string;
+  location: string;
+  category: CalendarCategoryItem; // its Calendar category (Local, District, Departmental…)
+  time: string; // "All day" or "9:00 AM – 12:00 PM"
+  inCharge: string;
+  /** Spreadsheet budget text that isn't a plain amount (e.g. "TBA"); "" otherwise. */
+  budgetText: string;
+  /** The budget given for it, oldest first — including any dated after today. */
+  funds: DepartmentFund[];
+  dateFrom: string; // ISO
+  dateTo: string; // ISO
+  departmentName: string; // "" when no department has been picked yet
+  budget: number | null; // allocated budget; null when not set
+  given: number; // handed out so far, less what came back (only up to today)
+  stillNeeded: number; // budget − given, never below zero
+  status: UpcomingStatus;
+  daysAway: number; // days until it starts; 0 or less = today or already going on
+}
+
+export interface UpcomingMonthGroup {
+  key: string; // "2026-10"
+  label: string; // "November 2026"
+  rows: UpcomingActivityRow[];
+  stillNeeded: number;
+}
+
+export interface FinanceUpcoming {
+  untilLabel: string; // "Nov 30, 2026"
+  months: UpcomingMonthGroup[];
+  count: number;
+  totalStillNeeded: number;
+  noBudgetCount: number;
+  /** The fund today less every amount still to be given; negative when the fund isn't enough. */
+  fundAfter: number;
 }
 
 export interface FinanceCategoryRow {
@@ -132,6 +187,9 @@ export default function useFinanceReport() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [deptFunds, setDeptFunds] = useState<DepartmentFund[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [calendarCategories, setCalendarCategories] = useState<CalendarCategoryItem[]>([]);
+  const [upcomingWindow, setUpcomingWindow] = useState<UpcomingWindow>(1);
   const [settings, setSettings] = useState<GeneralFundSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -147,8 +205,10 @@ export default function useFinanceReport() {
       getDepartmentFunds("0000-01-01", "9999-12-31"),
       getDepartments(),
       getGeneralFundSettings(),
+      getAllEvents(),
+      getAllCategories(),
     ])
-      .then(([tithesList, offeringsList, expensesList, fundsList, departmentList, s]) => {
+      .then(([tithesList, offeringsList, expensesList, fundsList, departmentList, s, eventList, categoryList]) => {
         if (cancelled) return;
         setTithes(tithesList);
         setOfferings(offeringsList);
@@ -156,6 +216,8 @@ export default function useFinanceReport() {
         setDeptFunds(fundsList);
         setDepartments(departmentList);
         setSettings(s);
+        setEvents(eventList);
+        setCalendarCategories(categoryList);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -398,6 +460,80 @@ export default function useFinanceReport() {
     };
   }, [tithes, offerings, expenses, deptFunds, departments, dateFrom, dateTo, todayISO, balanceAsOf, deptGivenIn, deptReturnedIn]);
 
+  const fundBalance = balanceAsOf(todayISO);
+
+  /** Department activities from today to the end of the window, each staying listed until it ends,
+   *  with the budget still to be given. Always counted from today, whatever period is picked above. */
+  const upcoming = useMemo<FinanceUpcoming>(() => {
+    const today = parseISO(todayISO);
+    const until = monthEndISO(today.getFullYear(), today.getMonth() + upcomingWindow);
+    const departmentNames = new Map(departments.map((d) => [d.id, d.name]));
+    const activities = groupActivities(events, departments);
+    const linkedFunds = fundsByActivity(activities, deptFunds);
+    const eventById = new Map(events.map((e) => [e.id, e]));
+    // Compare in centavos so ₱0.1 + ₱0.2 still equals ₱0.3.
+    const cents = (n: number) => Math.round(n * 100);
+
+    const rows: UpcomingActivityRow[] = activities
+      .filter((a) => a.dateTo >= todayISO && a.dateFrom <= until)
+      .map((a) => {
+        // Only cash already handed out (or returned) by today — the same cash the fund balance counts.
+        const linked = linkedFunds.get(a.key) ?? [];
+        const given =
+          linked.reduce((s, f) => (f.dateGiven <= todayISO ? s + (f.amountGiven || 0) : s), 0) -
+          linked.reduce((s, f) => (f.dateReturned && f.dateReturned <= todayISO ? s + (f.amountReturned || 0) : s), 0);
+        const budget = a.budget && a.budget > 0 ? a.budget : null;
+        const stillNeeded = budget === null ? 0 : Math.max(cents(budget) - cents(given), 0) / 100;
+        const status: UpcomingStatus =
+          budget === null ? "noBudget" : stillNeeded <= 0 ? "fullyGiven" : given > 0 ? "partlyGiven" : "notGiven";
+        const first = eventById.get(a.key);
+        return {
+          key: a.key,
+          title: a.title,
+          location: a.location,
+          category: findCategory(calendarCategories, first?.cat ?? ""),
+          time: !first || first.allDay || !first.start ? "All day" : `${fmtTime(first.start)} – ${fmtTime(first.end)}`,
+          inCharge: a.inCharge,
+          budgetText: a.budgetText,
+          funds: [...linked].sort((x, y) => x.dateGiven.localeCompare(y.dateGiven)),
+          dateFrom: a.dateFrom,
+          dateTo: a.dateTo,
+          departmentName: a.departmentId ? departmentNames.get(a.departmentId) ?? "Unknown department" : "",
+          budget,
+          given,
+          stillNeeded,
+          status,
+          daysAway: Math.round((parseISO(a.dateFrom).getTime() - today.getTime()) / 86_400_000),
+        };
+      })
+      // Only what concerns a department: it has one, a budget, or budget given — like Department Funds.
+      .filter((r) => r.departmentName || r.budget !== null || r.given > 0);
+
+    const months: UpcomingMonthGroup[] = [];
+    rows.forEach((r) => {
+      // An activity already going on is listed under this month, where it's still happening.
+      const d = r.dateFrom < todayISO ? today : parseISO(r.dateFrom);
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      let group = months[months.length - 1];
+      if (!group || group.key !== key) {
+        group = { key, label: `${FINANCE_MONTHS[d.getMonth()]} ${d.getFullYear()}`, rows: [], stillNeeded: 0 };
+        months.push(group);
+      }
+      group.rows.push(r);
+      group.stillNeeded += r.stillNeeded;
+    });
+
+    const totalStillNeeded = rows.reduce((s, r) => s + r.stillNeeded, 0);
+    return {
+      untilLabel: formatDisplayDate(until),
+      months,
+      count: rows.length,
+      totalStillNeeded,
+      noBudgetCount: rows.filter((r) => r.status === "noBudget").length,
+      fundAfter: (cents(fundBalance) - cents(totalStillNeeded)) / 100,
+    };
+  }, [events, calendarCategories, departments, deptFunds, todayISO, upcomingWindow, fundBalance]);
+
 
   return {
     mode,
@@ -414,10 +550,14 @@ export default function useFinanceReport() {
     loading,
     error,
 
-    fundBalance: balanceAsOf(todayISO),
+    fundBalance,
     startingBalanceSet,
     // Department lines stay hidden for a church that has never given cash to a department.
     hasDepartmentFunds: deptFunds.length > 0,
+
+    upcoming,
+    upcomingWindow,
+    setUpcomingWindow,
 
     ...report,
   };

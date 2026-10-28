@@ -3,8 +3,10 @@ import type {
   FinanceDepartmentRow,
   FinanceMonthRow,
   FinanceServiceRow,
+  FinanceUpcoming,
 } from "../../hooks/useFinanceReport";
 import { formatDisplayDate, toLocalISODate } from "../../utils/date";
+import { activityDateLabel } from "../../utils/departmentActivities";
 import { getFinanceStatus } from "../../components/finance/financeStatus";
 
 // A4 portrait, in millimetres — same layout constants as memberPdfExport.ts.
@@ -42,6 +44,7 @@ export interface FinanceReportPdfData {
   services: FinanceServiceRow[];
   expenseCategories: FinanceCategoryRow[];
   departmentRows: FinanceDepartmentRow[];
+  upcoming: FinanceUpcoming; // department activities from today on — not tied to the period
 }
 
 /** Downloads the Finance Report as a one-to-two page PDF. jsPDF is loaded on demand. */
@@ -174,7 +177,12 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
       doc.setTextColor(...(header ? MUTED : TEXT));
       let x = MARGIN;
       cols.forEach((c, i) => {
-        const text = header ? c.label.toUpperCase() : cells[i];
+        let text = header ? c.label.toUpperCase() : cells[i];
+        // Shorten text that would run into the next column.
+        if (doc.getTextWidth(text) > c.width - 2) {
+          while (text.length > 1 && doc.getTextWidth(`${text}...`) > c.width - 2) text = text.slice(0, -1);
+          text = `${text.trimEnd()}...`;
+        }
         doc.text(text, c.right ? x + c.width : x, y, c.right ? { align: "right" } : undefined);
         x += c.width;
       });
@@ -307,6 +315,58 @@ export async function exportFinanceReportPdf(data: FinanceReportPdfData): Promis
         ["Total", peso(given), peso(returned), peso(given - returned)]
       );
     }
+  }
+
+  // ── Coming up: department activities from today on, so their budget can be prepared ──
+  const up = data.upcoming;
+  if (y > PAGE_H - 60) {
+    doc.addPage();
+    y = MARGIN + 6;
+  }
+  sectionTitle(`Coming Up — Department Activities until ${up.untilLabel}`);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...MUTED);
+  if (up.count === 0) {
+    doc.text("No department activities in the Calendar from today until then.", MARGIN, y);
+    y += 12;
+  } else {
+    const short = up.fundAfter < 0;
+    // Same wording as the summary on screen.
+    const summary = [
+      up.totalStillNeeded <= 0
+        ? "All of these activities already have their budget given."
+        : `${peso(up.totalStillNeeded)} needs to be prepared for these activities. ` +
+          (short
+            ? `The General Fund has ${peso(data.fundBalance)} today, so it is short by ${peso(-up.fundAfter)}.`
+            : `The General Fund has enough (${peso(data.fundBalance)} today).`),
+      up.noBudgetCount > 0 ? "Activities with no budget yet are not counted." : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    const summaryLines = doc.splitTextToSize(summary, CONTENT_W) as string[];
+    doc.text(summaryLines, MARGIN, y);
+    y += summaryLines.length * 4 + 4;
+
+    const rows = up.months.flatMap((m) => m.rows);
+    table(
+      [
+        { label: "Date", width: 32 },
+        { label: "Activity", width: 52 },
+        { label: "Category", width: 28 },
+        { label: "Department", width: 32 },
+        { label: "Still Needed", width: 30, right: true },
+      ],
+      rows.map((r) => [
+        activityDateLabel(r.dateFrom, r.dateTo),
+        r.title,
+        r.category.label,
+        r.departmentName || "No department yet",
+        r.status === "noBudget" ? "No budget yet" : r.status === "fullyGiven" ? "Given" : peso(r.stillNeeded),
+      ]),
+      ["Total", "", "", "", peso(up.totalStillNeeded)],
+      8.5
+    );
   }
 
   // ── Footer on every page ──

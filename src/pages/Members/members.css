@@ -338,8 +338,8 @@
     display: flex;
     gap: 12px;
 
-    margin-bottom: 16px;
-
+    /* margin-bottom: 16px; */
+    margin:2%;
     flex-wrap: wrap;
 }
 

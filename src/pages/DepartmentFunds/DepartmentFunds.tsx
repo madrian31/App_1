@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import AutoSaveStatus from "../../components/settings/AutoSaveStatus";
 import DepartmentActivitiesTable from "../../components/departmentFunds/DepartmentActivitiesTable";
@@ -16,7 +17,9 @@ import "./departmentFunds.css";
 
 export default function DepartmentFunds() {
   const currentUser = useCurrentUserName();
-  const d = useDepartmentFunds(currentUser);
+  // ?activity=<event id> opens the page on that activity (the Finance Report links here).
+  const [params] = useSearchParams();
+  const d = useDepartmentFunds(currentUser, { focusActivityKey: params.get("activity") });
   const v = (n: number) => (d.loading ? "…" : fmtPeso(n));
   const budgetLeft = d.totalBudget - d.totalUsed;
 
@@ -223,6 +226,7 @@ export default function DepartmentFunds() {
                 periodLabel={d.activityPeriodLabel}
                 departments={d.departments}
                 showAll={d.showAllActivities}
+                highlightKey={d.highlightKey}
                 onDepartmentChange={d.setActivityDepartment}
                 onBudgetCommit={d.setActivityBudget}
                 onAddBudget={d.openAddForActivity}

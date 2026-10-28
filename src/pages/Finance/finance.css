@@ -592,3 +592,389 @@
     font-size: 12.5px;
     color: var(--text-muted);
 }
+
+/* =========================================================
+   Coming Up — department activities still to be budgeted
+   ========================================================= */
+
+.upcoming-title-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    margin-bottom: 10px;
+}
+
+.upcoming-title-row .report-section-title {
+    margin-bottom: 4px;
+}
+
+.upcoming-intro {
+    margin: 0;
+
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.upcoming-window button {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+/* One plain sentence: how much to prepare, and whether the fund is enough. */
+.upcoming-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    padding: 14px 20px;
+
+    border-bottom: 1px solid var(--border);
+
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.upcoming-summary p {
+    margin: 0;
+}
+
+.upcoming-summary i {
+    margin-top: 4px;
+}
+
+.upcoming-summary.is-enough,
+.upcoming-summary.is-ready {
+    background: #ecfdf5;
+    color: #14532d;
+}
+
+.upcoming-summary.is-enough i,
+.upcoming-summary.is-ready i {
+    color: var(--success);
+}
+
+.upcoming-summary.is-short {
+    background: var(--danger-bg);
+    color: #7f1d1d;
+}
+
+.upcoming-summary.is-short i {
+    color: var(--danger);
+}
+
+/* The month row uses a <th>, which the table styles leave without padding — match the cells. */
+.upcoming-table .upcoming-month-row th,
+.upcoming-table .upcoming-month-row td {
+    padding: 10px 16px;
+
+    border-bottom: 1px solid var(--border);
+
+    background: #f7f8fa;
+
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: left;
+}
+
+.upcoming-table .upcoming-month-row td.finance-num {
+    text-align: right;
+}
+
+.upcoming-date {
+    display: block;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.upcoming-activity {
+    display: block;
+    padding: 0;
+
+    border: none;
+    background: none;
+    color: var(--text);
+
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.finance-row-click:hover .upcoming-activity {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.upcoming-activity:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.upcoming-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    margin-top: 4px;
+
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.upcoming-category {
+    padding: 1px 8px;
+
+    border: 1px solid;
+    border-radius: 999px;
+
+    font-size: 11.5px;
+    font-weight: 600;
+}
+
+.upcoming-needed {
+    font-weight: 700;
+    color: var(--danger);
+}
+
+.upcoming-given {
+    font-weight: 600;
+    color: var(--success);
+}
+
+/* =========================================================
+   Show / hide the full details (chart and tables)
+   ========================================================= */
+
+.finance-details-toggle {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+
+    width: 100%;
+    margin-bottom: 24px;
+    padding: 14px 20px;
+
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+
+    background: var(--card);
+    color: var(--primary);
+
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: left;
+
+    cursor: pointer;
+}
+
+.finance-details-toggle:hover {
+    border-color: var(--primary);
+}
+
+.finance-details-toggle:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.finance-details-toggle span {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+}
+
+/* =========================================================
+   Activity details modal (opened from Coming Up)
+   ========================================================= */
+
+.modal-box.activity-modal {
+    max-width: 560px;
+}
+
+.activity-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    margin-bottom: 16px;
+}
+
+.activity-modal-header .modal-title {
+    margin: 8px 0 0;
+    font-size: 20px;
+}
+
+.activity-modal-close {
+    flex-shrink: 0;
+
+    width: 36px;
+    height: 36px;
+
+    border: none;
+    border-radius: 8px;
+
+    background: transparent;
+    color: var(--text-muted);
+
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+.activity-modal-close:hover {
+    background: #f3f4f6;
+    color: var(--text);
+}
+
+.activity-modal-details {
+    margin: 0 0 20px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.activity-modal-details > div {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 12px;
+
+    padding: 10px 14px;
+}
+
+.activity-modal-details > div + div {
+    border-top: 1px solid var(--border);
+}
+
+.activity-modal-details dt {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.activity-modal-details dd {
+    margin: 0;
+
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.activity-modal-subtitle {
+    margin: 0 0 8px;
+
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.activity-modal-empty {
+    margin: 0 0 20px;
+    padding: 12px 14px;
+
+    border-radius: 8px;
+    background: #f7f8fa;
+
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.activity-modal-budget {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+
+    margin-bottom: 20px;
+}
+
+.activity-modal-budget > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    padding: 10px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.activity-modal-budget span {
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.activity-modal-budget strong {
+    font-size: 16px;
+    color: var(--text);
+}
+
+.activity-modal-budget .is-needed {
+    background: var(--danger-bg);
+    border-color: #f5c2c4;
+}
+
+.activity-modal-budget .is-needed strong {
+    color: var(--danger);
+}
+
+.activity-modal-budget .is-done {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.activity-modal-budget .is-done strong {
+    color: var(--success);
+}
+
+.activity-modal-funds {
+    margin: 0 0 20px;
+    padding: 0;
+
+    list-style: none;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+}
+
+.activity-modal-funds li {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 10px 14px;
+
+    font-size: 14px;
+}
+
+.activity-modal-funds li + li {
+    border-top: 1px solid var(--border);
+}
+
+.activity-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.activity-modal-actions .btn-secondary {
+    text-decoration: none;
+}
+
+@media (max-width: 520px) {
+    .activity-modal-budget {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-modal-details > div {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+}
