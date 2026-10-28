@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-import type { Member } from "../types/member";
+import { YOUTH, isYouthCategory, type Member } from "../types/member";
 
 const MEMBERS_COLLECTION = "members";
 const ATTENDANCE_COLLECTION = "membersAttendance";
@@ -201,6 +201,7 @@ export default function useMembersAttendanceReport() {
   const members = useMemo(() => {
     if (!categoryFilter) return allMembers;
     if (categoryFilter === UNCATEGORIZED) return allMembers.filter((m) => !m.category);
+    if (categoryFilter === YOUTH) return allMembers.filter((m) => isYouthCategory(m.category));
     return allMembers.filter((m) => m.category === categoryFilter);
   }, [allMembers, categoryFilter]);
   const [loadingMembers, setLoadingMembers] = useState(true);

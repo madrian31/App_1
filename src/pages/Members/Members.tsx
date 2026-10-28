@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "../../components/sidebar/Sidebar";
 import useMembers, { ALL_CATEGORIES, UNCATEGORIZED } from "../../hooks/useMembers";
+import { YOUTH, isYouthCategory, youthSubLabel } from "../../types/member";
 import PageHeader from "../../components/members/PageHeader";
 import MembersToolbar, { type FilterOption } from "../../components/members/MembersToolbar";
 import MembersTable from "../../components/members/MembersTable";
@@ -39,11 +40,31 @@ export default function Members() {
     refetch,
   } = useMembers();
 
+  // "Youth Boys" and "Youth Girls" share one "Youth" choice; a second dropdown
+  // then narrows it to Boys or Girls.
+  const youthCategories = categories.filter(isYouthCategory);
+  const departmentOptions = [
+    ...categories.filter((c) => !isYouthCategory(c)).map((c) => ({ value: c, label: c })),
+    ...(youthCategories.length ? [{ value: YOUTH, label: "Youth" }] : []),
+  ].sort((a, b) => a.label.localeCompare(b.label));
+
   const categoryFilterOptions: FilterOption<string>[] = [
     { value: ALL_CATEGORIES, label: "All Departments" },
-    ...categories.map((c) => ({ value: c, label: c })),
+    ...departmentOptions,
     ...(hasUncategorized ? [{ value: UNCATEGORIZED, label: "Uncategorized" }] : []),
   ];
+
+  const youthSelected = filter === YOUTH || isYouthCategory(filter);
+  const youthSubFilter = youthSelected
+    ? {
+        value: filter,
+        options: [
+          { value: YOUTH, label: "Boys & Girls" },
+          ...youthCategories.map((c) => ({ value: c, label: youthSubLabel(c) })),
+        ],
+        onChange: onFilterChange,
+      }
+    : undefined;
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -60,9 +81,10 @@ export default function Members() {
           <MembersToolbar
             search={search}
             onSearchChange={onSearchChange}
-            filter={filter}
+            filter={youthSelected ? YOUTH : filter}
             onFilterChange={onFilterChange}
             filterOptions={categoryFilterOptions}
+            subFilter={youthSubFilter}
           />
 
           <div className="members-card">

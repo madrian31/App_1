@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import type { Member } from "../types/member";
+import { YOUTH, isYouthCategory, type Member } from "../types/member";
 import {
     getAllMembers,
     archiveMember as archiveMemberService,
@@ -14,7 +14,7 @@ export function initials(
 
 export type PledgerFilter = "all" | "yes" | "no";
 
-/** Category filter: "all", UNCATEGORIZED, or a category name (e.g. "Women"). */
+/** Category filter: "all", UNCATEGORIZED, YOUTH, or a category name (e.g. "Women"). */
 export const ALL_CATEGORIES = "all";
 export const UNCATEGORIZED = "__uncategorized__";
 
@@ -102,7 +102,8 @@ export default function useMembers(
             // Category filter
             const category = (m.category ?? "").trim();
             if (filter === UNCATEGORIZED && category) return false;
-            if (filter !== ALL_CATEGORIES && filter !== UNCATEGORIZED && category !== filter) return false;
+            if (filter === YOUTH && !isYouthCategory(category)) return false;
+            if (filter !== ALL_CATEGORIES && filter !== UNCATEGORIZED && filter !== YOUTH && category !== filter) return false;
 
             // Search
             // Match "First MI Last" as well as the displayed "Last, First MI".

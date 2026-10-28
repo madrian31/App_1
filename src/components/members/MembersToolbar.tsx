@@ -18,6 +18,12 @@ interface MembersToolbarProps<T extends string> {
     filterOptions?: FilterOption<T>[];
     /** Hide the filter dropdown — used on pages that are already filtered (e.g. Archives). */
     hideFilter?: boolean;
+    /** A second dropdown shown beside the filter, e.g. Boys / Girls once "Youth" is picked. */
+    subFilter?: {
+        value: string;
+        options: FilterOption<string>[];
+        onChange: (value: string) => void;
+    };
 }
 
 export default function MembersToolbar<T extends string>({
@@ -27,6 +33,7 @@ export default function MembersToolbar<T extends string>({
     onFilterChange,
     filterOptions = PLEDGER_FILTER_OPTIONS as FilterOption<T>[],
     hideFilter = false,
+    subFilter,
 }: MembersToolbarProps<T>) {
     return (
         <div className="toolbar">
@@ -60,6 +67,26 @@ export default function MembersToolbar<T extends string>({
                         }
                     >
                         {filterOptions.map((o) => (
+                            <option key={o.value} value={o.value}>
+                                {o.label}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            {!hideFilter && subFilter && (
+                <div className="filter-select-wrap">
+                    <i
+                        className="fa-solid fa-user-group"
+                        aria-hidden="true"
+                    />
+
+                    <select
+                        value={subFilter.value}
+                        onChange={(e) => subFilter.onChange(e.target.value)}
+                    >
+                        {subFilter.options.map((o) => (
                             <option key={o.value} value={o.value}>
                                 {o.label}
                             </option>

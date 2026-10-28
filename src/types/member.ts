@@ -83,10 +83,23 @@ export function isWorkerPoolMember(m: Member): boolean {
   return m.isWorker || ministryHas(m, "Worker");
 }
 
+/** "Youth Boys" and "Youth Girls" — department filters show them as one Youth choice. */
+export function isYouthCategory(category: string | undefined): boolean {
+  return Boolean(category?.startsWith("Youth"));
+}
+
+/** Department filter value for every Youth category at once. */
+export const YOUTH = "__youth__";
+
+/** "Youth Boys" → "Boys", for the second dropdown once Youth is picked. */
+export function youthSubLabel(category: string): string {
+  return category.replace(/^Youth\s*/, "") || category;
+}
+
 /** Wednesday Presider pool: Youth OR Council Member, but never a Worker —
  *  even if that person is also Youth and/or Council. */
 export function isWedPresiderPoolMember(m: Member): boolean {
-  return (isCouncilPoolMember(m) || Boolean(m.category?.startsWith("Youth"))) && !isWorkerPoolMember(m);
+  return (isCouncilPoolMember(m) || isYouthCategory(m.category)) && !isWorkerPoolMember(m);
 }
 
 // The directory writes "Praise & Worship"; Manage Lists may spell it
