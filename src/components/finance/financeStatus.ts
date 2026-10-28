@@ -12,7 +12,7 @@ export interface FinanceStatus {
 /**
  * The period's financial status, shared by the on-screen card and the PDF so both say
  * the same thing. It answers "did the fund go up or down?" and names the amount that
- * matters: how much was added, or how much more tithes & offerings were needed to cover expenses.
+ * matters: how much was added, or how much was taken from the fund to pay the expenses.
  * The full numbers are already in the breakdown beside it.
  *
  * `money` formats amounts — "₱" on screen, "PHP" in the PDF (its fonts can't draw "₱").
@@ -52,7 +52,7 @@ export function getFinanceStatus(
       icon: "fa-arrow-down",
       headline: "Fund Decreased",
       detail: `Tithes and offerings were not enough for the ${outLabel} ${inPeriod}, so the difference was taken from the fund.`,
-      figure: { value: money(diff), label: `More tithes & offerings needed to cover the ${outLabel}` },
+      figure: { value: money(diff), label: `Taken from the fund to pay the ${outLabel}` },
     };
   }
   if (income > expenses) {

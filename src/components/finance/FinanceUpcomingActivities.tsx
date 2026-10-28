@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   UPCOMING_WINDOWS,
@@ -6,49 +6,104 @@ import {
   type UpcomingActivityRow,
   type UpcomingWindow,
 } from "../../hooks/useFinanceReport";
+import { useCanEdit, useCurrentUserName } from "../../auth/authContext";
 import { categoryBorder, categorySoftBg } from "../../types/calendarEvent";
+import type { NewDepartmentFund } from "../../types/departmentFund";
 import { activityDateLabel } from "../../utils/departmentActivities";
 import FinanceActivityModal from "./FinanceActivityModal";
+import FinanceGiveBudgetModal from "./FinanceGiveBudgetModal";
 import { fmtPeso, whenLabel } from "./financeFormat";
 
 interface FinanceUpcomingActivitiesProps {
   upcoming: FinanceUpcoming;
+  fundBalance: number; // the General Fund today
   loading: boolean;
   lookAhead: UpcomingWindow;
   onLookAheadChange: (lookAhead: UpcomingWindow) => void;
+  onGiveBudget: (fund: NewDepartmentFund) => Promise<void>;
 }
 
-function StillNeeded({ row }: { row: UpcomingActivityRow }) {
-  if (row.status === "noBudget") return <span className="date-text">No budget yet</span>;
+/** Whether the budget was given yet, and — for Admins — the button to give it. */
+function BudgetStatus({
+  row,
+  canEdit,
+  onGive,
+}: {
+  row: UpcomingActivityRow;
+  canEdit: boolean;
+  onGive: (row: UpcomingActivityRow) => void;
+}) {
+  const departmentFundsLink = `/Finance/DepartmentFunds?activity=${encodeURIComponent(row.key)}`;
+  // The row opens the activity's details; these buttons and links shouldn't.
+  const stop = (e: MouseEvent) => e.stopPropagation();
+
+  if (row.status === "noBudget") {
+    return (
+      <>
+        <span className="date-text">No budget yet</span>
+        {canEdit && (
+          <Link to={departmentFundsLink} className="upcoming-action-link" onClick={stop}>
+            Set budget →
+          </Link>
+        )}
+      </>
+    );
+  }
   if (row.status === "fullyGiven") {
     return (
-      <span className="upcoming-given">
-        <i className="fa-solid fa-check" aria-hidden="true" /> Given
-      </span>
+      <>
+        <span className="upcoming-given">
+          <i className="fa-solid fa-circle-check" aria-hidden="true" /> Given
+        </span>
+        <span className="dept-fund-sub">{fmtPeso(row.given)} taken from the fund</span>
+      </>
     );
   }
   return (
     <>
       <span className="upcoming-needed">{fmtPeso(row.stillNeeded)}</span>
-      {row.status === "partlyGiven" && (
-        <span className="dept-fund-sub">
-          {fmtPeso(row.given)} of {fmtPeso(row.budget ?? 0)} given
-        </span>
-      )}
+      <span className="dept-fund-sub">
+        {row.status === "partlyGiven"
+          ? `${fmtPeso(row.given)} of ${fmtPeso(row.budget ?? 0)} given`
+          : "Not given yet"}
+      </span>
+      {canEdit &&
+        (row.departmentId ? (
+          <button
+            type="button"
+            className="btn-secondary upcoming-give"
+            onClick={(e) => {
+              stop(e);
+              onGive(row);
+            }}
+          >
+            <i className="fa-solid fa-hand-holding-dollar" aria-hidden="true" />
+            {row.status === "partlyGiven" ? "Give the rest" : "Give"}
+          </button>
+        ) : (
+          <Link to={departmentFundsLink} className="upcoming-action-link" onClick={stop}>
+            Pick a department first →
+          </Link>
+        ))}
     </>
   );
 }
 
 /** Department activities that haven't ended yet and the budget still to be prepared for them.
- *  Nothing here is taken from the fund until it's given on the Department Funds page. */
+ *  Nothing here is taken from the fund until its budget is given. */
 export default function FinanceUpcomingActivities({
   upcoming,
+  fundBalance,
   loading,
   lookAhead,
   onLookAheadChange,
+  onGiveBudget,
 }: FinanceUpcomingActivitiesProps) {
   const { months, count, noBudgetCount, untilLabel } = upcoming;
+  const canEdit = useCanEdit(); // Users only view the list
+  const currentUser = useCurrentUserName();
   const [selected, setSelected] = useState<UpcomingActivityRow | null>(null);
+  const [giving, setGiving] = useState<UpcomingActivityRow | null>(null);
 
   return (
     <>
@@ -80,7 +135,7 @@ export default function FinanceUpcomingActivities({
               <tr>
                 <th>Date</th>
                 <th>Activity</th>
-                <th className="finance-num">Still Needed</th>
+                <th className="finance-num">Budget</th>
               </tr>
             </thead>
             <tbody>
@@ -134,8 +189,8 @@ export default function FinanceUpcomingActivities({
                           {r.departmentName || "No department yet"}
                         </span>
                       </td>
-                      <td className="finance-num">
-                        <StillNeeded row={r} />
+                      <td className="finance-num upcoming-budget">
+                        <BudgetStatus row={r} canEdit={canEdit} onGive={setGiving} />
                       </td>
                     </tr>
                   )),
@@ -147,11 +202,28 @@ export default function FinanceUpcomingActivities({
 
         <p className="finance-table-note">
           Click an activity to see its details. {noBudgetCount > 0 && "Activities with no budget yet are not counted. "}
-          Set budgets and give them on the <Link to="/Finance/DepartmentFunds">Department Funds</Link> page.
+          {canEdit ? (
+            <>
+              Click <strong>Give</strong> when the money is handed to the department — only then is it taken from the
+              General Fund. Budgets are set, and receipts recorded, on the{" "}
+              <Link to="/Finance/DepartmentFunds">Department Funds</Link> page.
+            </>
+          ) : (
+            "A budget is taken from the General Fund only once it is given to the department."
+          )}
         </p>
       </div>
 
       {selected && <FinanceActivityModal activity={selected} onClose={() => setSelected(null)} />}
+      {giving && (
+        <FinanceGiveBudgetModal
+          activity={giving}
+          fundBalance={fundBalance}
+          currentUser={currentUser}
+          onGive={onGiveBudget}
+          onClose={() => setGiving(null)}
+        />
+      )}
     </>
   );
 }

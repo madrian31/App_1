@@ -206,6 +206,114 @@
     color: #374151;
 }
 
+.finance-glance-pill-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* "?" beside the verdict — why the fund went up or down. */
+.finance-why {
+    position: relative;
+    display: inline-flex;
+}
+
+.finance-why-btn {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+
+    border: 2px solid var(--border);
+    border-radius: 50%;
+
+    background: var(--card);
+    color: var(--text-muted);
+
+    font: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+
+    cursor: pointer;
+}
+
+.finance-why-btn:hover,
+.finance-why-btn[aria-expanded="true"] {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.finance-why-btn:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.finance-why-pop {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 20;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    width: min(340px, calc(100vw - 48px));
+    padding: 16px;
+
+    border: 1px solid var(--border);
+    border-radius: 12px;
+
+    background: var(--card);
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--text);
+    text-align: left;
+}
+
+.finance-why-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.finance-why-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f7f8fa;
+
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.finance-why-flow > span {
+    display: flex;
+    flex-direction: column;
+}
+
+.finance-why-flow strong {
+    font-size: 16px;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 640px) {
+    .finance-why-pop {
+        right: auto;
+        left: 0;
+    }
+}
+
 .finance-glance-change {
     font-size: 15px;
     line-height: 1.4;
@@ -764,6 +872,105 @@
 .upcoming-given {
     font-weight: 600;
     color: var(--success);
+}
+
+.upcoming-give {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+
+    margin-top: 6px;
+    padding: 5px 12px;
+
+    font-size: 13px;
+}
+
+.upcoming-action-link {
+    display: inline-block;
+    margin-top: 4px;
+
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.upcoming-action-link:hover {
+    text-decoration: underline;
+}
+
+/* =========================================================
+   Give Budget modal — opened from Coming Up
+   ========================================================= */
+
+.give-budget-modal {
+    max-width: 480px;
+}
+
+.give-budget-activity {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    margin: 0 0 14px;
+
+    font-size: 15px;
+}
+
+.give-budget-activity span {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.give-budget-figures {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+
+    margin: 0 0 16px;
+}
+
+.give-budget-figures > div {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f7f8fa;
+}
+
+.give-budget-figures dt {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.give-budget-figures dd {
+    margin: 2px 0 0;
+
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.give-budget-effect {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    margin: 14px 0 0;
+    padding: 12px 14px;
+    border-radius: 10px;
+
+    background: #eff6ff;
+    color: #1e3a8a;
+
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.give-budget-effect i {
+    margin-top: 3px;
+}
+
+.give-budget-effect.is-short {
+    background: var(--danger-bg);
+    color: #991b1b;
 }
 
 /* =========================================================

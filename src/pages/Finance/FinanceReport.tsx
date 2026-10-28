@@ -53,6 +53,7 @@ export default function FinanceReport() {
     upcoming,
     upcomingWindow,
     setUpcomingWindow,
+    giveDepartmentBudget,
   } = useFinanceReport();
 
   const [exporting, setExporting] = useState(false);
@@ -183,6 +184,7 @@ export default function FinanceReport() {
               loading={loading}
               periodLabel={periodLabel}
               currentPeriod={currentPeriod}
+              startBalance={startBalance}
               endBalance={endBalance}
               fundBalance={fundBalance}
               startingBalanceSet={startingBalanceSet}
@@ -201,9 +203,11 @@ export default function FinanceReport() {
             <section className="report-section" id="finance-upcoming">
               <FinanceUpcomingActivities
                 upcoming={upcoming}
+                fundBalance={fundBalance}
                 loading={loading}
                 lookAhead={upcomingWindow}
                 onLookAheadChange={setUpcomingWindow}
+                onGiveBudget={giveDepartmentBudget}
               />
             </section>
           )}

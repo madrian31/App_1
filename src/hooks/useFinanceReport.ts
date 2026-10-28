@@ -3,13 +3,13 @@ import { getGeneralFundSettings } from "../services/finance/financeSettingsServi
 import { getTithes } from "../services/tithes/tithesService";
 import { getExpenses } from "../services/expenses/expensesService";
 import { getOfferings } from "../services/offerings/offeringsService";
-import { getDepartmentFunds } from "../services/departments/departmentFundsService";
+import { addDepartmentFund, getDepartmentFunds } from "../services/departments/departmentFundsService";
 import { getDepartments } from "../services/departments/departmentsService";
 import { getAllEvents } from "../services/calendar/calendarEventsService";
 import { getAllCategories } from "../services/calendar/calendarCategoriesService";
 import { findCategory, type CalendarCategoryItem, type CalendarEvent } from "../types/calendarEvent";
 import type { Department } from "../types/department";
-import type { DepartmentFund } from "../types/departmentFund";
+import type { DepartmentFund, NewDepartmentFund } from "../types/departmentFund";
 import type { Expense } from "../types/expense";
 import type { GeneralFundSettings } from "../types/finance";
 import type { Offering } from "../types/offering";
@@ -91,6 +91,7 @@ export interface UpcomingActivityRow {
   funds: DepartmentFund[];
   dateFrom: string; // ISO
   dateTo: string; // ISO
+  departmentId: string; // "" when no department has been picked yet
   departmentName: string; // "" when no department has been picked yet
   budget: number | null; // allocated budget; null when not set
   given: number; // handed out so far, less what came back (only up to today)
@@ -498,6 +499,7 @@ export default function useFinanceReport() {
           funds: [...linked].sort((x, y) => x.dateGiven.localeCompare(y.dateGiven)),
           dateFrom: a.dateFrom,
           dateTo: a.dateTo,
+          departmentId: a.departmentId,
           departmentName: a.departmentId ? departmentNames.get(a.departmentId) ?? "Unknown department" : "",
           budget,
           given,
@@ -535,6 +537,12 @@ export default function useFinanceReport() {
   }, [events, calendarCategories, departments, deptFunds, todayISO, upcomingWindow, fundBalance]);
 
 
+  /** Budget given from the Finance Report's Coming Up list; the fund and the list update at once. */
+  async function giveDepartmentBudget(fund: NewDepartmentFund) {
+    await addDepartmentFund(fund);
+    setDeptFunds(await getDepartmentFunds("0000-01-01", "9999-12-31"));
+  }
+
   return {
     mode,
     chooseMode,
@@ -558,6 +566,7 @@ export default function useFinanceReport() {
     upcoming,
     upcomingWindow,
     setUpcomingWindow,
+    giveDepartmentBudget,
 
     ...report,
   };
