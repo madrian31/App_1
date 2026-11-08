@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, query, where, orderBy, setDoc } from "firebase/firestore";
+import { collection, doc, documentId, getDoc, getDocs, query, where, orderBy, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import type { Pledge } from "../../types/pledge";
 
@@ -9,13 +9,14 @@ function buildPledgeId(memberId: string, date: string): string {
   return `${memberId}_${date}`;
 }
 
-/** Fetches one member's pledges within an inclusive date range (e.g. one month, for the tracker). */
+/** Fetches one member's pledges within an inclusive date range (e.g. one month, for the tracker).
+ *  Filters on the document id (`${memberId}_${date}`) so it works without a composite index —
+ *  filtering on memberId + a date range would need one. */
 export async function getPledgesForMember(memberId: string, dateFrom: string, dateTo: string): Promise<Pledge[]> {
   const q = query(
     pledgesCol,
-    where("memberId", "==", memberId),
-    where("date", ">=", dateFrom),
-    where("date", "<=", dateTo)
+    where(documentId(), ">=", buildPledgeId(memberId, dateFrom)),
+    where(documentId(), "<=", buildPledgeId(memberId, dateTo))
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Pledge));

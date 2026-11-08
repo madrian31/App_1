@@ -10,6 +10,7 @@ interface PledgeTrackerTableProps {
   entries: Record<string, Entry>;
   rowStatus: Record<string, RowSaveStatus | undefined>;
   loading: boolean;
+  error: boolean; // true when this member's pledges failed to load
   disabled: boolean; // true when no member is selected yet
   onAmountChange: (date: string, value: string) => void;
   onNotesChange: (date: string, value: string) => void;
@@ -38,6 +39,7 @@ export default function PledgeTrackerTable({
   entries,
   rowStatus,
   loading,
+  error,
   disabled,
   onAmountChange,
   onNotesChange,
@@ -71,6 +73,14 @@ export default function PledgeTrackerTable({
               <td colSpan={5} className="empty-cell">
                 <div className="empty-state">
                   <p>Loading pledges…</p>
+                </div>
+              </td>
+            </tr>
+          ) : error ? (
+            <tr>
+              <td colSpan={5} className="empty-cell">
+                <div className="empty-state">
+                  <p>Could not load this member's pledges. Please refresh the page and try again.</p>
                 </div>
               </td>
             </tr>

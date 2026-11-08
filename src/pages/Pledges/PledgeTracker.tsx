@@ -26,6 +26,7 @@ export default function PledgeTracker() {
     entries,
     rowStatus,
     loadingEntries,
+    loadError,
     handleAmountChange,
     handleNotesChange,
     commitAmount,
@@ -80,7 +81,7 @@ export default function PledgeTracker() {
             onYearChange={setCurYear}
             years={years}
             onExportCSV={exportCSV}
-            exportDisabled={!memberId}
+            exportDisabled={!memberId || loadError}
           />
 
           <div className="members-card">
@@ -89,6 +90,7 @@ export default function PledgeTracker() {
               entries={entries}
               rowStatus={rowStatus}
               loading={loadingEntries}
+              error={loadError}
               disabled={!memberId}
               onAmountChange={handleAmountChange}
               onNotesChange={handleNotesChange}

@@ -38,6 +38,7 @@ export default function usePledgeTracker(currentUser: string) {
   const [entries, setEntries] = useState<Record<string, EntryState>>({}); // keyed by ISO date
   const [rowStatus, setRowStatus] = useState<Record<string, RowSaveStatus | undefined>>({});
   const [loadingEntries, setLoadingEntries] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const savedClearTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -58,21 +59,39 @@ export default function usePledgeTracker(currentUser: string) {
   const sundays = useMemo(() => getSundaysInMonth(curMonth, curYear), [curMonth, curYear]);
 
   useEffect(() => {
+    // Clear the previous member's/month's rows right away, so they never show
+    // (or get saved) under the newly selected member — even if the load fails.
+    setEntries({});
+    setLoadError(false);
     if (!memberId || sundays.length === 0) {
-      setEntries({});
+      setLoadingEntries(false);
       return;
     }
+
+    // Ignore a slow response that arrives after the user has already switched away.
+    let cancelled = false;
     setLoadingEntries(true);
     getPledgesForMember(memberId, sundays[0], sundays[sundays.length - 1])
       .then((pledges) => {
+        if (cancelled) return;
         const map: Record<string, EntryState> = {};
         pledges.forEach((p) => {
           map[p.date] = { amount: String(p.amount ?? ""), notes: p.notes ?? "" };
         });
         setEntries(map);
       })
-      .catch((err) => console.error("Failed to load pledges:", err))
-      .finally(() => setLoadingEntries(false));
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load pledges:", err);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEntries(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [memberId, sundays]);
 
   // Cancel pending timers when switching member/month/year, so a stale save
@@ -198,6 +217,7 @@ export default function usePledgeTracker(currentUser: string) {
     entries,
     rowStatus,
     loadingEntries,
+    loadError,
     handleAmountChange,
     handleNotesChange,
     commitAmount,
