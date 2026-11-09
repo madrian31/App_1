@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { arrayUnion, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 import type { LookupListKey } from "../../types/lookupList";
 
@@ -15,6 +15,12 @@ export async function getLookupList(key: LookupListKey): Promise<string[]> {
 export async function saveLookupList(key: LookupListKey, values: string[]): Promise<void> {
   const ref = doc(db, COLLECTION, key);
   await setDoc(ref, { values }, { merge: true });
+}
+
+/** Adds one value to a list if it isn't there yet — no read needed. */
+export async function addToLookupList(key: LookupListKey, value: string): Promise<void> {
+  const ref = doc(db, COLLECTION, key);
+  await setDoc(ref, { values: arrayUnion(value) }, { merge: true });
 }
 
 /** Writes the seed values only if the list doc doesn't exist yet — safe to call every load. */

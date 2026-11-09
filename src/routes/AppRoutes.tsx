@@ -83,7 +83,6 @@ export default function AppRoutes() {
           <Route path="/Settings/Departments" element={<DepartmentsSettings />} />
 
           {/* Menu items without a page yet */}
-          <Route path="/Roles" element={<ComingSoon title="Roles" />} />
           <Route path="/settings" element={<GeneralSettings />} />
           <Route path="/SundaySchool" element={<ComingSoon title="Sunday School Savings" />} />
           <Route path="/SundaySchoolReport" element={<ComingSoon title="Sunday School Report" />} />

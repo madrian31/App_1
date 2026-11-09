@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import type { LedgerEntryForm } from "../../hooks/useLedger";
 import type { LedgerEntryType } from "../../types/ledger";
+import { getLedgerCategories } from "../../services/ledger/ledgerService";
 import MemberSearchSelect from "../visitation/MemberSearchSelect";
 
 const TYPE_CONFIG: Record<LedgerEntryType, { label: string; sign: string }> = {
@@ -31,6 +33,14 @@ export default function LedgerFormModal({
   error,
 }: LedgerFormModalProps) {
   const isDonation = form.type === "DONATION";
+
+  // Categories used before, offered as choices — typing a new one still works
+  const [categories, setCategories] = useState<string[]>([]);
+  useEffect(() => {
+    getLedgerCategories()
+      .then(setCategories)
+      .catch((err) => console.error("Failed to load ledger categories:", err));
+  }, []);
 
   // Switching between a picked member and a typed name starts the giver over
   function setDonorNonMember(nonMember: boolean) {
@@ -135,10 +145,16 @@ export default function LedgerFormModal({
             <label>Category</label>
             <input
               type="text"
-              placeholder="e.g. Utilities, Loan…"
+              list="ledger-category-options"
+              placeholder="Pick or type a category"
               value={form.category}
               onChange={(e) => onChange("category", e.target.value)}
             />
+            <datalist id="ledger-category-options">
+              {categories.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </div>
 
           <div className="ledger-field ledger-field--full">

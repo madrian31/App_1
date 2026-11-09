@@ -13,8 +13,38 @@ import {
 import { db } from "../../firebase/firebase";
 import type { LedgerDepartment, LedgerEntry, NewLedgerEntry } from "../../types/ledger";
 import { toLocalISODate } from "../../utils/date";
+import { addToLookupList, getLookupList, saveLookupList } from "../settings/lookupListsService";
 
 const COLLECTION = "ledger";
+
+/**
+ * Categories offered in the Ledger form (shared by every department). It's the
+ * "Ledger Category" list in Settings → Manage Lists; while that list is empty it's
+ * built once from the categories already used in the ledger, so nothing has to be
+ * typed in by hand. New categories join it on save — see `rememberCategory`.
+ */
+export async function getLedgerCategories(): Promise<string[]> {
+  const saved = await getLookupList("ledgerCategory");
+  if (saved.length > 0) return saved;
+
+  const snap = await getDocs(collection(db, COLLECTION));
+  const used = [
+    ...new Set(snap.docs.map((d) => String(d.data().category ?? "").trim()).filter(Boolean)),
+  ].sort((a, b) => a.localeCompare(b));
+  if (used.length > 0) await saveLookupList("ledgerCategory", used);
+  return used;
+}
+
+/** Adds a category typed in the form to the list, so it's offered next time. A failure
+ *  here mustn't fail the save itself — the entry is already written. */
+async function rememberCategory(category: string): Promise<void> {
+  if (!category) return;
+  try {
+    await addToLookupList("ledgerCategory", category);
+  } catch (err) {
+    console.error("Failed to remember ledger category:", err);
+  }
+}
 
 function toISODate(value: unknown): string {
   if (value instanceof Timestamp) return toLocalISODate(value.toDate());
@@ -74,6 +104,7 @@ export async function addLedgerEntry(entry: NewLedgerEntry): Promise<string> {
     modifiedBy: entry.modifiedBy,
   };
   const ref = await addDoc(collection(db, COLLECTION), payload);
+  await rememberCategory(entry.category);
   return ref.id;
 }
 
@@ -91,6 +122,7 @@ export async function updateLedgerEntry(id: string, entry: NewLedgerEntry): Prom
     modifiedBy: entry.modifiedBy,
   };
   await updateDoc(doc(db, COLLECTION, id), payload);
+  await rememberCategory(entry.category);
 }
 
 export async function deleteLedgerEntry(id: string): Promise<void> {

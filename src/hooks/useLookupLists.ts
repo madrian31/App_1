@@ -29,11 +29,19 @@ const SEED_VALUES: Record<LookupListKey, string[]> = {
     "Tambourine Dancer",
   ],
   expenseCategory: EXPENSE_CATEGORY_SEED,
+  ledgerCategory: [], // built from the categories already used in the ledger — see getLedgerCategories
 };
 
 type ListsState = Record<LookupListKey, string[]>;
 
-const EMPTY_STATE: ListsState = { status: [], category: [], us2cgLevel: [], ministry: [], expenseCategory: [] };
+const EMPTY_STATE: ListsState = {
+  status: [],
+  category: [],
+  us2cgLevel: [],
+  ministry: [],
+  expenseCategory: [],
+  ledgerCategory: [],
+};
 
 export default function useLookupLists() {
   const [lists, setLists] = useState<ListsState>(EMPTY_STATE);
