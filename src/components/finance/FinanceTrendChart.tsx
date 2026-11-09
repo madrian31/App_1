@@ -1,5 +1,5 @@
 import type { FinanceMonthRow } from "../../hooks/useFinanceReport";
-import { fmtPeso } from "./financeFormat";
+import { compactPeso, fmtPeso } from "./financeFormat";
 
 interface FinanceTrendChartProps {
   months: FinanceMonthRow[];
@@ -46,11 +46,4 @@ export default function FinanceTrendChart({ months, title, selectedKey, onSelect
       </div>
     </div>
   );
-}
-
-/** "₱12.5k" — short enough to sit above a bar. */
-function compactPeso(n: number): string {
-  if (n >= 1_000_000) return `₱${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `₱${(n / 1_000).toFixed(1)}k`;
-  return `₱${Math.round(n)}`;
 }

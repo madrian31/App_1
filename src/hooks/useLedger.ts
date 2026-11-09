@@ -25,15 +25,50 @@ export interface LedgerEntryForm {
   amount: string;
   description: string;
   dateAdded: string; // ISO date
+  // DONATION only — who gave it
+  donorNonMember: boolean; // true = typed name (or blank for Anonymous) instead of a picked member
+  donorMemberId: string;
+  donorName: string;
 }
 
-const EMPTY_FORM: LedgerEntryForm = {
+export const EMPTY_LEDGER_FORM: LedgerEntryForm = {
   type: "EXPENSE",
   category: "",
   amount: "",
   description: "",
   dateAdded: toLocalISODate(new Date()),
+  donorNonMember: false,
+  donorMemberId: "",
+  donorName: "",
 };
+
+/** Amount is required; a donation needs its giver (a picked member, or the non-member
+ *  option), everything else needs a description. */
+export function isLedgerFormComplete(form: LedgerEntryForm): boolean {
+  if (!((parseFloat(form.amount) || 0) > 0)) return false;
+  if (form.type === "DONATION") return form.donorNonMember || Boolean(form.donorMemberId);
+  return form.description.trim().length > 0;
+}
+
+/** The form as a ledger entry. Donor fields are only kept for a donation. */
+export function toNewLedgerEntry(
+  form: LedgerEntryForm,
+  department: LedgerDepartment,
+  modifiedBy: string
+): NewLedgerEntry {
+  const isDonation = form.type === "DONATION";
+  return {
+    department,
+    type: form.type,
+    category: form.category.trim(),
+    amount: parseFloat(form.amount) || 0,
+    description: form.description.trim(),
+    donorMemberId: isDonation && !form.donorNonMember ? form.donorMemberId : "",
+    donorName: isDonation ? form.donorName.trim() || "Anonymous" : "",
+    dateAdded: form.dateAdded,
+    modifiedBy,
+  };
+}
 
 function monthStartISO(year: number, month: number): string {
   return toLocalISODate(new Date(year, month, 1));
@@ -59,7 +94,7 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
   const [error, setError] = useState<string | null>(null);
 
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<LedgerEntryForm>(EMPTY_FORM);
+  const [form, setForm] = useState<LedgerEntryForm>(EMPTY_LEDGER_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -89,7 +124,7 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
   }, [refetch]);
 
   function openAddForm() {
-    setForm({ ...EMPTY_FORM, dateAdded: toLocalISODate(new Date()) });
+    setForm({ ...EMPTY_LEDGER_FORM, dateAdded: toLocalISODate(new Date()) });
     setEditingId(null);
     setShowForm(true);
   }
@@ -101,13 +136,16 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
       amount: String(entry.amount),
       description: entry.description,
       dateAdded: entry.dateAdded,
+      donorNonMember: Boolean(entry.donorName) && !entry.donorMemberId,
+      donorMemberId: entry.donorMemberId || "",
+      donorName: entry.donorName === "Anonymous" && !entry.donorMemberId ? "" : entry.donorName || "",
     });
     setEditingId(entry.id);
     setShowForm(true);
   }
 
   function closeForm() {
-    setForm(EMPTY_FORM);
+    setForm(EMPTY_LEDGER_FORM);
     setEditingId(null);
     setShowForm(false);
   }
@@ -116,22 +154,14 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  const canSave = Boolean(form.amount) && form.description.trim().length > 0;
+  const canSave = isLedgerFormComplete(form);
 
   async function saveEntry() {
     if (!canSave) return;
     setSaving(true);
     setError(null);
     try {
-      const payload: NewLedgerEntry = {
-        department,
-        type: form.type,
-        category: form.category.trim(),
-        amount: parseFloat(form.amount) || 0,
-        description: form.description.trim(),
-        dateAdded: form.dateAdded,
-        modifiedBy: currentUser,
-      };
+      const payload = toNewLedgerEntry(form, department, currentUser);
       if (editingId) {
         await updateLedgerEntry(editingId, payload);
       } else {
@@ -162,11 +192,13 @@ export default function useLedger(department: LedgerDepartment, currentUser: str
     const totalExpenses = entries.filter((e) => e.type === "EXPENSE").reduce((s, e) => s + e.amount, 0);
     const totalLoanOut = entries.filter((e) => e.type === "LOAN_OUT").reduce((s, e) => s + e.amount, 0);
     const totalRepayment = entries.filter((e) => e.type === "REPAYMENT").reduce((s, e) => s + e.amount, 0);
+    const totalDonations = entries.filter((e) => e.type === "DONATION").reduce((s, e) => s + e.amount, 0);
     return {
       totalExpenses,
       totalLoanOut,
       totalRepayment,
-      netOutflow: totalExpenses + totalLoanOut - totalRepayment,
+      totalDonations,
+      netOutflow: totalExpenses + totalLoanOut - totalRepayment - totalDonations,
     };
   }, [entries]);
 

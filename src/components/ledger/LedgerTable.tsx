@@ -1,9 +1,11 @@
 import type { LedgerEntry, LedgerEntryType } from "../../types/ledger";
+import { ledgerEntryText } from "../../types/ledger";
 
 const TYPE_CONFIG: Record<LedgerEntryType, { label: string; sign: string; className: string }> = {
   EXPENSE: { label: "Expense", sign: "−", className: "ledger-type-pill--expense" },
   LOAN_OUT: { label: "Loan Out", sign: "−", className: "ledger-type-pill--loan" },
   REPAYMENT: { label: "Repayment", sign: "+", className: "ledger-type-pill--repayment" },
+  DONATION: { label: "Donation", sign: "+", className: "ledger-type-pill--donation" },
 };
 
 function fmt(n: number): string {
@@ -94,7 +96,7 @@ export default function LedgerTable({
                       <span className="date-text">—</span>
                     )}
                   </td>
-                  <td>{e.description}</td>
+                  <td>{ledgerEntryText(e)}</td>
                   <td className="col-hide-mobile">
                     <span className="added-by">
                       <i className="fa-regular fa-user" style={{ fontSize: 12 }} />
@@ -135,8 +137,9 @@ export default function LedgerTable({
         {entries.length > 0 && (
           <tfoot>
             <tr>
+              {/* Donations and repayments can outweigh spending — then it's a net inflow */}
               <td colSpan={canManage ? 5 : 4} style={{ fontWeight: 600, color: "var(--text-muted)" }}>
-                Net Outflow — {monthLabel}
+                {netOutflow < 0 ? "Net Inflow" : "Net Outflow"} — {monthLabel}
               </td>
               <td
                 style={{
@@ -145,7 +148,7 @@ export default function LedgerTable({
                   color: netOutflow > 0 ? "var(--danger)" : "var(--success)",
                 }}
               >
-                {fmt(netOutflow)}
+                {fmt(Math.abs(netOutflow))}
               </td>
               {canManage && <td></td>}
             </tr>

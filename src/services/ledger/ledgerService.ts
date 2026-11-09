@@ -16,13 +16,6 @@ import { toLocalISODate } from "../../utils/date";
 
 const COLLECTION = "ledger";
 
-/**
- * NOTE: this query filters by `department` (equality) and `dateAdded`
- * (range) at the same time, plus an orderBy on `dateAdded`. Firestore will
- * ask you to create a composite index the first time this runs — click the
- * link in the console error once and it's done for good.
- */
-
 function toISODate(value: unknown): string {
   if (value instanceof Timestamp) return toLocalISODate(value.toDate());
   if (typeof value === "string") return value;
@@ -37,13 +30,17 @@ function fromDoc(id: string, data: Record<string, unknown>): LedgerEntry {
     category: (data.category as string) ?? "",
     amount: (data.amount as number) ?? 0,
     description: (data.description as string) ?? "",
+    donorMemberId: (data.donorMemberId as string) || "",
+    donorName: (data.donorName as string) || "",
     dateAdded: toISODate(data.dateAdded),
     dateModified: toISODate(data.dateModified),
     modifiedBy: (data.modifiedBy as string) ?? "",
   };
 }
 
-/** Fetch all entries for a department within an inclusive date range (YYYY-MM-DD). */
+/** Fetch all entries for a department within an inclusive date range (YYYY-MM-DD).
+ *  Filters on `dateAdded` only and picks the department out afterwards, so it works
+ *  without a composite index (department + a date range would need one). */
 export async function getLedgerEntries(
   department: LedgerDepartment,
   dateFrom: string,
@@ -54,14 +51,13 @@ export async function getLedgerEntries(
 
   const q = query(
     collection(db, COLLECTION),
-    where("department", "==", department),
     where("dateAdded", ">=", start),
     where("dateAdded", "<=", end),
     orderBy("dateAdded", "asc")
   );
 
   const snap = await getDocs(q);
-  return snap.docs.map((d) => fromDoc(d.id, d.data()));
+  return snap.docs.map((d) => fromDoc(d.id, d.data())).filter((e) => e.department === department);
 }
 
 export async function addLedgerEntry(entry: NewLedgerEntry): Promise<string> {
@@ -71,6 +67,8 @@ export async function addLedgerEntry(entry: NewLedgerEntry): Promise<string> {
     category: entry.category,
     amount: entry.amount,
     description: entry.description,
+    donorMemberId: entry.donorMemberId ?? "",
+    donorName: entry.donorName ?? "",
     dateAdded: Timestamp.fromDate(new Date(`${entry.dateAdded}T00:00:00`)),
     dateModified: Timestamp.fromDate(new Date()),
     modifiedBy: entry.modifiedBy,
@@ -86,6 +84,8 @@ export async function updateLedgerEntry(id: string, entry: NewLedgerEntry): Prom
     category: entry.category,
     amount: entry.amount,
     description: entry.description,
+    donorMemberId: entry.donorMemberId ?? "",
+    donorName: entry.donorName ?? "",
     dateAdded: Timestamp.fromDate(new Date(`${entry.dateAdded}T00:00:00`)),
     dateModified: Timestamp.fromDate(new Date()),
     modifiedBy: entry.modifiedBy,
@@ -98,7 +98,7 @@ export async function deleteLedgerEntry(id: string): Promise<void> {
 }
 
 /**
- * Net outflow (EXPENSE + LOAN_OUT − REPAYMENT) for a department within a
+ * Net outflow (EXPENSE + LOAN_OUT − REPAYMENT − DONATION) for a department within a
  * date range — used by reports (e.g. Pledges Report's Net Balance KPI)
  * that need a single number without pulling in the full entry list.
  */
@@ -109,7 +109,7 @@ export async function getLedgerNetOutflow(
 ): Promise<number> {
   const entries = await getLedgerEntries(department, dateFrom, dateTo);
   return entries.reduce((sum, e) => {
-    if (e.type === "REPAYMENT") return sum - e.amount;
+    if (e.type === "REPAYMENT" || e.type === "DONATION") return sum - e.amount;
     return sum + e.amount; // EXPENSE + LOAN_OUT
   }, 0);
 }

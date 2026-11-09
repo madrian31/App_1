@@ -2,23 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getAllMembers } from "../services/members/memberService/membersService";
 import { getPledgesForMember, savePledge } from "../services/pledges/pledgesService";
 import type { Member } from "../types/member";
-import { toLocalISODate } from "../utils/date";
+import { getSundaysInMonth } from "../utils/date";
 
 export type RowSaveStatus = "saving" | "saved" | "error";
 
 const SAVE_DEBOUNCE_MS = 800;
 const SAVED_BADGE_MS = 1500;
-
-/** Every Sunday in the given month, as ISO date strings ("2026-08-09"). */
-function getSundaysInMonth(month: number, year: number): string[] {
-  const out: string[] = [];
-  const d = new Date(year, month, 1);
-  while (d.getMonth() === month) {
-    if (d.getDay() === 0) out.push(toLocalISODate(d));
-    d.setDate(d.getDate() + 1);
-  }
-  return out;
-}
 
 interface EntryState {
   amount: string;

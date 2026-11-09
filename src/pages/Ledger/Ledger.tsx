@@ -45,6 +45,7 @@ export default function Ledger() {
     totalExpenses,
     totalLoanOut,
     totalRepayment,
+    totalDonations,
     netOutflow,
   } = useLedger(department, currentUser);
 
@@ -58,7 +59,7 @@ export default function Ledger() {
           <div className="page-header">
             <div className="page-header-left">
               <h1>{LEDGER_DEPARTMENT_LABELS[department]} Ledger</h1>
-              <p>Track expenses, loans, and repayments for {monthLabel}.</p>
+              <p>Track expenses, loans, repayments, and donations for {monthLabel}.</p>
             </div>
           </div>
 
@@ -66,6 +67,7 @@ export default function Ledger() {
             totalExpenses={totalExpenses}
             totalLoanOut={totalLoanOut}
             totalRepayment={totalRepayment}
+            totalDonations={totalDonations}
             netOutflow={netOutflow}
             entryCount={entries.length}
           />

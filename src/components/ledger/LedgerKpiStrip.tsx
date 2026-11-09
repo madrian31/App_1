@@ -12,6 +12,7 @@ export default function LedgerKpiStrip({
   totalExpenses,
   totalLoanOut,
   totalRepayment,
+  totalDonations,
   netOutflow,
   entryCount,
 }: LedgerKpiStripProps) {
@@ -36,10 +37,17 @@ export default function LedgerKpiStrip({
         <span className="summary-card-label">Repayments</span>
       </div>
       <div className="summary-card">
-        <span className="summary-card-value" style={{ color: netOutflow > 0 ? "var(--danger)" : "var(--success)" }}>
-          {fmt(netOutflow)}
+        <span className="summary-card-value" style={{ color: "#0f766e" }}>
+          {fmt(totalDonations)}
         </span>
-        <span className="summary-card-label">Net Outflow</span>
+        <span className="summary-card-label">Donations</span>
+      </div>
+      <div className="summary-card">
+        {/* Donations and repayments can outweigh spending — then it's a net inflow */}
+        <span className="summary-card-value" style={{ color: netOutflow > 0 ? "var(--danger)" : "var(--success)" }}>
+          {fmt(Math.abs(netOutflow))}
+        </span>
+        <span className="summary-card-label">{netOutflow < 0 ? "Net Inflow" : "Net Outflow"}</span>
       </div>
       <div className="summary-card">
         <span className="summary-card-value">{entryCount}</span>

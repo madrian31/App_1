@@ -1,40 +1,55 @@
 import { Sidebar } from "../../components/sidebar/Sidebar";
-import usePledgesReport, { MONTHS, type QuickRange } from "../../hooks/usePledgesReport";
+import usePledgesReport, { MONTHS } from "../../hooks/usePledgesReport";
+import PledgesMonthChart from "../../components/pledges/PledgesMonthChart";
+import PledgesBreakdownTable from "../../components/pledges/PledgesBreakdownTable";
+import PledgesExpensesTable from "../../components/pledges/PledgesExpensesTable";
+import LedgerFormModal from "../../components/ledger/LedgerFormModal";
+import { fmtPeso } from "../../components/finance/financeFormat";
+import { useCurrentUserName } from "../../auth/authContext";
 import "./pledgesMembers.css";
-
-const QUICK_RANGES: { value: QuickRange; label: string }[] = [
-  { value: "thisMonth", label: "This Month" },
-  { value: "last3Months", label: "Last 3 Months" },
-  { value: "thisYear", label: "This Year" },
-  { value: "custom", label: "Custom Range" },
-];
-
-function fmt(n: number): string {
-  return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import "../Attendance/attendanceReport.css";
+import "../Finance/finance.css";
+import "../Ledger/ledger.css";
 
 export default function PledgesReport() {
+  const currentUser = useCurrentUserName();
   const {
-    quickRange,
-    onQuickRangeChange,
-    fromMonth,
-    setFromMonth,
-    fromYear,
-    setFromYear,
-    toMonth,
-    setToMonth,
-    toYear,
-    setToYear,
+    year,
+    selectYear,
     years,
+    month,
+    setMonth,
+    toggleMonth,
+    periodLabel,
     loading,
+    loaded,
     error,
-    grandTotal,
+    sundaysPerMonth,
+    periodSundays,
+    monthTotals,
+    rows,
+    pledgeTotal,
+    totalDonations,
+    totalCollected,
+    totalExpenses,
+    totalLoanOut,
+    totalRepayment,
+    netBalance,
     activePledgers,
     avgPerPledger,
-    byMonth,
-    byMember,
+    periodLedger,
+    entryForm,
+    savingEntry,
+    entryError,
+    canSaveEntry,
+    openEntryForm,
+    closeEntryForm,
+    updateEntryForm,
+    saveEntry,
     exportCSV,
-  } = usePledgesReport();
+  } = usePledgesReport(currentUser);
+
+  const v = (n: number) => (loaded ? fmtPeso(n) : "…");
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
@@ -44,72 +59,43 @@ export default function PledgesReport() {
           <div className="page-header">
             <div className="page-header-left">
               <h1>Pledges Report</h1>
-              <p>
-                {MONTHS[fromMonth]} {fromYear} – {MONTHS[toMonth]} {toYear}
-              </p>
+              <p>{periodLabel}</p>
             </div>
             <div className="page-header-actions">
-              <button className="btn-secondary" onClick={exportCSV} disabled={loading}>
+              {/* Month filter — scopes everything below except the monthly chart, whose bars also pick a month */}
+              <div className="filter-select-wrap">
+                <select
+                  value={month === null ? "all" : String(month)}
+                  onChange={(e) => setMonth(e.target.value === "all" ? null : Number(e.target.value))}
+                  aria-label="Month"
+                >
+                  <option value="all">All Months</option>
+                  {MONTHS.map((label, m) => (
+                    <option key={label} value={m}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="filter-select-wrap">
+                <i className="fa-regular fa-calendar" aria-hidden="true" />
+                <select value={year} onChange={(e) => selectYear(Number(e.target.value))} aria-label="Year">
+                  {years.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button className="btn-secondary" onClick={exportCSV} disabled={!loaded}>
                 <i className="fa-solid fa-file-export" aria-hidden="true" />
                 Export CSV
               </button>
-            </div>
-          </div>
-
-          {/* Range picker */}
-          <div className="toolbar-row report-range-row">
-            <div className="quick-range-group">
-              {QUICK_RANGES.map((r) => (
-                <button
-                  key={r.value}
-                  className={`quick-range-btn${quickRange === r.value ? " active" : ""}`}
-                  onClick={() => onQuickRangeChange(r.value)}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="month-range-wrap">
-              <div className="filter-select-wrap">
-                <select value={fromMonth} onChange={(e) => setFromMonth(Number(e.target.value))}>
-                  {MONTHS.map((m, i) => (
-                    <option key={i} value={i}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-select-wrap">
-                <select value={fromYear} onChange={(e) => setFromYear(Number(e.target.value))}>
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <span className="month-range-arrow">→</span>
-
-              <div className="filter-select-wrap">
-                <select value={toMonth} onChange={(e) => setToMonth(Number(e.target.value))}>
-                  {MONTHS.map((m, i) => (
-                    <option key={i} value={i}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="filter-select-wrap">
-                <select value={toYear} onChange={(e) => setToYear(Number(e.target.value))}>
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Same form as Pledges → Ledger: expense, loan, repayment, or donation */}
+              <button className="btn-add" onClick={openEntryForm}>
+                <i className="fa-solid fa-plus" aria-hidden="true" />
+                Add Entry
+              </button>
             </div>
           </div>
 
@@ -120,107 +106,77 @@ export default function PledgesReport() {
             </div>
           )}
 
-          {/* KPIs */}
-          <div className="summary-cards">
-            <div className="summary-card">
-              <span className="summary-card-value">{loading ? "…" : fmt(grandTotal)}</span>
-              <span className="summary-card-label">Total Collected</span>
+          {/* While another year loads, keep the current figures in place, dimmed */}
+          <div className={`pledge-report-body${loading && loaded ? " is-refreshing" : ""}`}>
+            <div className="summary-cards pledge-report-kpis">
+              <div className="summary-card">
+                <span className="summary-card-value">{v(totalCollected)}</span>
+                <span className="summary-card-label">Total Collected</span>
+                {totalDonations > 0 && (
+                  <span className="pledge-kpi-note">
+                    {fmtPeso(pledgeTotal)} from pledgers + {fmtPeso(totalDonations)} in donations
+                  </span>
+                )}
+              </div>
+              <div className="summary-card">
+                <span className="summary-card-value">{v(totalExpenses)}</span>
+                <span className="summary-card-label">Total Expenses</span>
+              </div>
+              <div className="summary-card">
+                <span className={`summary-card-value ${netBalance < 0 ? "is-down" : "is-up"}`}>
+                  {loaded ? (netBalance < 0 ? "−" : "") + fmtPeso(Math.abs(netBalance)) : "…"}
+                </span>
+                <span className="summary-card-label">Net Balance</span>
+                {(totalLoanOut > 0 || totalRepayment > 0) && (
+                  <span className="pledge-kpi-note">
+                    After {fmtPeso(totalLoanOut)} loaned out and {fmtPeso(totalRepayment)} repaid
+                  </span>
+                )}
+              </div>
+              <div className="summary-card">
+                <span className="summary-card-value">{loaded ? activePledgers : "…"}</span>
+                <span className="summary-card-label">Pledgers Who Gave</span>
+              </div>
+              <div className="summary-card">
+                <span className="summary-card-value">{v(avgPerPledger)}</span>
+                <span className="summary-card-label">Average per Pledger</span>
+              </div>
             </div>
-            <div className="summary-card">
-              <span className="summary-card-value">{loading ? "…" : activePledgers}</span>
-              <span className="summary-card-label">Active Pledgers</span>
-            </div>
-            <div className="summary-card">
-              <span className="summary-card-value">{loading ? "…" : fmt(avgPerPledger)}</span>
-              <span className="summary-card-label">Avg per Pledger</span>
-            </div>
+
+            <section className="report-section">
+              <PledgesMonthChart year={year} monthTotals={monthTotals} selectedMonth={month} onSelectMonth={toggleMonth} />
+            </section>
+
+            <section className="report-section">
+              <PledgesBreakdownTable
+                rows={rows}
+                month={month}
+                year={year}
+                sundaysPerMonth={sundaysPerMonth}
+                periodSundays={periodSundays}
+                totalCollected={pledgeTotal}
+                periodLabel={periodLabel}
+              />
+            </section>
+
+            <section className="report-section">
+              {/* keyed by period so "Show all" folds back up when another month is picked */}
+              <PledgesExpensesTable key={periodLabel} entries={periodLedger} periodLabel={periodLabel} />
+            </section>
           </div>
 
-          {/* Breakdown by Month */}
-          <section className="report-section">
-            <h2 className="report-section-title">Monthly Breakdown</h2>
-            <div className="members-card">
-              <div className="table-scroll">
-                <table className="members-table">
-                  <thead>
-                    <tr>
-                      <th>Month</th>
-                      <th>Total Collected</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={2} className="empty-cell">
-                          <div className="empty-state">
-                            <p>Loading…</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : byMonth.length === 0 ? (
-                      <tr>
-                        <td colSpan={2} className="table-empty">
-                          No pledges recorded for this range.
-                        </td>
-                      </tr>
-                    ) : (
-                      byMonth.map((row) => (
-                        <tr key={row.key}>
-                          <td>{row.label}</td>
-                          <td>{fmt(row.total)}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          {/* Breakdown by Member */}
-          <section className="report-section">
-            <h2 className="report-section-title">Member Breakdown</h2>
-            <div className="members-card">
-              <div className="table-scroll">
-                <table className="members-table">
-                  <thead>
-                    <tr>
-                      <th>Member</th>
-                      <th>Total</th>
-                      <th>Sundays Paid</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={3} className="empty-cell">
-                          <div className="empty-state">
-                            <p>Loading…</p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : byMember.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="table-empty">
-                          No pledges recorded for this range.
-                        </td>
-                      </tr>
-                    ) : (
-                      byMember.map((row) => (
-                        <tr key={row.memberId}>
-                          <td>
-                            <span className="member-name">{row.memberName}</span>
-                          </td>
-                          <td>{fmt(row.total)}</td>
-                          <td>{row.sundaysPaid}</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          {entryForm && (
+            <LedgerFormModal
+              form={entryForm}
+              isEditing={false}
+              saving={savingEntry}
+              canSave={canSaveEntry}
+              onChange={updateEntryForm}
+              onSave={saveEntry}
+              onClose={closeEntryForm}
+              error={entryError}
+            />
+          )}
         </div>
       </main>
     </div>

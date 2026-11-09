@@ -1,174 +1,286 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllPledges } from "../services/pledges/pledgesService";
+import { addLedgerEntry, getLedgerEntries } from "../services/ledger/ledgerService";
+import { getAllMembers } from "../services/members/memberService/membersService";
+import { EMPTY_LEDGER_FORM, isLedgerFormComplete, toNewLedgerEntry, type LedgerEntryForm } from "./useLedger";
 import type { Pledge } from "../types/pledge";
-import { toLocalISODate } from "../utils/date";
-
-export type QuickRange = "thisMonth" | "last3Months" | "thisYear" | "custom";
+import type { LedgerEntry } from "../types/ledger";
+import type { Member } from "../types/member";
+import { getSundaysInMonth, toLocalISODate } from "../utils/date";
 
 export const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+export const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function monthStartISO(year: number, month: number): string {
-  return toLocalISODate(new Date(year, month, 1));
-}
-function monthEndISO(year: number, month: number): string {
-  return toLocalISODate(new Date(year, month + 1, 0));
+/** Month index (0-11) of a "YYYY-MM-DD" string. */
+function monthOf(iso: string): number {
+  return Number(iso.slice(5, 7)) - 1;
 }
 
-function resolveQuickRange(range: QuickRange, now: Date) {
-  const m = now.getMonth();
-  const y = now.getFullYear();
-  switch (range) {
-    case "thisMonth":
-      return { fromMonth: m, fromYear: y, toMonth: m, toYear: y };
-    case "last3Months": {
-      const d = new Date(y, m - 2, 1);
-      return { fromMonth: d.getMonth(), fromYear: d.getFullYear(), toMonth: m, toYear: y };
-    }
-    case "thisYear":
-      return { fromMonth: 0, fromYear: y, toMonth: 11, toYear: y };
-    case "custom":
-    default:
-      return { fromMonth: m, fromYear: y, toMonth: m, toYear: y };
-  }
-}
-
-export interface MonthRow {
-  key: string;
-  label: string;
-  total: number;
-}
-
-export interface MemberRow {
+export interface MemberReportRow {
   memberId: string;
   memberName: string;
-  total: number;
-  sundaysPaid: number;
+  yearTotal: number;
+  monthTotals: number[]; // 12 entries, Jan..Dec
+  sundaysPaid: number[]; // 12 entries — Sundays with an amount, per month
+  periodTotal: number; // the selected month, or the whole year
+  /** The selected month's collections, keyed by Sunday ("YYYY-MM-DD"). Empty when All Months. */
+  bySunday: Record<string, { amount: number; notes: string }>;
 }
 
-export default function usePledgesReport() {
+/**
+ * Drives the Pledges Report: one year at a time, optionally narrowed to one month.
+ * Every figure on the page (cards, member chart, tables) follows the selected month;
+ * the monthly chart always shows the whole year so another month can be picked.
+ *
+ * Pledge money is pooled: what comes in is per member (Pledge Tracker), what goes out
+ * is one Pledges Ledger entry per purchase — added from here or from the Ledger page.
+ */
+export default function usePledgesReport(currentUser: string) {
   const now = new Date();
-  const initial = resolveQuickRange("thisMonth", now);
 
-  const [quickRange, setQuickRange] = useState<QuickRange>("thisMonth");
-  const [fromMonth, setFromMonthState] = useState(initial.fromMonth);
-  const [fromYear, setFromYearState] = useState(initial.fromYear);
-  const [toMonth, setToMonthState] = useState(initial.toMonth);
-  const [toYear, setToYearState] = useState(initial.toYear);
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState<number | null>(null); // null = All Months
 
   const [pledges, setPledges] = useState<Pledge[]>([]);
+  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
+  const [pledgers, setPledgers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false); // true after the first load, so refetches keep the page in place
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0); // bump to refetch after adding an entry
 
-  const years = Array.from({ length: 9 }, (_, i) => now.getFullYear() - 5 + i);
+  // "Add Entry" form — a Pledges Ledger entry (expense, donation, …)
+  const [entryForm, setEntryForm] = useState<LedgerEntryForm | null>(null); // null = closed
+  const [savingEntry, setSavingEntry] = useState(false);
+  const [entryError, setEntryError] = useState<string | null>(null);
 
-  function onQuickRangeChange(range: QuickRange) {
-    setQuickRange(range);
-    if (range !== "custom") {
-      const r = resolveQuickRange(range, now);
-      setFromMonthState(r.fromMonth);
-      setFromYearState(r.fromYear);
-      setToMonthState(r.toMonth);
-      setToYearState(r.toYear);
+  const years =Array.from({ length: 9 }, (_, i) => now.getFullYear() - 5 + i);
+
+  // Current pledgers, so someone who hasn't given yet still shows up (with "—").
+  useEffect(() => {
+    getAllMembers()
+      .then((all) => setPledgers(all.filter((m) => m.isPledger && !m.isArchived)))
+      .catch((err) => console.error("Failed to load pledgers:", err));
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const from = `${year}-01-01`;
+    const to = `${year}-12-31`;
+    Promise.all([getAllPledges(from, to), getLedgerEntries("pledges", from, to)])
+      .then(([p, l]) => {
+        if (cancelled) return;
+        setPledges(p);
+        setLedger(l);
+        setLoaded(true);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load pledges report:", err);
+        setError("Could not load the report. Please refresh the page and try again.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [year, reloadKey]);
+
+  function selectYear(y: number) {
+    setYear(y);
+    setMonth(null);
+  }
+
+  /** Clicking the month that's already selected goes back to All Months. */
+  function toggleMonth(m: number) {
+    setMonth((cur) => (cur === m ? null : m));
+  }
+
+  const inPeriod = (iso: string) => month === null || monthOf(iso) === month;
+
+  const sundaysPerMonth = useMemo(() => MONTHS.map((_, m) => getSundaysInMonth(m, year)), [year]);
+  const periodSundays = month === null ? [] : sundaysPerMonth[month];
+
+  const monthTotals = useMemo(() => {
+    const totals = Array(12).fill(0) as number[];
+    pledges.forEach((p) => (totals[monthOf(p.date)] += p.amount || 0));
+    return totals;
+  }, [pledges]);
+
+  // ── Members ──
+  const rows = useMemo<MemberReportRow[]>(() => {
+    const map = new Map<string, MemberReportRow>();
+    const rowFor = (memberId: string, memberName: string) => {
+      let row = map.get(memberId);
+      if (!row) {
+        row = {
+          memberId,
+          memberName,
+          yearTotal: 0,
+          monthTotals: Array(12).fill(0),
+          sundaysPaid: Array(12).fill(0),
+          periodTotal: 0,
+          bySunday: {},
+        };
+        map.set(memberId, row);
+      }
+      return row;
+    };
+
+    pledgers.forEach((m) => rowFor(m.id, `${m.firstName} ${m.lastName}`));
+    pledges.forEach((p) => {
+      const row = rowFor(p.memberId, p.memberName);
+      const amount = p.amount || 0;
+      const m = monthOf(p.date);
+      row.yearTotal += amount;
+      row.monthTotals[m] += amount;
+      if (amount > 0) row.sundaysPaid[m] += 1;
+      if (month === null || m === month) row.periodTotal += amount;
+      if (m === month) row.bySunday[p.date] = { amount, notes: p.notes || "" };
+    });
+
+    // Same order whichever month is picked: biggest givers for the year first.
+    return Array.from(map.values()).sort(
+      (a, b) => b.yearTotal - a.yearTotal || a.memberName.localeCompare(b.memberName)
+    );
+  }, [pledgers, pledges, month]);
+
+  // ── Cards (follow the selected month) ──
+  // What the pledgers gave (Pledge Tracker) — the member chart and table add up to this.
+  const pledgeTotal = month === null ? monthTotals.reduce((s, n) => s + n, 0) : monthTotals[month];
+
+  const periodLedger = ledger.filter((e) => inPeriod(e.dateAdded)); // already oldest first
+  const sumOf = (type: LedgerEntry["type"]) =>
+    periodLedger.filter((e) => e.type === type).reduce((s, e) => s + e.amount, 0);
+  const totalExpenses = sumOf("EXPENSE");
+  const totalLoanOut = sumOf("LOAN_OUT");
+  const totalRepayment = sumOf("REPAYMENT");
+  const totalDonations = sumOf("DONATION"); // from people who aren't pledgers
+
+  const totalCollected = pledgeTotal + totalDonations;
+  const netBalance = totalCollected - totalExpenses - totalLoanOut + totalRepayment;
+
+  const activePledgers = rows.filter((r) => r.periodTotal > 0).length;
+  const avgPerPledger = activePledgers > 0 ? pledgeTotal / activePledgers : 0;
+
+  const periodLabel = month === null ? `All of ${year}` : `${MONTHS[month]} ${year}`;
+
+  /** Today if it falls in the period being viewed, otherwise the period's first day —
+   *  so a new entry shows up in the list the user is looking at. */
+  function defaultEntryDate(): string {
+    const today = toLocalISODate(new Date());
+    const from = toLocalISODate(new Date(year, month ?? 0, 1));
+    const to = toLocalISODate(month === null ? new Date(year, 11, 31) : new Date(year, month + 1, 0));
+    return today >= from && today <= to ? today : from;
+  }
+
+  function openEntryForm() {
+    setEntryForm({ ...EMPTY_LEDGER_FORM, dateAdded: defaultEntryDate() });
+    setEntryError(null);
+  }
+
+  function closeEntryForm() {
+    setEntryForm(null);
+    setEntryError(null);
+  }
+
+  function updateEntryForm<K extends keyof LedgerEntryForm>(key: K, value: LedgerEntryForm[K]) {
+    setEntryForm((f) => (f ? { ...f, [key]: value } : f));
+  }
+
+  const canSaveEntry = !!entryForm && isLedgerFormComplete(entryForm);
+
+  async function saveEntry() {
+    if (!entryForm || !canSaveEntry) return;
+    setSavingEntry(true);
+    setEntryError(null);
+    try {
+      await addLedgerEntry(toNewLedgerEntry(entryForm, "pledges", currentUser));
+      closeEntryForm();
+      setReloadKey((k) => k + 1);
+    } catch (err) {
+      console.error("Failed to add pledges ledger entry:", err);
+      setEntryError("Could not save this entry. Please try again.");
+    } finally {
+      setSavingEntry(false);
     }
   }
 
-  // Any manual change to the month/year pickers switches the range to "custom"
-  // so the quick-range chips stop overriding the user's selection.
-  function setFromMonth(m: number) { setFromMonthState(m); setQuickRange("custom"); }
-  function setFromYear(y: number) { setFromYearState(y); setQuickRange("custom"); }
-  function setToMonth(m: number) { setToMonthState(m); setQuickRange("custom"); }
-  function setToYear(y: number) { setToYearState(y); setQuickRange("custom"); }
-
-  const dateFrom = monthStartISO(fromYear, fromMonth);
-  const dateTo = monthEndISO(toYear, toMonth);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-    getAllPledges(dateFrom, dateTo)
-      .then(setPledges)
-      .catch((err) => {
-        console.error("Failed to load pledges report:", err);
-        setError("Failed to load report data.");
-      })
-      .finally(() => setLoading(false));
-  }, [dateFrom, dateTo]);
-
-  // ── Summary ──
-  const grandTotal = useMemo(() => pledges.reduce((s, p) => s + (p.amount || 0), 0), [pledges]);
-  const activePledgers = useMemo(
-    () => new Set(pledges.filter((p) => p.amount > 0).map((p) => p.memberId)).size,
-    [pledges]
-  );
-  const avgPerPledger = activePledgers > 0 ? grandTotal / activePledgers : 0;
-
-  // ── Breakdown by month ──
-  const byMonth = useMemo<MonthRow[]>(() => {
-    const map = new Map<string, number>();
-    pledges.forEach((p) => {
-      const d = new Date(`${p.date}T00:00:00`);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      map.set(key, (map.get(key) || 0) + (p.amount || 0));
-    });
-    return Array.from(map.entries())
-      .sort(([a], [b]) => (a < b ? -1 : 1))
-      .map(([key, total]) => {
-        const [y, m] = key.split("-").map(Number);
-        return { key, label: `${MONTHS_SHORT[m - 1]} ${y}`, total };
-      });
-  }, [pledges]);
-
-  // ── Breakdown by member ──
-  const byMember = useMemo<MemberRow[]>(() => {
-    const map = new Map<string, MemberRow>();
-    pledges.forEach((p) => {
-      if (!map.has(p.memberId)) {
-        map.set(p.memberId, { memberId: p.memberId, memberName: p.memberName, total: 0, sundaysPaid: 0 });
-      }
-      const row = map.get(p.memberId)!;
-      row.total += p.amount || 0;
-      if (p.amount > 0) row.sundaysPaid += 1;
-    });
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [pledges]);
-
   function exportCSV() {
-    let csv = `Pledges Report,${MONTHS[fromMonth]} ${fromYear} to ${MONTHS[toMonth]} ${toYear}\n\n`;
-    csv += "Member,Total,Sundays Paid\n";
-    byMember.forEach((r) => {
-      csv += `${r.memberName},${r.total.toFixed(2)},${r.sundaysPaid}\n`;
+    const q = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const money = (n: number) => n.toFixed(2);
+    const sundayLabel = (iso: string) =>
+      new Date(`${iso}T00:00:00`).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+
+    const headers = month === null ? MONTHS_SHORT : periodSundays.map(sundayLabel);
+    const cells = (r: MemberReportRow) =>
+      month === null ? r.monthTotals : periodSundays.map((d) => r.bySunday[d]?.amount || 0);
+
+    let csv = `${q(`Pledges Report — ${periodLabel}`)}\n\n`;
+    csv += ["Member", ...headers.map(q), "Total"].join(",") + "\n";
+    rows.forEach((r) => {
+      csv += [q(r.memberName), ...cells(r).map(money), money(r.periodTotal)].join(",") + "\n";
     });
-    csv += `\nGrand Total,${grandTotal.toFixed(2)}\n`;
+    const columnTotals = headers.map((_, i) => rows.reduce((s, r) => s + cells(r)[i], 0));
+    csv += ["Total", ...columnTotals.map(money), money(pledgeTotal)].join(",") + "\n\n";
+    if (totalDonations) {
+      csv += `From Pledgers,${money(pledgeTotal)}\nDonations,${money(totalDonations)}\n`;
+    }
+    csv += `Total Collected,${money(totalCollected)}\n`;
+    csv += `Total Expenses,${money(totalExpenses)}\n`;
+    if (totalLoanOut || totalRepayment) {
+      csv += `Loaned Out,${money(totalLoanOut)}\nRepaid,${money(totalRepayment)}\n`;
+    }
+    csv += `Net Balance,${money(netBalance)}\n`;
 
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
-    a.download = `pledges_report_${fromYear}${String(fromMonth + 1).padStart(2, "0")}_${toYear}${String(toMonth + 1).padStart(2, "0")}.csv`;
+    a.download =
+      month === null
+        ? `pledges_report_${year}.csv`
+        : `pledges_report_${year}${String(month + 1).padStart(2, "0")}.csv`;
     a.click();
   }
 
   return {
-    quickRange,
-    onQuickRangeChange,
-    fromMonth,
-    setFromMonth,
-    fromYear,
-    setFromYear,
-    toMonth,
-    setToMonth,
-    toYear,
-    setToYear,
+    year,
+    selectYear,
     years,
+    month,
+    setMonth,
+    toggleMonth,
+    periodLabel,
     loading,
+    loaded,
     error,
-    grandTotal,
+    sundaysPerMonth,
+    periodSundays,
+    monthTotals,
+    rows,
+    pledgeTotal,
+    totalDonations,
+    totalCollected,
+    totalExpenses,
+    totalLoanOut,
+    totalRepayment,
+    netBalance,
     activePledgers,
     avgPerPledger,
-    byMonth,
-    byMember,
+    periodLedger,
+    entryForm,
+    savingEntry,
+    entryError,
+    canSaveEntry,
+    openEntryForm,
+    closeEntryForm,
+    updateEntryForm,
+    saveEntry,
     exportCSV,
   };
 }

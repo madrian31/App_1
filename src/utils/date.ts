@@ -8,6 +8,17 @@ export function toLocalISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/** Every Sunday in the given month (0-based), as "YYYY-MM-DD" strings. */
+export function getSundaysInMonth(month: number, year: number): string[] {
+  const out: string[] = [];
+  const d = new Date(year, month, 1);
+  while (d.getMonth() === month) {
+    if (d.getDay() === 0) out.push(toLocalISODate(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
 /** Normalizes a stored date string to "YYYY-MM-DD". Accepts ISO dates as well as
  *  legacy display strings like "Oct 17, 2026". Returns "" if unparseable. */
 export function normalizeToISODate(value: unknown): string {

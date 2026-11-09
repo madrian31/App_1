@@ -2,6 +2,13 @@ export function fmtPeso(n: number): string {
   return "₱" + n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+/** "₱12.5k" — short enough to sit above a bar. */
+export function compactPeso(n: number): string {
+  if (n >= 1_000_000) return `₱${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `₱${(n / 1_000).toFixed(1)}k`;
+  return `₱${Math.round(n)}`;
+}
+
 /** How soon something starts: "Happening now", "Today", "Tomorrow", "In 5 days", "In 3 weeks", "In 4 months". */
 export function whenLabel(daysAway: number): string {
   if (daysAway < 0) return "Happening now";

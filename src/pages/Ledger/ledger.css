@@ -102,6 +102,12 @@
     color: var(--success);
 }
 
+.ledger-type-btn--donation.active {
+    background: #f0fdfa;
+    border-color: #0f766e;
+    color: #0f766e;
+}
+
 /* =========================================================
    Type pill (table)
    ========================================================= */
@@ -126,6 +132,12 @@
     background: #ecfdf5;
     color: var(--success);
     border: 1px solid #a7f3d0;
+}
+
+.ledger-type-pill--donation {
+    background: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
 }
 
 /* =========================================================
